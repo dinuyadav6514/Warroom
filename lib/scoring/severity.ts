@@ -68,8 +68,19 @@ export function calculateSeverity(event: {
   else fatalitiesFactor = 0;
 
   // 2. Event Type Factor (0-35)
+  // Non-kinetic / diplomatic / political events explicitly score 0 and are capped at MODERATE max.
+  const NON_KINETIC_TYPES = [
+    'strategic development', 'diplomatic', 'speech', 'statement', 'sanctions',
+    'summit', 'ceasefire', 'truce', 'peace', 'agreement', 'protest', 'demonstration',
+  ];
+  const isNonKinetic = NON_KINETIC_TYPES.some(
+    (nk) => eventType.includes(nk) || subType.includes(nk)
+  );
+
   let eventTypeFactor = 10;
-  if (
+  if (isNonKinetic) {
+    eventTypeFactor = 3; // Hard cap: non-kinetic events cannot contribute much to severity
+  } else if (
     eventType.includes('air') ||
     eventType.includes('drone') ||
     eventType.includes('explosion') ||
@@ -123,7 +134,10 @@ export function calculateSeverity(event: {
   const totalScore = Math.min(100, fatalitiesFactor + eventTypeFactor + recencyFactor + actorFactor);
 
   let severity: Severity = 'LOW';
-  if (totalScore >= 70 || fatalities >= 15) {
+  if (isNonKinetic) {
+    // Non-kinetic events (speeches, diplomatic events, summits, etc.) are always LOW
+    severity = 'LOW';
+  } else if (totalScore >= 70 || fatalities >= 15) {
     severity = 'CRITICAL';
   } else if (totalScore >= 45 || fatalities >= 3) {
     severity = 'HIGH';

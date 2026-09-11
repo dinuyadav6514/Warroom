@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ReliefWeb & Live Wire Intelligence Provider
  *
  * Implements the user-specified ReliefWeb API v2 query:
@@ -212,10 +212,12 @@ export class ReliefWebProvider {
                 const r = reports[i];
                 const fields = r.fields || {};
                 const title = fields.title || '';
+                if (!title) continue;
+
                 const loc =
                   (fields.country && fields.country[0] && extractCountry(fields.country[0].name)) ||
                   extractCountry(title);
-                if (!loc || !title) continue;
+                if (!loc) continue;
 
                 const isoDate = fields.date?.original || fields.date?.created || new Date().toISOString();
                 const eventDate = isoDate.slice(0, 10);
@@ -239,6 +241,7 @@ export class ReliefWebProvider {
                   subEventType,
                   fatalities,
                   severity: sd.severity,
+                  isConflict: true, // ReliefWeb reports are always conflict/humanitarian
                   verificationStatus: 'VERIFIED',
                   source: src,
                   sourceUrl: fields.url || `https://reliefweb.int/report/${r.id}`,
@@ -280,7 +283,6 @@ export class ReliefWebProvider {
 
       for (const item of items) {
         const text = `${item.title} ${item.description}`;
-        if (!isConflictArticle(text)) continue;
 
         const loc = extractCountry(text) || extractCountry(item.title);
         if (!loc) continue;
@@ -298,8 +300,9 @@ export class ReliefWebProvider {
         const eventDate = isoDate.slice(0, 10);
         if (!isWithinWindow(eventDate, 10)) continue;
 
+        const conflict = isConflictArticle(text);
         const { eventType, subEventType } = inferEventType(text);
-        const fatalities = estimateFatalities(text);
+        const fatalities = conflict ? estimateFatalities(text) : 0;
         const sd = calculateSeverity({ fatalities, eventType, subEventType, eventDate, timestamp: isoDate });
 
         const ev: ConflictEvent = {
@@ -315,6 +318,7 @@ export class ReliefWebProvider {
           subEventType,
           fatalities,
           severity: sd.severity,
+          isConflict: conflict,
           verificationStatus: 'REPORTED',
           source: sourceName,
           sourceUrl: item.link,

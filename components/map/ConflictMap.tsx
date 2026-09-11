@@ -149,13 +149,17 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           mapInstanceRef.current = map;
           setMapLoaded(true);
 
-          // Add GeoJSON sources
-          map.addSource('warroom-events', {
+          // Add GeoJSON sources — NO clustering so every dot is always individually visible
+          map.addSource('warroom-conflict-events', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
-            cluster: true,
-            clusterMaxZoom: 9,
-            clusterRadius: 40,
+            cluster: false,
+          });
+
+          map.addSource('warroom-general-news', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+            cluster: false,
           });
 
           map.addSource('warroom-conflicts', {
@@ -163,11 +167,11 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             data: { type: 'FeatureCollection', features: [] },
           });
 
-          // 1. Heatmap Layer
+          // 1. Heatmap Layer (conflict events only, HEATMAP mode)
           map.addLayer({
             id: 'events-heat',
             type: 'heatmap',
-            source: 'warroom-events',
+            source: 'warroom-conflict-events',
             maxzoom: 9,
             paint: {
               'heatmap-weight': ['interpolate', ['linear'], ['get', 'fatalities'], 0, 0.2, 10, 1],
@@ -188,56 +192,30 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             layout: { visibility: 'none' },
           });
 
-          // 2. Clusters Layer
+          // 2. General News Dots — small dark blue circles, always individual, never clustered
           map.addLayer({
-            id: 'clusters',
+            id: 'news-dots',
             type: 'circle',
-            source: 'warroom-events',
-            filter: ['has', 'point_count'],
+            source: 'warroom-general-news',
             paint: {
-              'circle-color': [
-                'step',
-                ['get', 'point_count'],
-                '#1e293b',
-                10, '#0284c7',
-                25, '#d97706',
-                50, '#dc2626',
-              ],
+              'circle-color': '#1e3a5f',
               'circle-radius': [
-                'step',
-                ['get', 'point_count'],
-                14,
-                10, 18,
-                25, 22,
-                50, 26,
+                'interpolate', ['linear'], ['zoom'],
+                1, 3,
+                5, 4.5,
+                10, 6,
               ],
-              'circle-stroke-width': 1.5,
-              'circle-stroke-color': '#00f0ff',
+              'circle-stroke-width': 1,
+              'circle-stroke-color': '#2563eb',
+              'circle-opacity': 0.85,
             },
           });
 
-          // Cluster Count Labels
+          // 3. Conflict Dots — colour-coded by severity, larger than news dots
           map.addLayer({
-            id: 'cluster-count',
-            type: 'symbol',
-            source: 'warroom-events',
-            filter: ['has', 'point_count'],
-            layout: {
-              'text-field': '{point_count_abbreviated}',
-              'text-font': ['Open Sans Bold'],
-              'text-size': 11,
-            },
-            paint: {
-              'text-color': '#ffffff',
-            },
-          });
-
-          // 3. Unclustered Individual Incident Markers
-          map.addLayer({
-            id: 'unclustered-point',
+            id: 'conflict-dots',
             type: 'circle',
-            source: 'warroom-events',
-            filter: ['!', ['has', 'point_count']],
+            source: 'warroom-conflict-events',
             paint: {
               'circle-color': [
                 'match',
@@ -249,11 +227,9 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                 '#64748b',
               ],
               'circle-radius': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                2, 5.5,
-                6, 8,
+                'interpolate', ['linear'], ['zoom'],
+                1, 5,
+                5, 7,
                 10, 11,
               ],
               'circle-stroke-width': [
@@ -268,23 +244,38 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                 '#00ff66',
                 '#080b0e',
               ],
+              'circle-opacity': 0.95,
             },
           });
 
-          // 3b. Expansive Hit-Target for Unclustered Incident Markers (prevents missed clicks)
+          // 3b. Invisible hit-target layer for conflict dots (prevents missed clicks on small dots)
           map.addLayer({
-            id: 'unclustered-point-hit',
+            id: 'conflict-dots-hit',
             type: 'circle',
-            source: 'warroom-events',
-            filter: ['!', ['has', 'point_count']],
+            source: 'warroom-conflict-events',
             paint: {
               'circle-radius': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                2, 14,
-                6, 18,
-                10, 22,
+                'interpolate', ['linear'], ['zoom'],
+                1, 14,
+                5, 16,
+                10, 20,
+              ],
+              'circle-opacity': 0,
+              'circle-stroke-width': 0,
+            },
+          });
+
+          // 3c. Invisible hit-target layer for news dots
+          map.addLayer({
+            id: 'news-dots-hit',
+            type: 'circle',
+            source: 'warroom-general-news',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                1, 12,
+                5, 14,
+                10, 18,
               ],
               'circle-opacity': 0,
               'circle-stroke-width': 0,
@@ -344,32 +335,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             },
           });
 
-          // Interaction: Cluster Click to Zoom (handles both circle and number label)
-          const handleClusterClick = (e: any) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['clusters', 'cluster-count'] });
-            if (!features || !features[0]) return;
-            const clusterId = features[0]?.properties?.cluster_id;
-            const source: any = map.getSource('warroom-events');
-            if (clusterId && source?.getClusterExpansionZoom) {
-              source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
-                if (err) return;
-                map.easeTo({
-                  center: (features[0].geometry as any).coordinates,
-                  zoom: zoom + 1,
-                  duration: 600,
-                });
-              });
-            }
-          };
-
-          map.on('click', 'clusters', handleClusterClick);
-          map.on('click', 'cluster-count', handleClusterClick);
-          map.on('mouseenter', 'clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
-          map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; });
-          map.on('mouseenter', 'cluster-count', () => { map.getCanvas().style.cursor = 'pointer'; });
-          map.on('mouseleave', 'cluster-count', () => { map.getCanvas().style.cursor = ''; });
-
-          // Function to open tactical popup for an incident
+          // Function to open popup for an event dot (works for both conflict and news dots)
           const openEventPopup = (feature: any, coords: any) => {
             if (!feature) return;
             hoverPopupRef.current?.remove();
@@ -386,33 +352,34 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               if (relatedConflict) onSelectConflictRef.current(relatedConflict);
             }
 
-            const severityColor =
-              props.severity === 'CRITICAL'
-                ? '#ef4444'
-                : props.severity === 'HIGH'
-                ? '#f97316'
-                : props.severity === 'MODERATE'
-                ? '#eab308'
-                : '#00f0ff';
+            const isNewsItem = props.isConflict === false || props.isConflict === 'false';
+            const accentColor = isNewsItem ? '#2563eb' : (
+              props.severity === 'CRITICAL' ? '#ef4444' :
+              props.severity === 'HIGH' ? '#f97316' :
+              props.severity === 'MODERATE' ? '#eab308' : '#00f0ff'
+            );
 
             const fatalitiesColor = props.fatalities > 0 ? '#ef4444' : '#8b949e';
             const notesText = foundEvent?.notes || props.notes || '';
             const sourceText = foundEvent?.source || props.source || 'VERIFIED DISPATCH';
             const sourceUrl = foundEvent?.sourceUrl || props.sourceUrl || '';
 
+            const headerLabel = isNewsItem ? '// NEWS DISPATCH ::' : '// INCIDENT ::';
+            const typeLabel = isNewsItem ? 'CATEGORY' : 'TYPE';
+
             const popupHtml = `
               <div style="font-family: monospace; font-size: 11px; line-height: 1.45; color: #e6edf3; min-width: 260px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,240,255,0.3); padding-bottom: 5px; margin-bottom: 6px; padding-right: 22px;">
-                  <span style="color: #00f0ff; font-weight: bold; letter-spacing: 0.05em;">// INCIDENT :: ${props.id}</span>
-                  <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid ${severityColor}; color: ${severityColor};">
-                    ${props.severity}
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid ${accentColor}55; padding-bottom: 5px; margin-bottom: 6px; padding-right: 22px;">
+                  <span style="color: ${accentColor}; font-weight: bold; letter-spacing: 0.05em;">${headerLabel} ${props.id}</span>
+                  <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid ${accentColor}; color: ${accentColor};">
+                    ${isNewsItem ? 'NEWS' : props.severity}
                   </span>
                 </div>
                 <div style="display: grid; gap: 3px; margin-bottom: 6px; font-size: 11px;">
-                  <div><span style="color: #8b949e;">TYPE ::</span> <strong style="color: #ffffff;">${props.eventType}</strong></div>
+                  <div><span style="color: #8b949e;">${typeLabel} ::</span> <strong style="color: #ffffff;">${props.eventType}</strong></div>
                   <div><span style="color: #8b949e;">LOC  ::</span> <span style="color: #ffffff;">${props.location}, ${props.country}</span></div>
                   <div><span style="color: #8b949e;">DATE ::</span> <span style="color: #ffffff;">${props.date}</span></div>
-                  <div><span style="color: #8b949e;">CASUALTIES ::</span> <strong style="color: ${fatalitiesColor};">${props.fatalities > 0 ? props.fatalities + ' reported' : 'None reported'}</strong></div>
+                  ${!isNewsItem ? `<div><span style="color: #8b949e;">CASUALTIES ::</span> <strong style="color: ${fatalitiesColor};">${props.fatalities > 0 ? props.fatalities + ' reported' : 'None reported'}</strong></div>` : ''}
                 </div>
                 ${
                   notesText
@@ -425,14 +392,14 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                   <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">SOURCE: <span style="color: #cbd5e1;">${sourceText}</span></span>
                   ${
                     sourceUrl
-                      ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="color: #00f0ff; text-decoration: underline; flex-shrink: 0; font-weight: bold;">
+                      ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="color: ${accentColor}; text-decoration: underline; flex-shrink: 0; font-weight: bold;">
                           POST &nearr;
                         </a>`
                       : ''
                   }
                 </div>
                 <div style="display: flex; gap: 6px; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                  <button id="warroom-btn-modal-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; font-weight: bold; background: rgba(0,240,255,0.15); border: 1px solid #00f0ff; color: #00f0ff; cursor: pointer; border-radius: 2px;">
+                  <button id="warroom-btn-modal-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; font-weight: bold; background: ${accentColor}22; border: 1px solid ${accentColor}; color: ${accentColor}; cursor: pointer; border-radius: 2px;">
                     INSPECT FULL INTEL &rarr;
                   </button>
                   <button id="warroom-btn-close-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #cbd5e1; cursor: pointer; border-radius: 2px;">
@@ -469,23 +436,53 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             }, 25);
           };
 
-          // Interaction: Marker Click -> Open Interactive Map Popup (both visual point and hit target)
-          map.on('click', 'unclustered-point', (e: any) => {
+          // Hover tooltip helper
+          const showHoverTooltip = (e: any, accentColor: string, isNews: boolean) => {
             if (!e.features || !e.features[0]) return;
-            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
-          });
-
-          map.on('click', 'unclustered-point-hit', (e: any) => {
-            if (!e.features || !e.features[0]) return;
-            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
-          });
-
-          map.on('mouseenter', 'unclustered-point-hit', () => {
             map.getCanvas().style.cursor = 'pointer';
+            if (clickPopupRef.current?.isOpen()) return;
+
+            const props = e.features[0].properties;
+            const coords = e.features[0].geometry.coordinates.slice();
+
+            const hoverHtml = `
+              <div style="font-family: monospace; font-size: 10px; line-height: 1.35; color: #e6edf3;">
+                <div style="color: ${accentColor}; font-weight: bold; margin-bottom: 2px;">${props.location}, ${props.country}</div>
+                <div style="color: #8b949e;">${props.eventType}${!isNews && props.fatalities > 0 ? ` &bull; <span style="color: #ef4444; font-weight: bold;">${props.fatalities} fatalities</span>` : ''}</div>
+                <div style="color: #00ff66; font-size: 9px; margin-top: 3px;">CLICK TO INSPECT RECORD</div>
+              </div>
+            `;
+
+            hoverPopupRef.current.setLngLat(coords).setHTML(hoverHtml).addTo(map);
+          };
+
+          // Conflict dot interactions
+          map.on('click', 'conflict-dots', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
-          map.on('mouseleave', 'unclustered-point-hit', () => {
-            map.getCanvas().style.cursor = '';
+          map.on('click', 'conflict-dots-hit', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
+          map.on('mousemove', 'conflict-dots', (e: any) => showHoverTooltip(e, '#ef4444', false));
+          map.on('mouseleave', 'conflict-dots', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
+          map.on('mouseenter', 'conflict-dots-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', 'conflict-dots-hit', () => { map.getCanvas().style.cursor = ''; });
+
+          // News dot interactions
+          map.on('click', 'news-dots', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
+          });
+          map.on('click', 'news-dots-hit', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
+          });
+          map.on('mousemove', 'news-dots', (e: any) => showHoverTooltip(e, '#2563eb', true));
+          map.on('mouseleave', 'news-dots', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
+          map.on('mouseenter', 'news-dots-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', 'news-dots-hit', () => { map.getCanvas().style.cursor = ''; });
 
           // Interaction: Conflict Centroid Click
           map.on('click', 'conflict-centroids', (e: any) => {
@@ -549,43 +546,6 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               }
             }, 25);
           });
-
-          // Non-blocking Hover preview (only when click popup is not open)
-          map.on('mousemove', 'unclustered-point', (e: any) => {
-            if (!e.features || !e.features[0]) return;
-            map.getCanvas().style.cursor = 'pointer';
-
-            // Do not disturb an open click popup
-            if (clickPopupRef.current?.isOpen()) return;
-
-            const props = e.features[0].properties;
-            const coords = e.features[0].geometry.coordinates.slice();
-
-            const hoverHtml = `
-              <div style="font-family: monospace; font-size: 10px; line-height: 1.35; color: #e6edf3;">
-                <div style="color: #00f0ff; font-weight: bold; margin-bottom: 2px;">${props.location}, ${props.country}</div>
-                <div style="color: #8b949e;">${props.eventType} &bull; <span style="color: ${props.fatalities > 0 ? '#ef4444' : '#cbd5e1'}; font-weight: bold;">${props.fatalities} fatalities</span></div>
-                <div style="color: #00ff66; font-size: 9px; margin-top: 3px;">CLICK TO INSPECT RECORD</div>
-              </div>
-            `;
-
-            hoverPopupRef.current
-              .setLngLat(coords)
-              .setHTML(hoverHtml)
-              .addTo(map);
-          });
-
-          map.on('mouseleave', 'unclustered-point', () => {
-            map.getCanvas().style.cursor = '';
-            hoverPopupRef.current?.remove();
-          });
-
-          map.on('mouseenter', 'clusters', () => {
-            map.getCanvas().style.cursor = 'pointer';
-          });
-          map.on('mouseleave', 'clusters', () => {
-            map.getCanvas().style.cursor = '';
-          });
         });
       } catch (err) {
         console.error('MapLibre GL initialization failed:', err);
@@ -617,45 +577,59 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       displayEvents = events.filter((e) => e.severity === 'CRITICAL' || e.severity === 'HIGH');
     }
 
-    const eventFeatures = displayEvents
-      .filter((e) => typeof e.longitude === 'number' && typeof e.latitude === 'number')
-      .map((e) => {
-        const time = new Date(e.timestamp || e.eventDate).getTime();
-        const isRecent24h = !isNaN(time) && now - time <= oneDayMs;
+    const toFeature = (e: ConflictEvent) => {
+      const time = new Date(e.timestamp || e.eventDate).getTime();
+      const isRecent24h = !isNaN(time) && now - time <= oneDayMs;
 
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [e.longitude!, e.latitude!],
-          },
-          properties: {
-            id: e.id,
-            location: e.location,
-            country: e.country,
-            eventType: e.eventType,
-            date: formatShortDate(e.eventDate),
-            fatalities: e.fatalities || 0,
-            severity: e.severity,
-            status: isRecent24h ? 'ACTIVE <24H' : 'RECENT',
-            isRecent24h,
-            source: e.source,
-            sourceUrl: e.sourceUrl,
-            notes: e.notes,
-          },
-        };
-      });
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [e.longitude!, e.latitude!],
+        },
+        properties: {
+          id: e.id,
+          location: e.location,
+          country: e.country,
+          eventType: e.eventType,
+          date: formatShortDate(e.eventDate),
+          fatalities: e.fatalities || 0,
+          severity: e.severity,
+          isConflict: e.isConflict !== false,
+          status: isRecent24h ? 'ACTIVE <24H' : 'RECENT',
+          isRecent24h,
+          source: e.source,
+          sourceUrl: e.sourceUrl,
+          notes: e.notes,
+        },
+      };
+    };
 
-    const eventSource: any = map.getSource('warroom-events');
-    if (eventSource?.setData) {
-      eventSource.setData({
+    const validEvents = displayEvents.filter((e) => typeof e.longitude === 'number' && typeof e.latitude === 'number');
+    const conflictEvents = validEvents.filter((e) => e.isConflict !== false);
+    const newsEvents = validEvents.filter((e) => e.isConflict === false);
+
+    const conflictFeatures = conflictEvents.map(toFeature);
+    const newsFeatures = newsEvents.map(toFeature);
+
+    const conflictSource: any = map.getSource('warroom-conflict-events');
+    if (conflictSource?.setData) {
+      conflictSource.setData({
         type: 'FeatureCollection',
-        features: eventFeatures,
+        features: conflictFeatures,
+      });
+    }
+
+    const newsSource: any = map.getSource('warroom-general-news');
+    if (newsSource?.setData) {
+      newsSource.setData({
+        type: 'FeatureCollection',
+        features: newsFeatures,
       });
     }
 
     // Conflicts Centroids Feature Collection
-    const conflictFeatures = conflicts
+    const theaterFeatures = conflicts
       .filter((c) => typeof c.longitude === 'number' && typeof c.latitude === 'number')
       .map((c) => ({
         type: 'Feature',
@@ -675,11 +649,11 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
         },
       }));
 
-    const conflictSource: any = map.getSource('warroom-conflicts');
-    if (conflictSource?.setData) {
-      conflictSource.setData({
+    const theaterSource: any = map.getSource('warroom-conflicts');
+    if (theaterSource?.setData) {
+      theaterSource.setData({
         type: 'FeatureCollection',
-        features: conflictFeatures,
+        features: theaterFeatures,
       });
     }
   }, [events, conflicts, mapLoaded, mapMode]);
@@ -697,24 +671,27 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
     if (mapMode === 'HEATMAP') {
       setVisibility('events-heat', true);
-      setVisibility('clusters', false);
-      setVisibility('cluster-count', false);
-      setVisibility('unclustered-point', true);
+      setVisibility('news-dots', true);
+      setVisibility('news-dots-hit', true);
+      setVisibility('conflict-dots', false);
+      setVisibility('conflict-dots-hit', false);
       setVisibility('conflict-centroids', false);
       setVisibility('conflict-labels', false);
     } else if (mapMode === 'CONFLICTS') {
       setVisibility('events-heat', false);
-      setVisibility('clusters', false);
-      setVisibility('cluster-count', false);
-      setVisibility('unclustered-point', false);
+      setVisibility('news-dots', false);
+      setVisibility('news-dots-hit', false);
+      setVisibility('conflict-dots', false);
+      setVisibility('conflict-dots-hit', false);
       setVisibility('conflict-centroids', true);
       setVisibility('conflict-labels', true);
     } else {
       // EVENTS or ESCALATION
       setVisibility('events-heat', false);
-      setVisibility('clusters', true);
-      setVisibility('cluster-count', true);
-      setVisibility('unclustered-point', true);
+      setVisibility('news-dots', true);
+      setVisibility('news-dots-hit', true);
+      setVisibility('conflict-dots', true);
+      setVisibility('conflict-dots-hit', true);
       setVisibility('conflict-centroids', false);
       setVisibility('conflict-labels', false);
     }

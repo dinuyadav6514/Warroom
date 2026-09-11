@@ -112,6 +112,30 @@ function parseGdeltDate(seendate: string): string {
   return new Date().toISOString();
 }
 
+// Keywords that indicate a kinetic/violent conflict event.
+// Used to set the isConflict flag (red dot vs. dark blue dot on map).
+const CONFLICT_KEYWORDS = [
+  'airstrike', 'air strike', 'drone strike', 'drone attack',
+  'missile', 'rocket', 'shelling', 'artillery', 'bombardment',
+  'explosion', 'blast', 'bomb', 'bombing',
+  'clash', 'clashes', 'battle', 'offensive', 'assault',
+  'attack', 'ambush', 'raid',
+  'killed', 'dead', 'fatalities', 'casualties',
+  'massacre', 'gunfire', 'sniper', 'mortar',
+  'troops', 'soldiers', 'fighters', 'militant', 'insurgent', 'rebel',
+  'fire exchange', 'cross-border', 'frontline', 'warfare',
+] as const;
+
+/**
+ * Returns true if the title indicates a kinetic/violent conflict event.
+ * Non-kinetic articles (speeches, summits, sanctions, etc.) return false
+ * and will be shown as dark blue "general news" dots on the map.
+ */
+function isConflictEvent(title: string): boolean {
+  const lower = title.toLowerCase();
+  return CONFLICT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 function inferEventType(title: string): { eventType: string; subEventType: string } {
   const t = title.toLowerCase();
   if (t.includes('airstrike') || t.includes('air strike') || t.includes('drone strike') || t.includes('drone attack')) {
@@ -138,7 +162,14 @@ function inferEventType(title: string): { eventType: string; subEventType: strin
   if (t.includes('ceasefire') || t.includes('truce')) {
     return { eventType: 'Strategic Development', subEventType: 'Ceasefire agreement' };
   }
-  return { eventType: 'Armed Conflict', subEventType: 'Engagement' };
+  if (t.includes('sanction') || t.includes('diplomat') || t.includes('summit') || t.includes('treaty') || t.includes('agreement')) {
+    return { eventType: 'Diplomatic', subEventType: 'Diplomatic event' };
+  }
+  if (t.includes('speech') || t.includes('statement') || t.includes('address') || t.includes('declared') || t.includes('announced')) {
+    return { eventType: 'Statement/Speech', subEventType: 'Official statement' };
+  }
+  // Generic news articles
+  return { eventType: 'News/General', subEventType: 'News report' };
 }
 
 function estimateFatalities(title: string): number {
@@ -224,9 +255,10 @@ export class GDELTProvider implements ConflictDataProvider {
 
   // GDELT 2.0 API endpoint (HTTP port 80 avoids TLS handshake drops)
   private static readonly API_URL = 'http://api.gdeltproject.org/api/v2/doc/doc';
-  // Avoid 3-letter words like "war" which GDELT rejects with "The specified phrase is too short"
+  // Broad geopolitical query: covers conflict, diplomacy, politics, and general world news in monitored regions.
+  // Avoids 3-letter words which GDELT rejects ("The specified phrase is too short").
   private static readonly QUERY =
-    '("fire exchange" OR "armed clash" OR "artillery" OR "warfare" OR "airstrike" OR "military strike" OR "offensive")';
+    '("fire exchange" OR "armed clash" OR "artillery" OR "warfare" OR "airstrike" OR "military strike" OR "offensive" OR "diplomatic" OR "sanctions" OR "ceasefire" OR "summit" OR "military" OR "troops" OR "president" OR "minister")';
   private static readonly MAX_RETRIES = 3;
 
   isConfigured(): boolean {
@@ -252,7 +284,7 @@ export class GDELTProvider implements ConflictDataProvider {
     const params = new URLSearchParams({
       query: GDELTProvider.QUERY,
       mode: 'ArtList',
-      maxrecords: '25',
+      maxrecords: '50',
       format: 'json',
       timespan: '24h',
       sort: 'DateDesc',
@@ -337,8 +369,9 @@ export class GDELTProvider implements ConflictDataProvider {
 
       if (!isWithinWindow(eventDate, 10)) continue;
 
+      const conflict = isConflictEvent(article.title);
       const { eventType, subEventType } = inferEventType(article.title);
-      const fatalities = estimateFatalities(article.title);
+      const fatalities = conflict ? estimateFatalities(article.title) : 0;
 
       const severityDetail = calculateSeverity({
         fatalities,
@@ -361,10 +394,13 @@ export class GDELTProvider implements ConflictDataProvider {
         subEventType,
         fatalities,
         severity: severityDetail.severity,
+        isConflict: conflict,
         verificationStatus: 'REPORTED',
         source: article.domain || 'GDELT Global Wire',
         sourceUrl: article.url,
-        notes: `${article.title}. Real-time conflict report monitored via GDELT Project Global Knowledge Graph. Outlet: ${article.domain || 'GDELT news aggregator'}. Assessment: ${severityDetail.explanation}.`,
+        notes: conflict
+          ? `${article.title}. Real-time conflict report via GDELT Project Global Knowledge Graph. Outlet: ${article.domain || 'GDELT'}. Assessment: ${severityDetail.explanation}.`
+          : `${article.title}. Latest geopolitical news dispatch via GDELT Project Global Media Monitor. Outlet: ${article.domain || 'GDELT'}.`,
       };
 
       if (isHistoricalOrStaleConflict(event)) continue;
@@ -372,7 +408,8 @@ export class GDELTProvider implements ConflictDataProvider {
       events.push(event);
     }
 
-    console.log(`[GDELT] Converted ${events.length} valid conflict events.`);
+    const conflictCount = events.filter((e) => e.isConflict).length;
+    console.log(`[GDELT] Converted ${events.length} events (${conflictCount} conflict, ${events.length - conflictCount} general news).`);
     return events;
   }
 }

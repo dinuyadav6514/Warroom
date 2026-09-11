@@ -123,13 +123,7 @@ export function isHistoricalOrStaleConflict(item: {
 
   const textToCheck = `${item.location || ''} ${item.notes || ''}`.toLowerCase();
 
-  // 2. Check for explicit historical year references (19xx, 200x, 201x, 2020-2024)
-  const pastYearRegex = /\b(19\d\d|200\d|201\d|202[0-4])\b/;
-  if (pastYearRegex.test(textToCheck)) {
-    return true;
-  }
-
-  // 3. Known resolved/historical battlefields or non-military events that commonly hallucinate as live
+  // 2. Known resolved/historical battlefields or non-military events that commonly hallucinate as live
   const historicalOrCeasedTheaters = [
     /\bbakhmut\b/i,
     /\bartemivsk\b/i,
@@ -166,7 +160,7 @@ export function isHistoricalOrStaleConflict(item: {
     }
   }
 
-  // 4. Retrospective/archival phrasing
+  // 3. Retrospective/archival phrasing
   if (
     textToCheck.includes('anniversary of') ||
     textToCheck.includes('commemorat') ||

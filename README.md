@@ -196,5 +196,3 @@ npm run build
 ## 11. Disclaimer & Data Limitations
 
 WARROOM is an informational conflict monitoring and geospatial visualization platform. Event classifications may be revised by providers as ground evidence solidifies. The platform does not make predictive warfare claims. AI summaries are analytical aids derived strictly from retrieved evidence.
-#   W a r r o o m  
- 

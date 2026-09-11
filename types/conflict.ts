@@ -26,6 +26,9 @@ export interface ConflictEvent {
   severity: Severity;
   verificationStatus: VerificationStatus;
 
+  /** True = kinetic/armed-conflict event (red dot). False = general news (dark blue dot). Defaults to true. */
+  isConflict?: boolean;
+
   source?: string;
   sourceUrl?: string;
   notes?: string;

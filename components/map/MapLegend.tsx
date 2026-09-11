@@ -48,6 +48,10 @@ export const MapLegend: React.FC<MapLegendProps> = ({
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
           <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#1e3a5f] border border-[#2563eb] shadow-[0_0_5px_#2563eb]" />
+            <span className="text-text-primary">GENERAL NEWS</span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-severity-critical shadow-[0_0_5px_#ef4444]" />
             <span className="text-text-primary">CRITICAL</span>
           </div>
@@ -67,8 +71,8 @@ export const MapLegend: React.FC<MapLegendProps> = ({
 
         <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[9px] text-text-muted">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full border border-accent-cyan" />
-            CLUSTER
+            <span className="w-2 h-2 rounded-full bg-[#1e3a5f] border border-[#2563eb]" />
+            NEWS DOT
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-severity-critical animate-ping opacity-75" />
