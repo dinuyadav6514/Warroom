@@ -150,9 +150,10 @@ export class ReliefWebProvider {
     'https://api.reliefweb.int/v2/reports?appname=my-conflict-tracker';
 
   private static readonly WIRE_FEEDS = [
-    { name: 'UN News Peace & Security', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
-    { name: 'BBC World News Wire', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
-    { name: 'Al Jazeera Conflict Wire', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+    { name: 'BBC World News', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+    { name: 'Al Jazeera World', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+    { name: 'NYTimes World', url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml' },
+    { name: 'Sky News World', url: 'https://feeds.skynews.com/feeds/rss/world.xml' },
   ];
 
   async fetchRecentReports(_query?: DateRangeQuery): Promise<ConflictEvent[]> {
@@ -346,7 +347,7 @@ export class ReliefWebProvider {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
             Accept: 'application/rss+xml, application/xml, text/xml, */*',
           },
-          timeout: 10000,
+          timeout: 15000,
         },
         (res) => {
           let data = '';

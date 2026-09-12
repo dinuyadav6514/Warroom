@@ -22,19 +22,19 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 font-mono select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 font-sans select-none cursor-pointer"
       onClick={onClose}
     >
       <div
-        className="bg-panel border border-border w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl cursor-default"
+        className="bg-panel border border-border rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 py-2.5 bg-panel-subtle border-b border-border flex items-center justify-between">
+        <div className="px-4 py-3 bg-panel-subtle/80 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-accent-cyan" />
-            <span className="text-accent-cyan font-bold text-xs tracking-wider">
-              DATA SOURCES & ATTRIBUTION SPECIFICATION
+            <span className="text-text-primary font-semibold text-xs tracking-wide">
+              Data Sources &amp; Attribution
             </span>
           </div>
           <button
@@ -71,12 +71,61 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          {/* Secondary & Architecture */}
-          <div className="bg-panel-subtle p-3 border border-border space-y-1.5">
-            <div className="text-[10px] text-text-muted">// SECONDARY PROVIDER EXTENSIONS</div>
+          {/* GDELT 2.0 */}
+          <div className="bg-panel-subtle p-3 border border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-accent-cyan font-bold text-sm">GDELT 2.0</span>
+              <span className="text-[10px] bg-sky-950/60 text-sky-400 border border-sky-700/60 px-2 py-0.5 font-bold">LIVE NEWS</span>
+            </div>
             <p className="text-text-secondary text-[11px] leading-relaxed">
-              The WARROOM data ingestion layer is decoupled through the <code className="text-accent-cyan">ConflictDataProvider</code> abstraction, prepared for GDELT, wire services (Reuters/BBC), UN OCHA reports, and verified government releases.
+              <strong className="text-text-primary">GDELT Project Global Media Knowledge Graph</strong> — monitors print, broadcast, and online news worldwide in real time. Provides conflict articles, geolocation, and tone analysis sourced from thousands of media outlets.
             </p>
+            <a
+              href="https://www.gdeltproject.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-cyan hover:underline flex items-center gap-1.5 text-[11px]"
+            >
+              <span>gdeltproject.org</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          {/* UN ReliefWeb */}
+          <div className="bg-panel-subtle p-3 border border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-accent-cyan font-bold text-sm">UN OCHA ReliefWeb</span>
+              <span className="text-[10px] bg-sky-950/60 text-sky-400 border border-sky-700/60 px-2 py-0.5 font-bold">HUMANITARIAN</span>
+            </div>
+            <p className="text-text-secondary text-[11px] leading-relaxed">
+              <strong className="text-text-primary">UN Office for the Coordination of Humanitarian Affairs ReliefWeb</strong> — authoritative source for verified humanitarian situation reports, crisis updates, and conflict assessments from UN agencies and NGOs.
+            </p>
+            <a
+              href="https://reliefweb.int"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-cyan hover:underline flex items-center gap-1.5 text-[11px]"
+            >
+              <span>reliefweb.int</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          {/* Live Wire Feeds */}
+          <div className="bg-panel-subtle p-3 border border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-accent-cyan font-bold text-sm">Live Wire Feeds</span>
+              <span className="text-[10px] bg-sky-950/60 text-sky-400 border border-sky-700/60 px-2 py-0.5 font-bold">LIVE NEWS</span>
+            </div>
+            <p className="text-text-secondary text-[11px] leading-relaxed">
+              International accredited news wire RSS feeds queried in real time for conflict and geopolitical reporting. Feeds currently active:
+            </p>
+            <ul className="space-y-1 text-text-secondary text-[10px]">
+              <li className="flex items-center gap-1.5"><span className="text-accent-cyan">•</span><span>BBC World News</span></li>
+              <li className="flex items-center gap-1.5"><span className="text-accent-cyan">•</span><span>Al Jazeera World</span></li>
+              <li className="flex items-center gap-1.5"><span className="text-accent-cyan">•</span><span>The New York Times — World</span></li>
+              <li className="flex items-center gap-1.5"><span className="text-accent-cyan">•</span><span>Sky News — World</span></li>
+            </ul>
           </div>
 
           {/* Data Freshness & Constraints */}
