@@ -27,6 +27,7 @@ interface LeftNavProps {
   onClearSelection?: () => void;
   onSelectEvent?: (event: ConflictEvent) => void;
   onOpenEventModal?: (event: ConflictEvent) => void;
+  onOpenFullStream?: () => void;
 }
 
 const ALL_PIPELINES = [
@@ -60,6 +61,7 @@ export const LeftNav: React.FC<LeftNavProps> = ({
   onClearSelection,
   onSelectEvent,
   onOpenEventModal,
+  onOpenFullStream,
 }) => {
   return (
     <>
@@ -97,7 +99,7 @@ export const LeftNav: React.FC<LeftNavProps> = ({
           </div>
 
           {/* Dynamic Display: Related News when dot clicked, or Live Terminal by default */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
             {selectedEvent || selectedConflict ? (
               <SelectedNewsDisplay
                 event={selectedEvent}
@@ -115,6 +117,8 @@ export const LeftNav: React.FC<LeftNavProps> = ({
                 eventsCount={eventsCount}
                 events={events}
                 availableSources={availableSources}
+                onSelectEvent={onSelectEvent}
+                onOpenFullStream={onOpenFullStream}
               />
             )}
           </div>

@@ -1,14 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiExchange, ConflictEvent } from '@/types/conflict';
-import { Terminal, Trash2, ArrowDownCircle, Wifi, Radio } from 'lucide-react';
 import { TypewriterText } from '@/components/ui/TypewriterText';
+import {
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  Crosshair,
+  Radio,
+  ExternalLink,
+} from 'lucide-react';
 
-interface TerminalLogEntry {
+interface StreamHistoryEntry {
   id: string;
   time: string;
-  tag: 'SYS' | 'FETCH' | 'DATA' | 'ALERT' | 'PING' | 'NET';
+  severity: string;
+  country: string;
   text: string;
 }
 
@@ -19,7 +29,97 @@ interface LiveTerminalOutputProps {
   eventsCount?: number;
   events?: ConflictEvent[];
   availableSources?: string[];
+  onSelectEvent?: (event: ConflictEvent) => void;
+  onOpenFullStream?: () => void;
 }
+
+const FALLBACK_STREAM_EVENTS: ConflictEvent[] = [
+  {
+    id: 'stream-fb-1',
+    eventDate: 'RECENT',
+    eventType: 'Explosive Hazards / Airstrike',
+    primaryCategory: 'Warfare & Combat',
+    region: 'Middle East',
+    country: 'Israel / Palestine',
+    location: 'Gaza Strip',
+    latitude: 31.3547,
+    longitude: 34.3088,
+    fatalities: 14,
+    source: 'UN OCHA ReliefWeb',
+    notes: 'Multiple precision strikes reported in northern sector; emergency medical corridors disrupted.',
+    severity: 'CRITICAL',
+    isConflict: true,
+    verificationStatus: 'VERIFIED',
+  },
+  {
+    id: 'stream-fb-2',
+    eventDate: 'RECENT',
+    eventType: 'Drone / Missile Strike',
+    primaryCategory: 'Defense & Strategy',
+    region: 'Eastern Europe',
+    country: 'Ukraine',
+    location: 'Kharkiv Oblast',
+    latitude: 49.9935,
+    longitude: 36.2304,
+    fatalities: 4,
+    source: 'GDELT Tactical Feed',
+    notes: 'Shahed-136 drone swarm intercepted over eastern industrial perimeter; power grid switchyard damaged.',
+    severity: 'HIGH',
+    isConflict: true,
+    verificationStatus: 'VERIFIED',
+  },
+  {
+    id: 'stream-fb-3',
+    eventDate: 'RECENT',
+    eventType: 'Naval Engagement / Anti-Ship Missile',
+    primaryCategory: 'Warfare & Combat',
+    region: 'Middle East',
+    country: 'Yemen',
+    location: 'Southern Red Sea / Bab el-Mandeb',
+    latitude: 12.5833,
+    longitude: 43.3333,
+    fatalities: 0,
+    source: 'UKMTO Maritime Intel',
+    notes: 'Commercial bulk carrier reports near-miss explosion 25nm southwest of Al-Mukha; crew safe.',
+    severity: 'HIGH',
+    isConflict: true,
+    verificationStatus: 'REPORTED',
+  },
+  {
+    id: 'stream-fb-4',
+    eventDate: 'RECENT',
+    eventType: 'Armed Clashes / Heavy Artillery',
+    primaryCategory: 'Warfare & Combat',
+    region: 'Africa',
+    country: 'Sudan',
+    location: 'Al-Fashir, North Darfur',
+    latitude: 13.6288,
+    longitude: 25.3547,
+    fatalities: 22,
+    source: 'ReliefWeb Humanitarian Dispatch',
+    notes: 'RSF advances trigger intense artillery exchange near city market; major humanitarian aid cutoff.',
+    severity: 'CRITICAL',
+    isConflict: true,
+    verificationStatus: 'VERIFIED',
+  },
+  {
+    id: 'stream-fb-5',
+    eventDate: 'RECENT',
+    eventType: 'Border Incursion / Drone Surveillance',
+    primaryCategory: 'Defense & Strategy',
+    region: 'Asia',
+    country: 'Myanmar',
+    location: 'Shan State Border Corridor',
+    latitude: 22.0,
+    longitude: 98.0,
+    fatalities: 8,
+    source: 'Local Ground Corroboration',
+    notes: 'Rebel coalition captures strategic outpost along transit highway; junta launches retaliatory sortie.',
+    severity: 'MODERATE',
+    isConflict: true,
+    verificationStatus: 'REPORTED',
+  },
+];
 
 export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
   apiExchange,
@@ -28,322 +128,243 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
   eventsCount = 0,
   events = [],
   availableSources = [],
+  onSelectEvent,
+  onOpenFullStream,
 }) => {
-  const [logs, setLogs] = useState<TerminalLogEntry[]>(() => {
-    const now = new Date();
-    const t = (d: Date) => d.toTimeString().substring(0, 8);
-    const tMinus = (seconds: number) => {
-      const past = new Date(now.getTime() - seconds * 1000);
-      return past.toTimeString().substring(0, 8);
-    };
-
-    return [
-      { id: '1', time: tMinus(25), tag: 'SYS', text: 'KERNEL: WarRoom Telemetry Engine v2.4 initialized.' },
-      { id: '2', time: tMinus(22), tag: 'NET', text: 'CARRIER: OpenSSL direct TLS-1.3 session established.' },
-      { id: '3', time: tMinus(20), tag: 'FETCH', text: 'INGEST_INIT: Connecting to GDELT 2.0 & UN OCHA ReliefWeb.' },
-      { id: '4', time: tMinus(15), tag: 'DATA', text: 'GEO_INDEX: 195 territorial centroid nodes mapped.' },
-      { id: '5', time: tMinus(10), tag: 'SYS', text: 'RADAR: Sub-orbital spherical projection online.' },
-      { id: '6', time: t(now), tag: 'PING', text: 'DAEMON: Continuous packet ingestion loop active.' },
-    ];
-  });
-
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [filterTag, setFilterTag] = useState<'ALL' | 'FETCH' | 'DATA' | 'ALERT'>('ALL');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [isPaused, setIsPaused] = useState(false);
+  const [history, setHistory] = useState<StreamHistoryEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prevExchangeIdRef = useRef<string | null>(null);
-  const prevRefreshingRef = useRef<boolean>(false);
-  const prevEventCountRef = useRef<number>(eventsCount);
 
   const getUtcTime = () => new Date().toTimeString().substring(0, 8);
 
-  // Auto-scroll to bottom
+  // Active conflict news pool
+  const streamEvents = useMemo(() => {
+    if (!events || events.length === 0) return FALLBACK_STREAM_EVENTS;
+    const valid = events.filter((e) => e && (e.notes || e.eventType || e.location));
+    if (valid.length === 0) return FALLBACK_STREAM_EVENTS;
+    return valid;
+  }, [events]);
+
+  const currentEvent = streamEvents[currentIndex % streamEvents.length] || streamEvents[0];
+
+  // 30-second live cycle timer
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs, autoScroll]);
+    if (isPaused) return;
 
-  // Log fetch events when isRefreshing changes
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setCurrentIndex((idx) => (idx + 1) % (streamEvents.length || 1));
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPaused, streamEvents.length]);
+
+  // Log dispatch into stream history whenever currentEvent changes
   useEffect(() => {
-    if (isRefreshing && !prevRefreshingRef.current) {
-      const time = getUtcTime();
-      setLogs((prev) => [
-        ...prev.slice(-90),
-        {
-          id: `${Date.now()}-ref-start`,
-          time,
-          tag: 'FETCH',
-          text: `QUERY_START: Initiating multi-pipeline recon burst across ${availableSources.length || 12} sources...`,
-        },
-        {
-          id: `${Date.now()}-ref-gdelt`,
-          time,
-          tag: 'NET',
-          text: 'GDELT_2.0: Polling global event stream & conflict codings...',
-        },
-        {
-          id: `${Date.now()}-ref-relief`,
-          time,
-          tag: 'NET',
-          text: 'RELIEFWEB_API: Querying verified humanitarian reports...',
-        },
-      ]);
-    } else if (!isRefreshing && prevRefreshingRef.current) {
-      const time = getUtcTime();
-      setLogs((prev) => [
-        ...prev.slice(-90),
-        {
-          id: `${Date.now()}-ref-end`,
-          time,
-          tag: 'SYS',
-          text: `BURST_DONE: Payload merged. Total active incidents: ${eventsCount}.`,
-        },
-      ]);
-    }
-    prevRefreshingRef.current = isRefreshing;
-  }, [isRefreshing, availableSources.length, eventsCount]);
-
-  // Log API exchanges when new data packet arrives
-  useEffect(() => {
-    if (apiExchange && apiExchange.id !== prevExchangeIdRef.current) {
-      prevExchangeIdRef.current = apiExchange.id;
-      const time = getUtcTime();
-      const statusText =
-        typeof apiExchange.response.status === 'number' && apiExchange.response.status < 400
-          ? 'HTTP 200 OK'
-          : `STATUS ${apiExchange.response.status}`;
-
-      const newEntries: TerminalLogEntry[] = [
-        {
-          id: `${Date.now()}-ex-res`,
-          time,
-          tag: 'FETCH',
-          text: `RESPONSE: ${statusText} from ${apiExchange.request.endpoint} (${apiExchange.response.latencyMs}ms)`,
-        },
-        {
-          id: `${Date.now()}-ex-meta`,
-          time,
-          tag: 'DATA',
-          text: `INGEST: ${apiExchange.response.eventsCount} incidents parsed | ${apiExchange.response.groundingCitationsCount} verified sources.`,
-        },
-      ];
-
-      // Add samples if present
-      if (apiExchange.response.sampleRecords && apiExchange.response.sampleRecords.length > 0) {
-        apiExchange.response.sampleRecords.slice(0, 2).forEach((rec, idx) => {
-          newEntries.push({
-            id: `${Date.now()}-sample-${idx}`,
-            time,
-            tag: rec.severity === 'CRITICAL' ? 'ALERT' : 'DATA',
-            text: `[${rec.country}] ${(rec.headline || '').slice(0, 38)}...`,
-          });
-        });
-      }
-
-      setLogs((prev) => [...prev.slice(-85), ...newEntries]);
-    }
-  }, [apiExchange]);
-
-  // Log incoming events count changes
-  useEffect(() => {
-    if (eventsCount !== prevEventCountRef.current && eventsCount > 0) {
-      const time = getUtcTime();
-      const delta = eventsCount - prevEventCountRef.current;
-      const sign = delta > 0 ? `+${delta}` : `${delta}`;
-
-      if (prevEventCountRef.current > 0) {
-        setLogs((prev) => [
-          ...prev.slice(-90),
-          {
-            id: `${Date.now()}-ev-delta`,
-            time,
-            tag: delta > 0 ? 'ALERT' : 'DATA',
-            text: `SIGNAL_DELTA: ${sign} operational incidents (${eventsCount} total monitored).`,
-          },
-        ]);
-      }
-      prevEventCountRef.current = eventsCount;
-    }
-  }, [eventsCount]);
-
-  // Periodic heartbeat / telemetry ping to keep the feed live and breathing
-  useEffect(() => {
-    const messages: Array<{ tag: 'PING' | 'SYS' | 'DATA'; text: string }> = [
-      { tag: 'PING', text: 'HEARTBEAT: Carrier sync nominal. Loss: 0.0%.' },
-      { tag: 'SYS', text: 'RADAR_SWEEP: 360° azimuth sweep complete. 0 dead zones.' },
-      { tag: 'DATA', text: 'BUFFER_CHECK: Memory cache aligned. L1 latency < 2ms.' },
-      { tag: 'PING', text: 'TIME_SYNC: NTP atomic clock synchronised (UTC+0).' },
-      { tag: 'SYS', text: 'DEDUP_MUTEX: Smart story merging hash map validated.' },
-      { tag: 'DATA', text: 'SPECTRAL_SCAN: Continuous news wire polling active.' },
-    ];
-
-    let idx = 0;
-    const interval = setInterval(() => {
-      const item = messages[idx % messages.length];
-      idx++;
-      setLogs((prev) => [
-        ...prev.slice(-90),
-        {
-          id: `${Date.now()}-hb`,
-          time: getUtcTime(),
-          tag: item.tag,
-          text: item.text,
-        },
-      ]);
-    }, 8500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const filteredLogs = logs.filter((l) => {
-    if (filterTag === 'ALL') return true;
-    return l.tag === filterTag;
-  });
-
-  const clearLogs = () => {
-    setLogs([
+    if (!currentEvent) return;
+    const time = getUtcTime();
+    setHistory((prev) => [
+      ...prev.slice(-25),
       {
-        id: `${Date.now()}-clr`,
-        time: getUtcTime(),
-        tag: 'SYS',
-        text: 'CONSOLE_CLEARED: Telemetry buffer flushed.',
+        id: `${Date.now()}-${currentEvent.id}`,
+        time,
+        severity: currentEvent.severity || 'MODERATE',
+        country: currentEvent.country || 'GLOBAL',
+        text: currentEvent.notes || `${currentEvent.eventType} in ${currentEvent.location}`,
       },
     ]);
+  }, [currentEvent]);
+
+  // Auto-scroll terminal history to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
+
+  const handleNext = () => {
+    setCurrentIndex((idx) => (idx + 1) % streamEvents.length);
+    setTimeLeft(30);
   };
 
-  const getTagStyle = (tag: TerminalLogEntry['tag']) => {
-    switch (tag) {
-      case 'ALERT':
-        return 'text-severity-critical bg-red-950/40 border-red-800/60';
-      case 'FETCH':
-        return 'text-amber-400 bg-amber-950/40 border-amber-800/60';
-      case 'DATA':
-        return 'text-emerald-400 bg-emerald-950/40 border-emerald-800/60';
-      case 'NET':
-        return 'text-blue-400 bg-blue-950/40 border-blue-800/60';
-      case 'PING':
-        return 'text-purple-400 bg-purple-950/40 border-purple-800/60';
-      case 'SYS':
-      default:
-        return 'text-accent-cyan bg-cyan-950/40 border-cyan-800/60';
-    }
+  const handlePrev = () => {
+    setCurrentIndex((idx) => (idx - 1 + streamEvents.length) % streamEvents.length);
+    setTimeLeft(30);
   };
+
+  const severityColor =
+    currentEvent?.severity === 'CRITICAL'
+      ? 'text-severity-critical border-red-800/80 bg-red-950/40'
+      : currentEvent?.severity === 'HIGH'
+      ? 'text-amber-400 border-amber-800/80 bg-amber-950/40'
+      : currentEvent?.severity === 'MODERATE'
+      ? 'text-yellow-400 border-yellow-800/80 bg-yellow-950/40'
+      : 'text-emerald-400 border-emerald-800/80 bg-emerald-950/40';
+
+  const progressPercent = Math.min(100, Math.max(0, ((30 - timeLeft) / 30) * 100));
 
   return (
-    <div className="h-full flex flex-col bg-[#05080c] border border-border/80 rounded-[2px] overflow-hidden select-none font-mono">
-      {/* Header */}
-      <div className="bg-[#090e15] border-b border-border/80 px-2.5 py-1.5 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-accent-cyan" />
-          <span className="text-[11px] font-bold text-text-primary tracking-wider">
-            // LIVE TERMINAL
+    <div className="w-full h-full flex-1 min-h-0 flex flex-col bg-transparent overflow-hidden select-none font-mono text-xs">
+      {/* Top Action Button: Open Full Live Conflict Stream */}
+      {onOpenFullStream && (
+        <button
+          onClick={onOpenFullStream}
+          className="w-full h-[26px] mb-1.5 shrink-0 text-[9.5px] tracking-wider font-bold text-accent-cyan hover:text-white bg-accent-cyan/10 hover:bg-accent-cyan/25 border border-accent-cyan/40 hover:border-accent-cyan rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm group"
+          title="Open Full Live Conflict Stream Terminal"
+        >
+          <Radio className="w-3 h-3 text-accent-green animate-pulse group-hover:scale-110 transition-transform" />
+          <span>OPEN FULL LIVE CONFLICT STREAM</span>
+          <ExternalLink className="w-3 h-3 text-accent-cyan/70 group-hover:text-white transition-colors" />
+        </button>
+      )}
+
+      {/* 30-Second Progress Sweep & Controls (Clean, minimal, zero clutter) */}
+      <div className="flex items-center gap-2 h-[16px] shrink-0 mb-1.5">
+        <div className="flex-1 bg-white/10 h-[2px] rounded-full overflow-hidden">
+          <div
+            className="bg-accent-cyan h-full transition-all duration-1000 ease-linear"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <div className="flex items-center gap-0.5 shrink-0 text-text-muted">
+          <button
+            onClick={handlePrev}
+            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            title="Previous dispatch"
+          >
+            <ChevronLeft className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setIsPaused((p) => !p)}
+            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            title={isPaused ? 'Resume auto-cycle' : 'Pause auto-cycle'}
+          >
+            {isPaused ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
+          </button>
+          <button
+            onClick={handleNext}
+            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            title="Next dispatch"
+          >
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {/* Featured Live Conflict Dispatch Card - ENLARGED VERTICALLY (345px fixed, strictly invariant) */}
+      <div className="h-[345px] shrink-0 bg-white/[0.03] border border-white/10 rounded-[2px] p-3 flex flex-col justify-between overflow-hidden">
+        {/* Badges Row - Fixed 22px */}
+        <div className="flex items-center justify-between gap-1 flex-wrap h-[22px] shrink-0">
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${severityColor}`}>
+            {currentEvent?.severity || 'MODERATE'}
           </span>
-          <span className="flex items-center gap-1 text-[9.5px]">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isRefreshing
-                  ? 'bg-amber-400 animate-ping'
-                  : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
-              }`}
+          {currentEvent?.primaryCategory && (
+            <span className="text-[9px] px-1.5 py-0.5 border border-white/10 text-text-secondary rounded-[2px] truncate max-w-[110px]">
+              {currentEvent.primaryCategory.toUpperCase()}
+            </span>
+          )}
+          {currentEvent?.verificationStatus && (
+            <span className="text-[8.5px] px-1 py-0.5 border border-accent-cyan/30 text-accent-cyan rounded-[2px]">
+              [{currentEvent.verificationStatus}]
+            </span>
+          )}
+          <span className="text-[8.5px] text-text-muted ml-auto font-mono">
+            {currentEvent?.eventDate || 'LIVE'}
+          </span>
+        </div>
+
+        {/* Live Headline Container - EXPANDED FIXED HEIGHT (195px) */}
+        <div
+          onClick={() => onSelectEvent?.(currentEvent)}
+          className="h-[195px] shrink-0 overflow-hidden cursor-pointer group flex items-start py-0.5"
+          title="Click to zoom to this conflict on map"
+        >
+          <TypewriterText
+            key={`headline-${currentEvent.id}-${currentIndex}`}
+            as="div"
+            text={currentEvent.notes || `${currentEvent.eventType} in ${currentEvent.location}`}
+            className="text-[12px] font-bold text-text-primary group-hover:text-accent-cyan leading-relaxed line-clamp-9 transition-colors"
+            speed={12}
+          />
+        </div>
+
+        {/* Geolocation & Coordinates - Fixed 24px */}
+        <div className="flex items-center justify-between gap-1 text-[10.5px] text-accent-cyan h-[24px] shrink-0">
+          <div className="flex items-center gap-1.5 truncate">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <TypewriterText
+              key={`loc-${currentEvent.id}-${currentIndex}`}
+              text={`${currentEvent.location}, ${currentEvent.country}`}
+              className="truncate"
+              cursor={false}
+              delay={200}
             />
-            <span className={isRefreshing ? 'text-amber-400' : 'text-emerald-400'}>
-              {isRefreshing ? 'FETCHING' : 'ONLINE'}
+          </div>
+          {currentEvent?.latitude != null && currentEvent?.longitude != null && (
+            <span className="text-[8.5px] text-text-muted font-mono shrink-0">
+              [{currentEvent.latitude.toFixed(1)}°, {currentEvent.longitude.toFixed(1)}°]
             </span>
-          </span>
+          )}
         </div>
 
-        {/* Action icons */}
-        <div className="flex items-center gap-1">
+        {/* Target On Map Action Button - Fixed 30px */}
+        {onSelectEvent ? (
           <button
-            onClick={() => setAutoScroll((prev) => !prev)}
-            className={`px-1 py-0.5 text-[9px] rounded border transition-colors cursor-pointer ${
-              autoScroll
-                ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40'
-                : 'text-text-muted border-border/40 hover:text-text-primary'
-            }`}
-            title={autoScroll ? 'Auto-scroll is ON' : 'Auto-scroll is OFF'}
+            onClick={() => onSelectEvent(currentEvent)}
+            className="w-full h-[30px] shrink-0 text-[10.5px] bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/50 hover:border-accent-cyan text-accent-cyan font-bold rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            AUTO
+            <Crosshair className="w-3.5 h-3.5" />
+            <span>LOCATE & ZOOM ON MAP</span>
           </button>
-          <button
-            onClick={clearLogs}
-            className="p-1 text-text-muted hover:text-text-primary hover:bg-panel-subtle rounded transition-colors cursor-pointer"
-            title="Clear terminal buffer"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        </div>
+        ) : (
+          <div className="h-[30px] shrink-0" />
+        )}
       </div>
 
-      {/* Quick Telemetry Band */}
-      <div className="bg-black/60 border-b border-border/40 px-2 py-1 flex items-center justify-between text-[9.5px] text-text-muted shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1">
-            <Wifi className="w-2.5 h-2.5 text-emerald-400" />
-            <span className="text-text-secondary">
-              {apiExchange?.response?.latencyMs ? `${apiExchange.response.latencyMs}ms` : '184ms'}
-            </span>
-          </span>
-          <span>|</span>
-          <span className="flex items-center gap-1">
-            <Radio className="w-2.5 h-2.5 text-accent-cyan" />
-            <span className="text-accent-cyan font-bold">{eventsCount} EVTS</span>
-          </span>
+      {/* Live Stream Terminal History Feed - FILLS EXACT REMAINING SPACE ADAPTING TO SCREEN HEIGHT */}
+      <div className="flex-1 min-h-0 flex flex-col pt-2 overflow-hidden">
+        <div className="text-[9px] font-bold text-text-muted tracking-wider pb-1 shrink-0 flex items-center justify-between h-[16px]">
+          <span>// STREAM FEED LOG</span>
+          <span className="text-[8px] text-accent-cyan">30S POLLING</span>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1">
-          {(['ALL', 'FETCH', 'DATA', 'ALERT'] as const).map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setFilterTag(tag)}
-              className={`px-1 py-0.2 rounded text-[8.5px] transition-colors cursor-pointer ${
-                filterTag === tag
-                  ? 'bg-accent-cyan/20 text-accent-cyan font-bold'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Terminal Output Log Stream */}
-      <div
-        ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 text-[10px] leading-relaxed select-text"
-      >
-        {filteredLogs.map((log, idx) => {
-          const isLatest = idx === filteredLogs.length - 1;
-          return (
-            <div key={log.id} className="flex items-start gap-1.5 font-mono break-all">
-              <span className="text-text-muted/60 shrink-0 select-none text-[9px] font-light">
-                [{log.time}]
-              </span>
+        <div
+          ref={scrollRef}
+          className="flex-1 min-h-0 overflow-y-auto space-y-1 text-[9.5px] leading-tight select-text pr-0.5"
+        >
+          {history.map((item) => (
+            <div key={item.id} className="flex items-start gap-1 font-mono text-text-secondary/90">
+              <span className="text-text-muted/60 text-[8.5px] shrink-0 font-light">[{item.time}]</span>
               <span
-                className={`px-1 py-0.2 border text-[8.5px] font-bold rounded-[2px] shrink-0 leading-none select-none ${getTagStyle(
-                  log.tag
-                )}`}
+                className={`text-[8px] px-1 py-0.2 rounded shrink-0 font-bold leading-none ${
+                  item.severity === 'CRITICAL'
+                    ? 'text-severity-critical bg-red-950/40 border border-red-900/50'
+                    : item.severity === 'HIGH'
+                    ? 'text-amber-400 bg-amber-950/40 border border-amber-900/50'
+                    : 'text-text-muted bg-white/5 border border-white/10'
+                }`}
               >
-                {log.tag}
+                {item.severity === 'CRITICAL' ? 'CRIT' : item.severity === 'HIGH' ? 'HIGH' : 'DATA'}
               </span>
-              <span className="text-text-secondary/90 flex-1">
-                {isLatest ? (
-                  <TypewriterText text={log.text} speed={8} cursor={true} />
-                ) : (
-                  log.text
-                )}
+              <span className="truncate flex-1">
+                <span className="text-accent-cyan">[{item.country}]</span> {item.text}
               </span>
             </div>
-          );
-        })}
+          ))}
 
-        {/* Blinking CLI Cursor */}
-        <div className="pt-1 flex items-center gap-1 text-[10px] text-accent-cyan/80 select-none">
-          <span className="font-bold">&gt;</span>
-          <span className="text-text-muted text-[9px]">stream active</span>
-          <span className="w-1.5 h-3 bg-accent-cyan animate-pulse inline-block ml-0.5" />
+          {/* Active Blinking Monospace Prompt */}
+          <div className="pt-1 flex items-center gap-1 text-[9.5px] text-accent-cyan/80 select-none h-[18px] shrink-0">
+            <span className="font-bold">&gt;</span>
+            <span className="text-text-muted text-[8.5px]">stream active [30s cycle]</span>
+            <span className="w-1.5 h-3 bg-accent-cyan animate-pulse inline-block ml-0.5" />
+          </div>
         </div>
       </div>
     </div>

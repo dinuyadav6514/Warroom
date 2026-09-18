@@ -46,27 +46,27 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         : 'text-amber-400 border-amber-600 bg-amber-950/40';
 
     return (
-      <div className="h-full flex flex-col bg-[#05080c] border border-border/80 rounded-[2px] overflow-hidden select-none font-mono">
-        {/* Header with Back Button */}
-        <div className="bg-[#090e15] border-b border-border/80 px-2.5 py-1.5 flex items-center justify-between shrink-0">
+      <div className="h-full flex flex-col bg-transparent overflow-hidden select-none font-mono">
+        {/* Minimal Transparent Return Link (No heavy header) */}
+        <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 text-[10.5px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>// LIVE TERMINAL</span>
+            <span>RETURN TO STREAM</span>
           </button>
           <button
             onClick={onClose}
-            className="p-1 text-text-muted hover:text-text-primary hover:bg-panel-subtle rounded transition-colors cursor-pointer"
-            title="Close theater and return to terminal"
+            className="p-1 text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer"
+            title="Close theater and return to stream"
           >
             <X className="w-3 h-3" />
           </button>
         </div>
 
         {/* Theater Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 text-xs">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-text-muted tracking-wider">// THEATER INTEL</span>
             <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${statusColor}`}>
@@ -91,7 +91,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 p-2 bg-black/40 border border-border/60 rounded-[2px] text-[10px]">
+          <div className="grid grid-cols-2 gap-1.5 p-2 bg-white/[0.03] border border-white/10 rounded-[2px] text-[10px]">
             <div>
               <span className="text-text-muted">7D CASUALTIES:</span>
               <div className="text-severity-critical font-bold text-[11px]">{conflict.fatalities7d || 0}</div>
@@ -113,7 +113,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
                   <button
                     key={ev.id}
                     onClick={() => onSelectEvent?.(ev)}
-                    className="w-full p-1.5 bg-panel-subtle/50 hover:bg-panel-hover border border-border/50 hover:border-accent-cyan/60 rounded text-left transition-colors cursor-pointer group"
+                    className="w-full p-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-accent-cyan/60 rounded text-left transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center justify-between text-[9px] text-text-muted mb-0.5">
                       <span className="text-accent-cyan truncate">{ev.location}</span>
@@ -130,9 +130,9 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full mt-2 py-1.5 border border-border hover:border-accent-cyan/60 bg-panel-subtle text-text-secondary hover:text-text-primary text-[10px] font-bold rounded-[2px] transition-colors cursor-pointer"
+            className="w-full mt-2 py-1.5 border border-white/10 hover:border-accent-cyan/60 bg-white/[0.03] hover:bg-white/[0.08] text-text-secondary hover:text-text-primary text-[10px] font-bold rounded-[2px] transition-colors cursor-pointer"
           >
-            ← RETURN TO LIVE TERMINAL
+            ← RETURN TO LIVE STREAM
           </button>
         </div>
       </div>
@@ -162,29 +162,29 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
     .slice(0, 3);
 
   return (
-    <div className="h-full flex flex-col bg-[#05080c] border border-border/80 rounded-[2px] overflow-hidden select-none font-mono">
-      {/* Header Bar with Back Button */}
-      <div className="bg-[#090e15] border-b border-border/80 px-2.5 py-1.5 flex items-center justify-between shrink-0">
+    <div className="h-full flex flex-col bg-transparent overflow-hidden select-none font-mono">
+      {/* Minimal Transparent Return Link (No heavy header) */}
+      <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-[10.5px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
-          title="Return to live terminal"
+          className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
+          title="Return to live conflict stream"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>// LIVE TERMINAL</span>
+          <span>RETURN TO STREAM</span>
         </button>
 
         <button
           onClick={onClose}
-          className="p-1 text-text-muted hover:text-text-primary hover:bg-panel-subtle rounded transition-colors cursor-pointer"
-          title="Deselect and return to terminal"
+          className="p-1 text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer"
+          title="Deselect and return to stream"
         >
           <X className="w-3 h-3" />
         </button>
       </div>
 
       {/* Main News Content Container */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 text-xs">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 text-xs">
         {/* Badges strip */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span
@@ -228,7 +228,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         </div>
 
         {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-1.5 p-2 bg-black/40 border border-border/60 rounded-[2px] text-[9.5px]">
+        <div className="grid grid-cols-2 gap-1.5 p-2 bg-white/[0.03] border border-white/10 rounded-[2px] text-[9.5px]">
           <div>
             <span className="text-text-muted">EVENT TYPE:</span>
             <div className="text-text-primary font-semibold truncate">
@@ -264,7 +264,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         </div>
 
         {/* Source & Direct Link Button */}
-        <div className="p-2 bg-[#080d13] border border-border/70 rounded-[2px] space-y-1.5">
+        <div className="p-2 bg-white/[0.03] border border-white/10 rounded-[2px] space-y-1.5">
           <div className="flex items-center justify-between text-[9.5px]">
             <span className="text-text-muted">ORIGINAL SOURCE:</span>
             <span className="text-accent-cyan font-bold truncate max-w-[130px]">
@@ -316,7 +316,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
                 <button
                   key={rel.id}
                   onClick={() => onSelectEvent?.(rel)}
-                  className="w-full p-1.5 bg-panel-subtle/40 hover:bg-panel-hover border border-border/50 hover:border-accent-cyan/50 rounded text-left transition-colors cursor-pointer group"
+                  className="w-full p-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-accent-cyan/50 rounded text-left transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center justify-between text-[8.5px] text-text-muted mb-0.5">
                     <span className="text-accent-cyan truncate max-w-[120px]">{rel.location}</span>
@@ -336,7 +336,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
           {onOpenEventModal && (
             <button
               onClick={() => onOpenEventModal(event!)}
-              className="w-full py-1.5 bg-panel-subtle hover:bg-panel-hover border border-border hover:border-accent-cyan/60 text-text-primary text-[10px] font-bold rounded-[2px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-accent-cyan/60 text-text-primary text-[10px] font-bold rounded-[2px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>INSPECT FULL INTEL DOSSIER</span>
               <ChevronRight className="w-3 h-3 text-accent-cyan" />
@@ -345,9 +345,9 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full py-1 border border-border/60 hover:border-border bg-black/30 hover:bg-panel-subtle text-text-muted hover:text-text-secondary text-[9.5px] rounded-[2px] transition-colors cursor-pointer"
+            className="w-full py-1 border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.06] text-text-muted hover:text-text-secondary text-[9.5px] rounded-[2px] transition-colors cursor-pointer"
           >
-            ← RETURN TO LIVE TERMINAL
+            ← RETURN TO LIVE STREAM
           </button>
         </div>
       </div>

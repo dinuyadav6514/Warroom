@@ -15,6 +15,7 @@ import { LeftNav, NavView } from '@/components/layout/LeftNav';
 import { GlobalStatsStrip } from '@/components/layout/GlobalStatsStrip';
 import { ConflictMap } from '@/components/map/ConflictMap';
 import { LiveEventStream } from '@/components/stream/LiveEventStream';
+import { FullLiveStreamModal } from '@/components/stream/FullLiveStreamModal';
 import { ConflictPanel } from '@/components/intelligence/ConflictPanel';
 import { ConflictModal } from '@/components/intelligence/ConflictModal';
 import { EventModal } from '@/components/intelligence/EventModal';
@@ -67,6 +68,7 @@ export default function WarRoomDashboard() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [isFullStreamModalOpen, setIsFullStreamModalOpen] = useState(false);
 
   // Operational Flags
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -317,6 +319,7 @@ export default function WarRoomDashboard() {
         setSelectedEvent(null);
         setIsSourcesModalOpen(false);
         setIsSetupModalOpen(false);
+        setIsFullStreamModalOpen(false);
       } else if (e.key === 'm' || e.key === 'M') {
         setCurrentView('WORLD');
       } else if (e.key === 't' || e.key === 'T') {
@@ -383,6 +386,14 @@ export default function WarRoomDashboard() {
       setSelectedEvent(null);
     }
   }, []);
+
+  const handleOpenFullStream = useCallback(() => {
+    setIsStreamCollapsed(false);
+    if (currentView !== 'WORLD') {
+      setCurrentView('WORLD');
+    }
+    setIsFullStreamModalOpen(true);
+  }, [currentView]);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-text-primary overflow-hidden font-mono">
@@ -456,6 +467,7 @@ export default function WarRoomDashboard() {
             setSelectedEvent(e);
             setIsEventModalOpen(true);
           }}
+          onOpenFullStream={handleOpenFullStream}
         />
 
         {/* Primary Operational Center Workspace */}
@@ -721,6 +733,22 @@ export default function WarRoomDashboard() {
         onClose={() => setIsSetupModalOpen(false)}
         isConfigured={typeof window !== 'undefined' && !!localStorage.getItem('warroom_gemini_key')}
         onKeyConfigured={handleForceRefresh}
+      />
+
+      <FullLiveStreamModal
+        isOpen={isFullStreamModalOpen}
+        onClose={() => setIsFullStreamModalOpen(false)}
+        events={allEvents10D}
+        onSelectEvent={(e) => {
+          handleSelectEvent(e);
+          setIsFullStreamModalOpen(false);
+        }}
+        onOpenEventModal={(e) => {
+          setSelectedEvent(e);
+          setIsEventModalOpen(true);
+        }}
+        isRefreshing={isRefreshing}
+        onRefresh={handleForceRefresh}
       />
     </div>
   );
