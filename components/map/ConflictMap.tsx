@@ -5,7 +5,7 @@ import { ConflictEvent, Conflict, MapMode, Severity } from '@/types/conflict';
 import { MapLegend } from './MapLegend';
 import { TacticalBleedmarkCursor } from './TacticalBleedmarkCursor';
 import { formatShortDate } from '@/lib/data/date-utils';
-import { Maximize2, Minimize2, ZoomIn, ZoomOut, RotateCcw, RefreshCw } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 
 interface ConflictMapProps {
   events: ConflictEvent[];
@@ -23,6 +23,196 @@ interface ConflictMapProps {
 
 const TACTICAL_CURSOR_SVG = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair`;
 const TACTICAL_LOCK_SVG = TACTICAL_CURSOR_SVG;
+
+function registerTacticalMilitaryIcons(map: any) {
+  if (typeof document === 'undefined') return;
+
+  const createIconData = (
+    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon',
+    fillColor: string,
+    strokeColor: string,
+    accentColor?: string
+  ) => {
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.clearRect(0, 0, size, size);
+
+    if (shape === 'diamond' || shape === 'diamond-lock') {
+      // 1. Lightweight modern corner brackets for active frontline (<24H)
+      if (shape === 'diamond-lock' && accentColor) {
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'square';
+
+        const arm = 9;
+        // Top-Left
+        ctx.beginPath();
+        ctx.moveTo(8, 8 + arm);
+        ctx.lineTo(8, 8);
+        ctx.lineTo(8 + arm, 8);
+        ctx.stroke();
+
+        // Top-Right
+        ctx.beginPath();
+        ctx.moveTo(56 - arm, 8);
+        ctx.lineTo(56, 8);
+        ctx.lineTo(56, 8 + arm);
+        ctx.stroke();
+
+        // Bottom-Left
+        ctx.beginPath();
+        ctx.moveTo(8, 56 - arm);
+        ctx.lineTo(8, 56);
+        ctx.lineTo(8 + arm, 56);
+        ctx.stroke();
+
+        // Bottom-Right
+        ctx.beginPath();
+        ctx.moveTo(56 - arm, 56);
+        ctx.lineTo(56, 56);
+        ctx.lineTo(56, 56 - arm);
+        ctx.stroke();
+      }
+
+      // 2. Modern Tactical NATO Lozenge (Diamond)
+      ctx.beginPath();
+      ctx.moveTo(32, 13);
+      ctx.lineTo(51, 32);
+      ctx.lineTo(32, 51);
+      ctx.lineTo(13, 32);
+      ctx.closePath();
+
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 3. Precision optical crosshair
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(24, 32);
+      ctx.lineTo(40, 32);
+      ctx.moveTo(32, 24);
+      ctx.lineTo(32, 40);
+      ctx.stroke();
+
+      // Optical center pinpoint
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(32, 32, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (shape === 'square') {
+      // Modern Tactical Alert Square
+      const x = 16;
+      const y = 16;
+      const w = 32;
+      const h = 32;
+
+      ctx.beginPath();
+      if (typeof (ctx as any).roundRect === 'function') {
+        (ctx as any).roundRect(x, y, w, h, 3);
+      } else {
+        ctx.rect(x, y, w, h);
+      }
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Inner tactical crosshair
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(24, 32);
+      ctx.lineTo(40, 32);
+      ctx.moveTo(32, 24);
+      ctx.lineTo(32, 40);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(32, 32, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (shape === 'circle') {
+      // Modern Tactical Patrolled Post
+      ctx.beginPath();
+      ctx.arc(32, 32, 16, 0, Math.PI * 2);
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Precision center dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(32, 32, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (shape === 'recon') {
+      // Modern Sleek Scout Lozenge
+      ctx.beginPath();
+      ctx.moveTo(32, 18);
+      ctx.lineTo(46, 32);
+      ctx.lineTo(32, 46);
+      ctx.lineTo(18, 32);
+      ctx.closePath();
+
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(32, 32, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    return ctx.getImageData(0, 0, size, size);
+  };
+
+  const icons: Array<{
+    id: string;
+    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon';
+    fillColor: string;
+    strokeColor: string;
+    accentColor?: string;
+  }> = [
+    { id: 'army-critical', shape: 'diamond', fillColor: '#dc2626', strokeColor: '#0f172a' },
+    { id: 'army-critical-24h', shape: 'diamond-lock', fillColor: '#dc2626', strokeColor: '#0f172a', accentColor: '#22c55e' },
+    { id: 'army-high', shape: 'diamond', fillColor: '#ea580c', strokeColor: '#0f172a' },
+    { id: 'army-high-24h', shape: 'diamond-lock', fillColor: '#ea580c', strokeColor: '#0f172a', accentColor: '#22c55e' },
+    { id: 'army-moderate', shape: 'square', fillColor: '#ca8a04', strokeColor: '#0f172a' },
+    { id: 'army-moderate-24h', shape: 'diamond-lock', fillColor: '#ca8a04', strokeColor: '#0f172a', accentColor: '#22c55e' },
+    { id: 'army-low', shape: 'circle', fillColor: '#4d7c0f', strokeColor: '#0f172a' },
+    { id: 'army-news', shape: 'recon', fillColor: '#64748b', strokeColor: '#0f172a' },
+  ];
+
+  for (const { id, shape, fillColor, strokeColor, accentColor } of icons) {
+    const imgData = createIconData(shape, fillColor, strokeColor, accentColor);
+    if (!imgData) continue;
+    if (map.hasImage(id)) {
+      map.removeImage(id);
+    }
+    map.addImage(id, imgData, { pixelRatio: 2 });
+  }
+}
 
 export const ConflictMap: React.FC<ConflictMapProps> = ({
   events,
@@ -67,7 +257,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   const radiatingMarkerRef = useRef<any>(null);
   const maplibreModuleRef = useRef<any>(null);
 
-  const setRadiatingBeacon = useCallback((lng: number, lat: number, color = '#00f0ff') => {
+  const setRadiatingBeacon = useCallback((lng: number, lat: number, color = '#dc2626') => {
     if (!mapInstanceRef.current || !maplibreModuleRef.current) return;
     const map = mapInstanceRef.current;
     const maplibre = maplibreModuleRef.current;
@@ -76,8 +266,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       const el = document.createElement('div');
       el.className = 'warroom-radiating-marker';
       el.style.cssText = `
-        width: 56px;
-        height: 56px;
+        width: 38px;
+        height: 38px;
         position: relative;
         display: flex;
         align-items: center;
@@ -87,11 +277,10 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       `;
 
       el.innerHTML = `
-        <div class="warroom-radiate-ring" style="animation-delay: 0s;"></div>
-        <div class="warroom-radiate-ring" style="animation-delay: 0.7s;"></div>
-        <div class="warroom-radiate-ring" style="animation-delay: 1.4s;"></div>
-        <div class="warroom-reticle"></div>
-        <div class="warroom-radiate-core"></div>
+        <div class="warroom-modern-reticle">
+          <div class="warroom-modern-brackets"></div>
+          <div class="warroom-modern-crosshairs"></div>
+        </div>
       `;
 
       radiatingMarkerRef.current = new maplibre.Marker({
@@ -117,7 +306,6 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   }, []);
 
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 100% Free, zero-API-key dark basemap (no CARTO watermark or key requirement)
   const darkBasemapStyle = {
@@ -217,6 +405,9 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             // Ignore if canvas not yet attached
           }
 
+          // Register authentic military tactical icons into MapLibre
+          registerTacticalMilitaryIcons(map);
+
           // Add GeoJSON sources — NO clustering so every dot is always individually visible
           map.addSource('warroom-conflict-events', {
             type: 'geojson',
@@ -245,14 +436,13 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'heatmap-weight': ['interpolate', ['linear'], ['get', 'fatalities'], 0, 0.2, 10, 1],
               'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
               'heatmap-color': [
-                'interpolate',
-                ['linear'],
+                'interpolate', ['linear'],
                 ['heatmap-density'],
-                0, 'rgba(0, 240, 255, 0)',
-                0.2, '#00f0ff',
-                0.4, '#eab308',
-                0.7, '#f97316',
-                1, '#ef4444',
+                0, 'rgba(77, 124, 15, 0)',
+                0.25, '#4d7c0f',
+                0.5, '#ca8a04',
+                0.75, '#ea580c',
+                1, '#dc2626',
               ],
               'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 4, 9, 25],
               'heatmap-opacity': 0.8,
@@ -260,65 +450,48 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             layout: { visibility: 'none' },
           });
 
-          // 2. General News Dots — compact, individual, decollided
+          // 2. Tactical Military Operational Symbology
+          // 2a. Armed Conflict Frontline Markers (NATO Tactical Symbols)
           map.addLayer({
-            id: 'news-dots',
-            type: 'circle',
-            source: 'warroom-general-news',
-            paint: {
-              'circle-color': '#1e3a5f',
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 2.0,
-                4, 2.75,
-                7, 4.0,
-                11, 5.5,
-              ],
-              'circle-stroke-width': 0.75,
-              'circle-stroke-color': '#2563eb',
-              'circle-opacity': 0.85,
-            },
-          });
-
-          // 3. Conflict Dots — colour-coded by severity, sleek compact radius
-          map.addLayer({
-            id: 'conflict-dots',
-            type: 'circle',
+            id: 'warroom-tactical-markers',
+            type: 'symbol',
             source: 'warroom-conflict-events',
-            paint: {
-              'circle-color': [
-                'match',
-                ['get', 'severity'],
-                'CRITICAL', '#ef4444',
-                'HIGH', '#f97316',
-                'MODERATE', '#eab308',
-                'LOW', '#38bdf8',
-                '#64748b',
-              ],
-              'circle-radius': [
+            layout: {
+              'icon-image': ['get', 'markerIcon'],
+              'icon-size': [
                 'interpolate', ['linear'], ['zoom'],
-                1, 2.75,
-                4, 3.8,
-                7, 5.5,
-                11, 8.0,
+                1, 0.36,
+                4, 0.48,
+                7, 0.68,
+                11, 0.92,
               ],
-              'circle-stroke-width': [
-                'case',
-                ['boolean', ['get', 'isRecent24h'], false],
-                1.5,
-                0.75,
-              ],
-              'circle-stroke-color': [
-                'case',
-                ['boolean', ['get', 'isRecent24h'], false],
-                '#00ff66',
-                '#080b0e',
-              ],
-              'circle-opacity': 0.95,
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-pitch-alignment': 'map',
             },
           });
 
-          // 3b. Invisible hit-target layer for conflict dots (prevents missed clicks on small dots)
+          // 2b. Tactical Recon & Intelligence Dispatches (Scout Lozenges)
+          map.addLayer({
+            id: 'warroom-news-markers',
+            type: 'symbol',
+            source: 'warroom-general-news',
+            layout: {
+              'icon-image': ['get', 'markerIcon'],
+              'icon-size': [
+                'interpolate', ['linear'], ['zoom'],
+                1, 0.28,
+                4, 0.38,
+                7, 0.54,
+                11, 0.76,
+              ],
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-pitch-alignment': 'map',
+            },
+          });
+
+          // 3. Invisible hit-target layers for responsive clicking and hovering
           map.addLayer({
             id: 'conflict-dots-hit',
             type: 'circle',
@@ -335,7 +508,6 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             },
           });
 
-          // 3c. Invisible hit-target layer for news dots
           map.addLayer({
             id: 'news-dots-hit',
             type: 'circle',
@@ -352,7 +524,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             },
           });
 
-          // 4. Conflict Centroid Theaters Layer
+          // 4b. Military Sector Boundary
           map.addLayer({
             id: 'conflict-centroids',
             type: 'circle',
@@ -361,9 +533,9 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'circle-color': [
                 'match',
                 ['get', 'status'],
-                'ESCALATING', 'rgba(239, 68, 68, 0.45)',
-                'DEESCALATING', 'rgba(56, 189, 248, 0.3)',
-                'rgba(249, 115, 22, 0.35)',
+                'ESCALATING', 'rgba(185, 28, 28, 0.08)',
+                'DEESCALATING', 'rgba(77, 124, 15, 0.08)',
+                'rgba(161, 98, 7, 0.08)',
               ],
               'circle-radius': [
                 'interpolate',
@@ -373,14 +545,15 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                 50, 28,
                 100, 42,
               ],
-              'circle-stroke-width': 1.5,
+              'circle-stroke-width': 1.4,
               'circle-stroke-color': [
                 'match',
                 ['get', 'status'],
-                'ESCALATING', '#ef4444',
-                'DEESCALATING', '#38bdf8',
-                '#f97316',
+                'ESCALATING', '#dc2626',
+                'DEESCALATING', '#4d7c0f',
+                '#ca8a04',
               ],
+              'circle-stroke-opacity': 0.85,
             },
             layout: { visibility: 'none' },
           });
@@ -399,8 +572,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               visibility: 'none',
             },
             paint: {
-              'text-color': '#00f0ff',
-              'text-halo-color': '#000000',
+              'text-color': '#94a3b8',
+              'text-halo-color': '#0a0e14',
               'text-halo-width': 1.5,
             },
           });
@@ -473,10 +646,11 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
             // Immediately activate radiating tactical beacon on the opened dot
             const isNewsItem = props.isConflict === false || props.isConflict === 'false';
-            const accentColor = isNewsItem ? '#38bdf8' : (
-              props.severity === 'CRITICAL' ? '#ef4444' :
-              props.severity === 'HIGH' ? '#f97316' :
-              props.severity === 'MODERATE' ? '#eab308' : '#00f0ff'
+            const accentColor = isNewsItem ? '#64748b' : (
+              props.severity === 'CRITICAL' ? '#dc2626' :
+              props.severity === 'HIGH' ? '#ea580c' :
+              props.severity === 'MODERATE' ? '#ca8a04' :
+              props.severity === 'LOW' ? '#4d7c0f' : '#dc2626'
             );
             const beaconLng = (coords && typeof coords[0] === 'number') ? coords[0] : foundEvent?.longitude;
             const beaconLat = (coords && typeof coords[1] === 'number') ? coords[1] : foundEvent?.latitude;
@@ -499,8 +673,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             clickPopupRef.current?.remove();
           };
 
-          // Conflict dot interactions — ONLY responds to clicks
-          map.on('click', 'conflict-dots', (e: any) => {
+          // Conflict marker interactions — ONLY responds to clicks
+          map.on('click', 'warroom-tactical-markers', (e: any) => {
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
@@ -518,19 +692,19 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
             map.getCanvas().classList.remove('tactical-lock');
           });
-          map.on('mouseenter', 'conflict-dots', () => {
+          map.on('mouseenter', 'warroom-tactical-markers', () => {
             setIsDotHovered(true);
             map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
             map.getCanvas().classList.add('tactical-lock');
           });
-          map.on('mouseleave', 'conflict-dots', () => {
+          map.on('mouseleave', 'warroom-tactical-markers', () => {
             setIsDotHovered(false);
             map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
             map.getCanvas().classList.remove('tactical-lock');
           });
 
-          // News dot interactions — ONLY responds to clicks
-          map.on('click', 'news-dots', (e: any) => {
+          // News marker interactions — ONLY responds to clicks
+          map.on('click', 'warroom-news-markers', (e: any) => {
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
@@ -548,12 +722,12 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
             map.getCanvas().classList.remove('tactical-lock');
           });
-          map.on('mouseenter', 'news-dots', () => {
+          map.on('mouseenter', 'warroom-news-markers', () => {
             setIsDotHovered(true);
             map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
             map.getCanvas().classList.add('tactical-lock');
           });
-          map.on('mouseleave', 'news-dots', () => {
+          map.on('mouseleave', 'warroom-news-markers', () => {
             setIsDotHovered(false);
             map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
             map.getCanvas().classList.remove('tactical-lock');
@@ -591,15 +765,15 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
             const statusColor =
               props.status === 'ESCALATING'
-                ? '#ef4444'
+                ? '#dc2626'
                 : props.status === 'DEESCALATING'
-                ? '#38bdf8'
-                : '#f97316';
+                ? '#4d7c0f'
+                : '#ca8a04';
 
             const conflictPopupHtml = `
               <div style="font-family: monospace; font-size: 11px; line-height: 1.45; color: #e6edf3; min-width: 250px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,240,255,0.3); padding-bottom: 5px; margin-bottom: 6px; padding-right: 22px;">
-                  <span style="color: #00f0ff; font-weight: bold;">// THEATER</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(202,138,4,0.3); padding-bottom: 5px; margin-bottom: 6px; padding-right: 22px;">
+                  <span style="color: #ca8a04; font-weight: bold;">// THEATER SECTOR</span>
                   <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid ${statusColor}; color: ${statusColor};">
                     ${props.status}
                   </span>
@@ -609,8 +783,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                 </div>
                 <div style="display: grid; gap: 3px; margin-bottom: 8px; font-size: 10.5px;">
                   <div><span style="color: #8b949e;">7D EVENTS    ::</span> <strong style="color: #ffffff;">${props.eventCount} incidents</strong></div>
-                  <div><span style="color: #8b949e;">7D CASUALTIES ::</span> <strong style="color: #ef4444;">${props.fatalities} reported</strong></div>
-                  <div><span style="color: #8b949e;">INTENSITY     ::</span> <span style="color: #00ff66;">${props.intensity}/100</span></div>
+                  <div><span style="color: #8b949e;">7D CASUALTIES ::</span> <strong style="color: #dc2626;">${props.fatalities} reported</strong></div>
+                  <div><span style="color: #8b949e;">INTENSITY     ::</span> <span style="color: #ea580c; font-weight: bold;">${props.intensity}/100</span></div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
                   <button id="warroom-btn-close-theater-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #cbd5e1; cursor: pointer; border-radius: 2px;">
@@ -654,9 +828,9 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           // Global canvas click: clicking empty space on the map deselects active dot and returns to terminal
           map.on('click', (e: any) => {
             const interactiveLayers = [
-              'conflict-dots',
+              'warroom-tactical-markers',
               'conflict-dots-hit',
-              'news-dots',
+              'warroom-news-markers',
               'news-dots-hit',
               'conflict-centroids',
             ].filter((layerId) => map.getLayer(layerId));
@@ -715,6 +889,19 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       const time = new Date(e.timestamp || e.eventDate).getTime();
       const isRecent24h = !isNaN(time) && now - time <= oneDayMs;
 
+      let markerIcon = 'army-low';
+      if (e.isConflict === false) {
+        markerIcon = 'army-news';
+      } else if (e.severity === 'CRITICAL') {
+        markerIcon = isRecent24h ? 'army-critical-24h' : 'army-critical';
+      } else if (e.severity === 'HIGH') {
+        markerIcon = isRecent24h ? 'army-high-24h' : 'army-high';
+      } else if (e.severity === 'MODERATE') {
+        markerIcon = isRecent24h ? 'army-moderate-24h' : 'army-moderate';
+      } else {
+        markerIcon = 'army-low';
+      }
+
       return {
         type: 'Feature',
         geometry: {
@@ -734,6 +921,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           isConflict: e.isConflict !== false,
           status: isRecent24h ? 'ACTIVE <24H' : 'RECENT',
           isRecent24h,
+          markerIcon,
           source: e.source,
           sourceUrl: e.sourceUrl,
           notes: e.notes,
@@ -854,31 +1042,26 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
       }
     };
 
+    const newsLayers = ['warroom-news-markers', 'news-dots-hit'];
+    const conflictLayers = ['warroom-tactical-markers', 'conflict-dots-hit'];
+    const theaterLayers = ['conflict-centroids', 'conflict-labels'];
+
     if (mapMode === 'HEATMAP') {
       setVisibility('events-heat', true);
-      setVisibility('news-dots', true);
-      setVisibility('news-dots-hit', true);
-      setVisibility('conflict-dots', false);
-      setVisibility('conflict-dots-hit', false);
-      setVisibility('conflict-centroids', false);
-      setVisibility('conflict-labels', false);
+      newsLayers.forEach((id) => setVisibility(id, true));
+      conflictLayers.forEach((id) => setVisibility(id, false));
+      theaterLayers.forEach((id) => setVisibility(id, false));
     } else if (mapMode === 'CONFLICTS') {
       setVisibility('events-heat', false);
-      setVisibility('news-dots', false);
-      setVisibility('news-dots-hit', false);
-      setVisibility('conflict-dots', false);
-      setVisibility('conflict-dots-hit', false);
-      setVisibility('conflict-centroids', true);
-      setVisibility('conflict-labels', true);
+      newsLayers.forEach((id) => setVisibility(id, false));
+      conflictLayers.forEach((id) => setVisibility(id, false));
+      theaterLayers.forEach((id) => setVisibility(id, true));
     } else {
       // EVENTS or ESCALATION
       setVisibility('events-heat', false);
-      setVisibility('news-dots', true);
-      setVisibility('news-dots-hit', true);
-      setVisibility('conflict-dots', true);
-      setVisibility('conflict-dots-hit', true);
-      setVisibility('conflict-centroids', false);
-      setVisibility('conflict-labels', false);
+      newsLayers.forEach((id) => setVisibility(id, true));
+      conflictLayers.forEach((id) => setVisibility(id, true));
+      theaterLayers.forEach((id) => setVisibility(id, false));
     }
   }, [mapMode, mapLoaded]);
 
@@ -894,10 +1077,11 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
 
     if (selectedEvent && typeof selectedEvent.longitude === 'number' && typeof selectedEvent.latitude === 'number') {
       const isNewsItem = selectedEvent.isConflict === false;
-      const accentColor = isNewsItem ? '#38bdf8' : (
-        selectedEvent.severity === 'CRITICAL' ? '#ef4444' :
-        selectedEvent.severity === 'HIGH' ? '#f97316' :
-        selectedEvent.severity === 'MODERATE' ? '#eab308' : '#00f0ff'
+      const accentColor = isNewsItem ? '#64748b' : (
+        selectedEvent.severity === 'CRITICAL' ? '#dc2626' :
+        selectedEvent.severity === 'HIGH' ? '#ea580c' :
+        selectedEvent.severity === 'MODERATE' ? '#ca8a04' :
+        selectedEvent.severity === 'LOW' ? '#4d7c0f' : '#dc2626'
       );
       setRadiatingBeacon(selectedEvent.longitude, selectedEvent.latitude, accentColor);
 
@@ -922,14 +1106,8 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
     prevSelectionRef.current = { event: selectedEvent, conflict: selectedConflict };
   }, [selectedConflict, selectedEvent, mapLoaded, setRadiatingBeacon, removeRadiatingBeacon]);
 
-  const handleResetView = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.easeTo({ center: [25, 20], zoom: 2.2, duration: 600 });
-    }
-  };
-
   return (
-    <div className={`relative w-full h-full bg-[#07090b] select-none ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className="relative w-full h-full bg-[#07090b] select-none">
       {/* Map Container Element */}
       <div
         ref={mapContainerRef}
@@ -942,59 +1120,28 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
         isDotHovered={isDotHovered}
       />
 
-      {/* Map Overlays & Coordinates Header */}
-      <div className="absolute top-2 left-2 z-20 bg-panel/90 border border-border px-2 py-1 text-[10px] font-mono flex items-center gap-2 backdrop-blur-sm">
-        <span className="text-accent-cyan font-bold">// STRATEGIC MAP</span>
-        <span className="text-text-muted">MODE: [{mapMode}]</span>
-      </div>
-
-      {/* Map Quick Controls */}
-      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-panel/90 border border-border p-1 backdrop-blur-sm font-mono">
+      {/* Map Zoom Controls (+ and - only, Army Tactical Panel) */}
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-[#090d12]/95 border border-zinc-800 p-1 font-mono shadow-md">
         <button
           onClick={() => mapInstanceRef.current?.zoomIn()}
-          className="p-1 text-text-secondary hover:text-accent-cyan hover:bg-panel-hover transition-colors"
-          title="Zoom In"
+          className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors cursor-pointer rounded-[1px]"
+          title="Zoom In (+)"
         >
-          <ZoomIn className="w-3.5 h-3.5" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapInstanceRef.current?.zoomOut()}
-          className="p-1 text-text-secondary hover:text-accent-cyan hover:bg-panel-hover transition-colors"
-          title="Zoom Out"
+          className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors cursor-pointer rounded-[1px]"
+          title="Zoom Out (-)"
         >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </button>
-        {onRefresh && (
-          <button
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="p-1 text-text-secondary hover:text-accent-cyan hover:bg-panel-hover transition-colors disabled:opacity-50 cursor-pointer"
-            title="Query Gemini API for live global conflict news"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-accent-cyan' : ''}`} />
-          </button>
-        )}
-        <button
-          onClick={handleResetView}
-          className="p-1 text-text-secondary hover:text-accent-cyan hover:bg-panel-hover transition-colors"
-          title="Reset Global View"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => setIsFullscreen(!isFullscreen)}
-          className="p-1 text-text-secondary hover:text-accent-cyan hover:bg-panel-hover transition-colors"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Map'}
-        >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          <Minus className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Map Legend & Mode Bar */}
+      {/* Map Mode Selector */}
       <MapLegend
         mapMode={mapMode}
         onChangeMode={onChangeMapMode}
-        eventCount={events.length}
       />
     </div>
   );

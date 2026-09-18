@@ -152,72 +152,75 @@ body {
   z-index: 25;
 }
 
-.warroom-radiate-ring {
+.warroom-modern-reticle {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.warroom-modern-brackets {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  border-style: solid;
-  border-color: currentColor;
-  animation: warroom-radar-radiate 2.1s cubic-bezier(0.15, 0.8, 0.35, 1) infinite;
-  pointer-events: none;
+  border: 1.2px solid currentColor;
+  clip-path: polygon(
+    0 0, 7px 0, 7px 1.2px, 1.2px 1.2px, 1.2px 7px, 0 7px,
+    0 calc(100% - 7px), 1.2px calc(100% - 7px), 1.2px calc(100% - 1.2px), 7px calc(100% - 1.2px), 7px 100%, 0 100%,
+    calc(100% - 7px) 100%, calc(100% - 7px) calc(100% - 1.2px), calc(100% - 1.2px) calc(100% - 1.2px), calc(100% - 1.2px) calc(100% - 7px), 100% calc(100% - 7px), 100% 100%,
+    100% 7px, calc(100% - 1.2px) 7px, calc(100% - 1.2px) 1.2px, calc(100% - 7px) 1.2px, calc(100% - 7px) 0, 100% 0
+  );
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
 }
 
-.warroom-reticle {
+.warroom-modern-crosshairs {
   position: absolute;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px dashed currentColor;
-  opacity: 0.55;
-  animation: warroom-reticle-spin 10s linear infinite;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
-.warroom-radiate-core {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+.warroom-modern-crosshairs::before,
+.warroom-modern-crosshairs::after {
+  content: '';
+  position: absolute;
   background-color: currentColor;
-  position: relative;
-  z-index: 2;
-  animation: warroom-core-pulse 1.4s ease-in-out infinite;
-  pointer-events: none;
 }
 
-@keyframes warroom-radar-radiate {
-  0% {
-    transform: scale(0.35);
-    opacity: 0.95;
-    border-width: 2.5px;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(3.2);
-    opacity: 0;
-    border-width: 1px;
-  }
+.warroom-modern-crosshairs::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    90deg,
+    currentColor 0,
+    currentColor 5px,
+    transparent 5px,
+    transparent calc(100% - 5px),
+    currentColor calc(100% - 5px),
+    currentColor 100%
+  );
 }
 
-@keyframes warroom-core-pulse {
-  0%, 100% {
-    transform: scale(0.95);
-    filter: drop-shadow(0 0 6px currentColor);
-  }
-  50% {
-    transform: scale(1.4);
-    filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 24px currentColor);
-  }
-}
-
-@keyframes warroom-reticle-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.warroom-modern-crosshairs::after {
+  left: 50%;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    currentColor 0,
+    currentColor 5px,
+    transparent 5px,
+    transparent calc(100% - 5px),
+    currentColor calc(100% - 5px),
+    currentColor 100%
+  );
 }
 
 /* White Crosshair (Middle One Only) */
@@ -226,7 +229,7 @@ body {
 }
 
 .warroom-map-crosshair:active {
-  cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='g'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='2'%20flood-color='%23ffffff'%20flood-opacity='0.95'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23g)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='10'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='22'%20y2='16'/%3E%3Cline%20x1='16'%20y1='10'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='22'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%2300f0ff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair;
+  cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='g'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='2'%20flood-color='%23ffffff'%20flood-opacity='0.95'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23g)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='10'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='22'%20y2='16'/%3E%3Cline%20x1='16'%20y1='10'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='22'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%2316a34a'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair;
 }
 
 /* Map canvas hides default OS cursor so custom animated reticle renders cleanly */

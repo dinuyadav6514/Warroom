@@ -132,13 +132,13 @@ export const TacticalBleedmarkCursor: React.FC<TacticalBleedmarkCursorProps> = (
               <feDropShadow dx="0" dy="0" stdDeviation="1.2" floodColor="#000000" floodOpacity="0.9" />
             </filter>
             <filter id="warroom-bleed-glow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#ffffff" floodOpacity="0.95" />
+              <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.95" />
             </filter>
           </defs>
 
           {/* Center White Crosshair Reticle (Fixed Center Point at 20, 20) — Middle One Only */}
           <g
-            filter={isPressed || isClickAnimating ? 'url(#warroom-bleed-glow)' : 'url(#warroom-bleed-shadow)'}
+            filter="url(#warroom-bleed-shadow)"
             stroke="#ffffff"
             strokeWidth="1.5"
             strokeLinecap="round"
@@ -161,7 +161,7 @@ export const TacticalBleedmarkCursor: React.FC<TacticalBleedmarkCursorProps> = (
               cx="20"
               cy="20"
               r="1.25"
-              fill={isDotHovered ? '#00f0ff' : '#ffffff'}
+              fill={isDotHovered ? '#16a34a' : '#ffffff'}
               stroke="none"
             />
           </g>

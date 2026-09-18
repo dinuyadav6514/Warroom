@@ -14,7 +14,6 @@ import { Header } from '@/components/layout/Header';
 import { LeftNav, NavView } from '@/components/layout/LeftNav';
 import { GlobalStatsStrip } from '@/components/layout/GlobalStatsStrip';
 import { ConflictMap } from '@/components/map/ConflictMap';
-import { LiveEventStream } from '@/components/stream/LiveEventStream';
 import { FullLiveStreamModal } from '@/components/stream/FullLiveStreamModal';
 import { ConflictPanel } from '@/components/intelligence/ConflictPanel';
 import { ConflictModal } from '@/components/intelligence/ConflictModal';
@@ -38,7 +37,6 @@ export default function WarRoomDashboard() {
   const [mapMode, setMapMode] = useState<MapMode>('EVENTS');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
-  const [isStreamCollapsed, setIsStreamCollapsed] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Filters State
@@ -388,7 +386,6 @@ export default function WarRoomDashboard() {
   }, []);
 
   const handleOpenFullStream = useCallback(() => {
-    setIsStreamCollapsed(false);
     if (currentView !== 'WORLD') {
       setCurrentView('WORLD');
     }
@@ -439,6 +436,53 @@ export default function WarRoomDashboard() {
         </div>
       )}
 
+      {/* Intel Category & Pipeline Filter Bar — full-width, above all three panes */}
+      <IntelFilterBar
+        intelMode={filters.intelMode || 'ALL'}
+        onSelectIntelMode={(mode) => handleUpdateFilters({ intelMode: mode })}
+        storyMerging={filters.storyMerging !== false}
+        onToggleStoryMerging={() =>
+          handleUpdateFilters({ storyMerging: filters.storyMerging === false ? true : false })
+        }
+        selectedSources={filters.sources || []}
+        onToggleSource={(source) => {
+          const current =
+            filters.sources && filters.sources.length > 0
+              ? filters.sources
+              : [...availableSources];
+          const next = current.includes(source)
+            ? current.filter((s) => s !== source)
+            : [...current, source];
+          handleUpdateFilters({
+            sources: next.length === availableSources.length ? [] : next,
+          });
+        }}
+        onSelectAllSources={() => {
+          const isAll =
+            !filters.sources ||
+            filters.sources.length === 0 ||
+            filters.sources.length === availableSources.length;
+          if (isAll) {
+            handleUpdateFilters({ sources: ['__NONE__'] });
+          } else {
+            handleUpdateFilters({ sources: [] });
+          }
+        }}
+        selectedRegion={filters.region || 'ALL'}
+        onSelectRegion={(region) => handleUpdateFilters({ region: region === 'ALL' ? '' : region })}
+        selectedSeverity={filters.severity || 'ALL'}
+        onSelectSeverity={(severity) => handleUpdateFilters({ severity })}
+        selectedEventType={filters.eventType || 'ALL'}
+        onSelectEventType={(eventType) => handleUpdateFilters({ eventType: eventType === 'ALL' ? '' : eventType })}
+        categoryCounts={categoryCounts}
+        storyMergeStats={{
+          original: mergedResult.totalOriginal,
+          unique: mergedResult.totalUnique,
+          merged: mergedResult.totalMerged,
+        }}
+        availableSources={availableSources}
+      />
+
       {/* Active Workstation Layout */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Navigation Pane */}
@@ -481,98 +525,24 @@ export default function WarRoomDashboard() {
             />
           )}
 
-          {/* Intel Category & Pipeline Filter Bar */}
-          <IntelFilterBar
-            intelMode={filters.intelMode || 'ALL'}
-            onSelectIntelMode={(mode) => handleUpdateFilters({ intelMode: mode })}
-            storyMerging={filters.storyMerging !== false}
-            onToggleStoryMerging={() =>
-              handleUpdateFilters({ storyMerging: filters.storyMerging === false ? true : false })
-            }
-            selectedSources={filters.sources || []}
-            onToggleSource={(source) => {
-              const current =
-                filters.sources && filters.sources.length > 0
-                  ? filters.sources
-                  : [...availableSources];
-              const next = current.includes(source)
-                ? current.filter((s) => s !== source)
-                : [...current, source];
-              handleUpdateFilters({
-                sources: next.length === availableSources.length ? [] : next,
-              });
-            }}
-            onSelectAllSources={() => {
-              const isAll =
-                !filters.sources ||
-                filters.sources.length === 0 ||
-                filters.sources.length === availableSources.length;
-              if (isAll) {
-                handleUpdateFilters({ sources: ['__NONE__'] });
-              } else {
-                handleUpdateFilters({ sources: [] });
-              }
-            }}
-            selectedRegion={filters.region || 'ALL'}
-            onSelectRegion={(region) => handleUpdateFilters({ region: region === 'ALL' ? '' : region })}
-            selectedSeverity={filters.severity || 'ALL'}
-            onSelectSeverity={(severity) => handleUpdateFilters({ severity })}
-            selectedEventType={filters.eventType || 'ALL'}
-            onSelectEventType={(eventType) => handleUpdateFilters({ eventType: eventType === 'ALL' ? '' : eventType })}
-            categoryCounts={categoryCounts}
-            storyMergeStats={{
-              original: mergedResult.totalOriginal,
-              unique: mergedResult.totalUnique,
-              merged: mergedResult.totalMerged,
-            }}
-            availableSources={availableSources}
-          />
-
           {/* Center Dynamic Workspace Views */}
           <div className="flex-1 relative overflow-hidden">
             {currentView === 'WORLD' && (
-              <div className="w-full h-full flex flex-col md:flex-row">
-                {/* Strategic Map Canvas */}
-                <div className="flex-1 h-2/3 md:h-full relative min-h-[300px]">
-                  <ConflictMap
-                    events={events}
-                    conflicts={conflicts}
-                    selectedConflict={selectedConflict}
-                    selectedEvent={selectedEvent}
-                    onSelectConflict={handleSelectConflict}
-                    onSelectEvent={handleSelectEvent}
-                    onOpenEventModal={(e) => {
-                      setSelectedEvent(e);
-                      setIsEventModalOpen(true);
-                    }}
-                    mapMode={mapMode}
-                    onChangeMapMode={setMapMode}
-                    onRefresh={handleForceRefresh}
-                    isRefreshing={isRefreshing}
-                  />
-                </div>
-
-                {/* Split Live Conflict Stream (Collapsible) */}
-                <div
-                  className={`${
-                    isStreamCollapsed
-                      ? 'w-full md:w-9 h-8 md:h-full'
-                      : 'w-full md:w-80 lg:w-72 h-1/3 md:h-full'
-                  } border-t md:border-t-0 md:border-l border-border bg-panel flex flex-col transition-all duration-300 shrink-0 overflow-hidden`}
-                >
-                  <LiveEventStream
-                    events={events}
-                    onSelectEvent={(e) => {
-                      setSelectedEvent(e);
-                      setIsEventModalOpen(true);
-                    }}
-                    selectedEventId={selectedEvent?.id}
-                    onRefresh={handleForceRefresh}
-                    isRefreshing={isRefreshing}
-                    isCollapsed={isStreamCollapsed}
-                    onToggleCollapse={() => setIsStreamCollapsed((prev) => !prev)}
-                  />
-                </div>
+              <div className="w-full h-full relative">
+                <ConflictMap
+                  events={events}
+                  conflicts={conflicts}
+                  selectedConflict={selectedConflict}
+                  selectedEvent={selectedEvent}
+                  onSelectConflict={handleSelectConflict}
+                  onSelectEvent={handleSelectEvent}
+                  onOpenEventModal={(e) => {
+                    setSelectedEvent(e);
+                    setIsEventModalOpen(true);
+                  }}
+                  mapMode={mapMode}
+                  onChangeMapMode={setMapMode}
+                />
               </div>
             )}
 
