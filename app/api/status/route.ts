@@ -20,7 +20,7 @@ export async function GET() {
       lastSyncAt: cached.lastSyncAt || 'NONE',
       lastEventAt: cached.lastEventAt || 'NONE',
       cachedRecordsCount: cached.events.length,
-      cacheFreshnessTtlHours: 4.5,
+      cacheFreshnessTtlMinutes: 1,
     },
     systemNotice: 'Terminal operational. Conflict news discovered via open media pipelines without Gemini API dependency.',
   });

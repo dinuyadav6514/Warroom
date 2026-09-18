@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runConflictSync, getActiveProvider } from '@/lib/providers';
+import { runConflictSync } from '@/lib/providers';
 import { generateConflictBrief } from '@/lib/ai/summarizer';
 
 export async function POST(request: NextRequest) {

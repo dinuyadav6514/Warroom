@@ -142,7 +142,7 @@ function generateDeterministicBrief(conflict: Conflict, windowDays: number): AiB
   const primaryTypes = Array.from(new Set(events.map((e) => e.eventType)));
 
   const retrievedSummary = events.slice(0, 6).map((e) => {
-    return `[${e.eventDate}] ${e.eventType}${e.subEventType ? ` (${e.subEventType})` : ''} at ${e.location} — ${e.fatalities || 0} reported fatalities. Source: ${e.source || 'GEMINI GROUNDED'}`;
+    return `[${e.eventDate}] ${e.eventType}${e.subEventType ? ` (${e.subEventType})` : ''} at ${e.location} — ${e.fatalities || 0} reported fatalities. Source: ${e.source || 'Wire Service'}`;
   });
 
   const aiAnalysis = `Observed activity in ${conflict.name} comprises ${conflict.eventCount7d} reported incidents over the last ${windowDays} days resulting in ${conflict.fatalities7d} recorded fatalities. Primary operational modalities include ${primaryTypes.join(', ')}. Of these incidents, ${highSeverityCount} meet high/critical severity thresholds. Current Escalation Index is rated at ${conflict.escalationIndex}/100 with a ${conflict.escalationTrend} trend. Data demonstrates sustained engagement among identified actors: ${conflict.actors.slice(0, 5).join(', ')}.`;

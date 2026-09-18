@@ -32,16 +32,15 @@ export function getDefaultApiExchange(): ApiExchange {
         days: 10,
       },
       sourcesQueried: [
-        'GDELT Project (Global Hard News)',
-        'UN OCHA ReliefWeb Humanitarian Reports',
-        'Reuters International Wires',
-        'Associated Press (AP News)',
-        'Al Jazeera Defense Desk',
-        'BBC News International',
-        'Institute for the Study of War (ISW)',
+        'GDELT Project 2.0 (Global Hard News)',
+        'UN OCHA ReliefWeb (Humanitarian Reports)',
+        'BBC World News RSS (fallback)',
+        'Al Jazeera World RSS (fallback)',
+        'The New York Times — World RSS (fallback)',
+        'Sky News — World RSS (fallback)',
       ],
-      promptSnippet: `Real-time hard news query: ("fire exchange" OR "armed clash" OR "artillery" OR "airstrike" OR "drone strike" OR "frontline") across international news wires between ${startStr} and ${endStr}.`,
-      fullPrompt: `Automated geopolitical conflict news ingestion querying GDELT 2.0 and UN ReliefWeb API for genuine armed conflict news dispatches within the rolling 10-day operational window.`,
+      promptSnippet: `Real-time conflict query: ("fire exchange" OR "armed clash" OR "artillery" OR "airstrike" OR "drone strike") — GDELT Doc-API v2 + ReliefWeb REST API between ${startStr} and ${endStr}.`,
+      fullPrompt: `Automated geopolitical conflict news ingestion querying GDELT 2.0 and UN OCHA ReliefWeb for armed conflict news within the rolling 10-day operational window. RSS wire feeds activate as fallback.`,
     },
     response: {
       status: 200,
@@ -203,9 +202,9 @@ export class CacheService {
   }
 
   /**
-   * Checks if the cached data was synced within the 4-5 hour freshness TTL (4.5 hours = 16,200,000 ms).
+   * Checks if the cached data was synced within the 1-minute freshness TTL (60,000 ms).
    */
-  static isCacheFresh(maxAgeMs = 4.5 * 60 * 60 * 1000): boolean {
+  static isCacheFresh(maxAgeMs = 60 * 1000): boolean {
     if (!globalCache.lastSyncAt || globalCache.events.length === 0) return false;
     const syncTime = new Date(globalCache.lastSyncAt).getTime();
     if (isNaN(syncTime)) return false;

@@ -50,25 +50,16 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
           {/* Primary Source Attribution */}
           <div className="bg-panel-subtle p-3 border border-border space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-accent-cyan font-bold text-sm">CONFLICT INTELLIGENCE ENGINE</span>
-              <span className="text-[10px] bg-emerald-950/60 text-accent-green border border-emerald-700/60 px-2 py-0.5 font-bold">
-                GEMINI + GOOGLE SEARCH GROUNDED
+              <span className="text-accent-cyan font-bold text-sm">CONFLICT INTELLIGENCE PIPELINE</span>
+              <span className="text-[10px] bg-sky-950/60 text-sky-400 border border-sky-700/60 px-2 py-0.5 font-bold">
+                LIVE · NO API KEY REQUIRED
               </span>
             </div>
             <p className="text-text-secondary leading-relaxed">
-              <strong className="text-text-primary">Gemini 1.5/2.0 API with Google Search Grounding</strong> operates as the automated real-time conflict discovery and geocoding engine. It actively searches verified international news publications (Reuters, AP News, BBC, Al Jazeera, etc.) for armed conflict, military operations, and political violence, automatically geocoding coordinates and casualty reports.
+              Conflict data is discovered and ingested automatically via two open, key-free pipelines:{' '}
+              <strong className="text-text-primary">GDELT 2.0</strong> (global media knowledge graph) and{' '}
+              <strong className="text-text-primary">UN OCHA ReliefWeb</strong> (humanitarian reports). No Gemini or AI model is involved in event discovery — events are fetched directly from these public APIs.
             </p>
-            <div className="pt-1">
-              <a
-                href="https://aistudio.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent-cyan hover:underline flex items-center gap-1.5 text-[11px]"
-              >
-                <span>GOOGLE AI STUDIO DEVELOPER PORTAL (aistudio.google.com)</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
           </div>
 
           {/* GDELT 2.0 */}
@@ -111,14 +102,105 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
             </a>
           </div>
 
-          {/* Live Wire Feeds */}
+          {/* 10 Connected News & Conflict Intelligence Providers */}
+          <div className="bg-panel-subtle p-3 border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-accent-cyan font-bold text-sm">CONNECTED NEWS &amp; CONFLICT PIPELINES</span>
+              <span className="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-700/60 px-2 py-0.5 font-bold">
+                12 ACTIVE PROVIDERS
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">1. FreeNewsApi</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">freenewsapi.io</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Real-time global news API querying conflict and military keywords.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">2. Currents News API</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">currentsapi.services</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Live news dispatches with keyword search across international outlets.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">3. NewsAPI.org</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">newsapi.org</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Over 150,000 news sources and blogs worldwide queried in real time.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">4. GNews API</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">gnews.io</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Global news search API indexing articles from 60,000+ publishers.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">5. NewsData.io</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">newsdata.io</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Breaking news API covering 150+ countries and multiple languages.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">6. World News API</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">worldnewsapi.com</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Geocoded news aggregator providing global sentiment and event data.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">7. NewsAPI.ai</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">eventregistry.org</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Event Registry AI intelligence engine tracking global events.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">8. Mediastack</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">mediastack.com</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">REST news API delivering real-time worldwide news coverage.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">9. The Guardian</span>
+                  <span className="text-[9px] text-accent-cyan border border-accent-cyan/40 px-1">theguardian.com</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">The Guardian Open Platform API for verified investigative reporting.</p>
+              </div>
+
+              <div className="border border-border/70 p-2 bg-black/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text-primary">10. Hacker News API</span>
+                  <span className="text-[9px] text-emerald-400 border border-emerald-500/40 px-1">100% FREE / NO KEY</span>
+                </div>
+                <p className="text-text-secondary text-[10px]">Algolia HN API tracking defense tech, cyber warfare, and geopolitical posts.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Wire Feed Fallbacks */}
           <div className="bg-panel-subtle p-3 border border-border space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-accent-cyan font-bold text-sm">Live Wire Feeds</span>
-              <span className="text-[10px] bg-sky-950/60 text-sky-400 border border-sky-700/60 px-2 py-0.5 font-bold">LIVE NEWS</span>
+              <span className="text-accent-cyan font-bold text-sm">RSS Wire Fallbacks</span>
+              <span className="text-[10px] bg-amber-950/60 text-amber-400 border border-amber-700/60 px-2 py-0.5 font-bold">FALLBACK ONLY</span>
             </div>
             <p className="text-text-secondary text-[11px] leading-relaxed">
-              International accredited news wire RSS feeds queried in real time for conflict and geopolitical reporting. Feeds currently active:
+              If the ReliefWeb API is unavailable, the pipeline falls back to these RSS feeds for conflict reporting:
             </p>
             <ul className="space-y-1 text-text-secondary text-[10px]">
               <li className="flex items-center gap-1.5"><span className="text-accent-cyan">•</span><span>BBC World News</span></li>

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { ConflictEvent } from '@/types/conflict';
 import { formatTerminalUtc } from '@/lib/data/date-utils';
-import { X, ExternalLink, ShieldCheck, AlertCircle, MapPin } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, AlertCircle, MapPin, Layers } from 'lucide-react';
 
 interface EventModalProps {
   event: ConflictEvent | null;
@@ -144,9 +144,55 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
             </div>
           </div>
 
+          {/* Corroborating Dispatches & Merged Posts */}
+          {event.mergedEvents && event.mergedEvents.length > 1 && (
+            <div className="bg-panel-subtle p-3 border border-border space-y-2">
+              <div className="flex items-center justify-between text-[10px] text-text-muted">
+                <div className="flex items-center gap-1.5 text-accent-cyan font-bold">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>// CORROBORATING SOURCES & MERGED POSTS ({event.mergedEvents.length} DISPATCHES)</span>
+                </div>
+                <span className="text-accent-green font-bold">DEDUPLICATED & MERGED</span>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 divide-y divide-border/40">
+                {event.mergedEvents.map((mergedEv, idx) => (
+                  <div key={mergedEv.id || idx} className="pt-2 first:pt-0 space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-800/80 text-accent-cyan font-bold rounded-[2px]">
+                        {mergedEv.source || 'Wire Source'}
+                      </span>
+                      <span className="text-text-muted">
+                        {mergedEv.publishedAt
+                          ? new Date(mergedEv.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : mergedEv.eventDate}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-text-primary font-medium leading-snug">
+                      {mergedEv.notes ? mergedEv.notes.split('.')[0] : mergedEv.eventType}
+                    </div>
+                    {mergedEv.sourceUrl && (
+                      <div className="pt-0.5">
+                        <a
+                          href={mergedEv.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10.5px] text-accent-cyan hover:underline font-bold"
+                        >
+                          <span>READ FULL POST / DISPATCH &rarr;</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Structured Source Notes */}
           <div className="bg-panel-subtle p-3 border border-border space-y-1.5">
-            <div className="text-[10px] text-text-muted">// RAW SOURCE INCIDENT LOG</div>
+            <div className="text-[10px] text-text-muted">// PRIMARY SOURCE INCIDENT LOG</div>
             <div className="text-[11px] text-text-primary leading-relaxed bg-black/40 p-2.5 border border-border/60">
               {event.notes ? event.notes : 'No raw descriptive notes attached to this record.'}
             </div>
@@ -156,7 +202,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
           <div className="bg-panel-subtle p-3 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
             <div>
               <span className="text-text-muted">SOURCE ATTRIBUTION:</span>{' '}
-              <span className="text-text-primary font-bold">{event.source || 'GEMINI GROUNDED INTEL'}</span>
+              <span className="text-text-primary font-bold">{event.source || 'Wire Service'}</span>
             </div>
             {event.sourceUrl && (
               <a

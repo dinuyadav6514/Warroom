@@ -428,11 +428,20 @@ function renderCat(target: string, context: CommandContext) {
   if (t === 'telemetry' || t === '/dev/telemetry') {
     return (
       <div className="space-y-1 text-[10px] text-slate-300 font-mono">
-        <div className="text-accent-cyan font-bold">// REAL-TIME DATA PIPELINE TELEMETRY</div>
-        <div>STREAM 1 : GDELT 2.0 Global Media Knowledge Graph (HTTP Port 80, Rate-Limited 6.5s)</div>
-        <div>STREAM 2 : UN OCHA ReliefWeb Humanitarian Dispatches (Public REST API)</div>
-        <div>STREAM 3 : Accredited Hard-News Defense Wires (ISW, UKMTO, Reuters, Al Jazeera)</div>
-        <div>INGESTION : 100% Key-Free, Automated Deduplication Mutex Active</div>
+        <div className="text-accent-cyan font-bold">// REAL-TIME MULTI-SOURCE INTELLIGENCE TELEMETRY</div>
+        <div>PIPELINE 01 : GDELT 2.0 Global Media Knowledge Graph (HTTP Port 80)</div>
+        <div>PIPELINE 02 : UN OCHA ReliefWeb Humanitarian Dispatches (Public REST API)</div>
+        <div>PIPELINE 03 : FreeNewsApi Global News API (freenewsapi.io)</div>
+        <div>PIPELINE 04 : Currents News API (currentsapi.services)</div>
+        <div>PIPELINE 05 : NewsAPI.org Multi-Outlet Aggregator (newsapi.org)</div>
+        <div>PIPELINE 06 : GNews Global Article Search (gnews.io)</div>
+        <div>PIPELINE 07 : NewsData.io Worldwide Dispatches (newsdata.io)</div>
+        <div>PIPELINE 08 : World News API Geocoded News (worldnewsapi.com)</div>
+        <div>PIPELINE 09 : NewsAPI.ai Event Registry Engine (eventregistry.org)</div>
+        <div>PIPELINE 10 : Mediastack Real-Time News REST API (mediastack.com)</div>
+        <div>PIPELINE 11 : The Guardian Open Platform API (theguardian.com)</div>
+        <div>PIPELINE 12 : Hacker News Public API (100% Free / No Key)</div>
+        <div>INGESTION   : Parallel Multi-Provider Ingestion Active</div>
       </div>
     );
   }
@@ -522,11 +531,11 @@ function renderStatus(context: CommandContext) {
       <div className="pl-3 space-y-0.5">
         <div>Loaded: <strong className="text-emerald-400">loaded</strong> (/etc/systemd/system/news-pipeline.service; enabled)</div>
         <div>Active: <strong className="text-emerald-400">active (running)</strong> since bootstrap; 100% key-free</div>
-        <div>Providers: <span className="text-accent-cyan">GDELT 2.0 Project + UN OCHA ReliefWeb + Defense Wires</span></div>
+        <div>Providers: <span className="text-accent-cyan">GDELT 2.0 + ReliefWeb + 10 Global News Pipelines (12 Active)</span></div>
         <div>Theaters Monitored: <strong className="text-text-primary">{count} Active Zones</strong></div>
         <div>Kinetic Events Ingested: <strong className="text-text-primary">{eventsCount} Verified Dispatches</strong></div>
         <div>Rate Limiting: <strong className="text-emerald-400">6,500ms mutex window enforced</strong></div>
-        <div>AI Analyst Status: <strong className="text-amber-300">Online (Gemini Grounded / Deterministic Fallback)</strong></div>
+        <div>AI Analyst Status: <strong className="text-amber-300">Online (Gemini Optional / Deterministic Fallback)</strong></div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { ConflictEvent } from '@/types/conflict';
@@ -130,12 +130,25 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
                 ? 'bg-severity-moderate/20 text-severity-moderate border-severity-moderate/50'
                 : 'bg-severity-low/20 text-severity-low border-severity-low/50';
 
+            const headline = ev.notes ? ev.notes.split('.')[0] : ev.eventType;
+            const category = ev.primaryCategory || ev.eventType;
+            const categoryBadge =
+              category === 'Warfare & Combat'
+                ? 'bg-red-950/40 text-severity-critical border-red-800/40'
+                : category === 'Defense & Strategy'
+                ? 'bg-amber-950/40 text-amber-400 border-amber-800/40'
+                : category === 'Geopolitics & Policy'
+                ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
+                : category === 'Economy & Global'
+                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
+                : 'bg-panel-subtle text-text-muted border-border';
+
             return (
               <button
                 key={ev.id}
                 onClick={() => onSelectEvent(ev)}
-                className={`w-full pt-2 text-left transition-colors cursor-pointer group ${
-                  isSelected ? 'bg-panel-hover' : 'hover:bg-panel-subtle'
+                className={`w-full pt-2 pb-1.5 px-1.5 text-left transition-colors cursor-pointer group rounded-[2px] ${
+                  isSelected ? 'bg-panel-hover border-l-2 border-accent-cyan' : 'hover:bg-panel-subtle'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -144,18 +157,28 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
                     <span className={`text-[9px] px-1.5 py-0.2 border font-bold ${sevColor}`}>
                       {ev.severity}
                     </span>
+                    <span className={`text-[8.5px] px-1 py-0.2 border font-semibold ${categoryBadge}`}>
+                      {category.split(' ')[0]}
+                    </span>
                   </div>
                   <span className="text-[10px] text-text-muted group-hover:text-accent-cyan">
                     {ev.country}
                   </span>
                 </div>
 
-                <div className="text-[11px] font-medium text-text-primary truncate">
-                  {ev.eventType}
+                <div className="text-[11px] font-medium text-text-primary line-clamp-2 leading-snug">
+                  {headline}
                 </div>
 
-                <div className="text-[10px] text-text-secondary truncate mt-0.5 flex items-center justify-between">
-                  <span>Location: {ev.location}</span>
+                <div className="text-[10px] text-text-secondary truncate mt-1 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span>{ev.location}</span>
+                    {ev.mergedCount && ev.mergedCount > 1 && (
+                      <span className="text-[9px] font-bold px-1 py-0.2 bg-cyan-950/80 border border-cyan-800 text-accent-cyan rounded-[2px]">
+                        +{ev.mergedCount - 1} SOURCES
+                      </span>
+                    )}
+                  </div>
                   {ev.fatalities !== undefined && ev.fatalities > 0 && (
                     <span className="text-severity-critical font-bold">+{ev.fatalities} KIA</span>
                   )}

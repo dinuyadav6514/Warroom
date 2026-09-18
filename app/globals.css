@@ -145,3 +145,150 @@ body {
   vertical-align: middle;
   animation: cursor-blink 1s infinite;
 }
+
+/* Tactical Radiating Dot Radar Marker */
+.warroom-radiating-marker {
+  pointer-events: none !important;
+  z-index: 25;
+}
+
+.warroom-radiate-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: currentColor;
+  animation: warroom-radar-radiate 2.1s cubic-bezier(0.15, 0.8, 0.35, 1) infinite;
+  pointer-events: none;
+}
+
+.warroom-reticle {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px dashed currentColor;
+  opacity: 0.55;
+  animation: warroom-reticle-spin 10s linear infinite;
+  pointer-events: none;
+}
+
+.warroom-radiate-core {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: currentColor;
+  position: relative;
+  z-index: 2;
+  animation: warroom-core-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes warroom-radar-radiate {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.95;
+    border-width: 2.5px;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes warroom-core-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  50% {
+    transform: scale(1.4);
+    filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 24px currentColor);
+  }
+}
+
+@keyframes warroom-reticle-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* White Crosshair (Middle One Only) */
+.warroom-map-crosshair {
+  cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair;
+}
+
+.warroom-map-crosshair:active {
+  cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='g'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='2'%20flood-color='%23ffffff'%20flood-opacity='0.95'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23g)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='10'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='22'%20y2='16'/%3E%3Cline%20x1='16'%20y1='10'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='22'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%2300f0ff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair;
+}
+
+/* Map canvas hides default OS cursor so custom animated reticle renders cleanly */
+.warroom-map-crosshair .maplibregl-canvas,
+.warroom-map-crosshair .maplibregl-canvas-container {
+  cursor: none !important;
+}
+
+/* Reticle Click Snap Animation Keyframe */
+@keyframes warroom-bleedmark-click {
+  0% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(0.68);
+    filter: drop-shadow(0 0 8px #ffffff);
+  }
+  60% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 4px #ffffff);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.warroom-anim-click-bleed {
+  animation: warroom-bleedmark-click 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Expanding Square Bleedmark Click Shockwave Wave */
+@keyframes warroom-bleedmark-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.95;
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+    border-color: #ffffff;
+    box-shadow: 0 0 2px transparent;
+  }
+}
+
+.warroom-bleedmark-shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  margin-left: -16px;
+  margin-top: -16px;
+  border: 1.5px solid #ffffff;
+  pointer-events: none;
+  border-radius: 2px;
+  animation: warroom-bleedmark-ring 0.35s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+  transform-origin: center;
+}
+
+

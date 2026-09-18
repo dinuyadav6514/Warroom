@@ -18,85 +18,11 @@ import { DateRangeQuery, ConflictDataProvider } from '@/types/provider';
 import { calculateSeverity } from '../scoring/severity';
 import { isWithinWindow, isHistoricalOrStaleConflict } from '../data/date-utils';
 
-// --- Country centroid coordinates ---
-const COUNTRY_COORDS: Record<string, [number, number]> = {
-  ukraine: [48.3794, 31.1656],
-  russia: [61.524, 105.3188],
-  israel: [31.0461, 34.8516],
-  palestine: [31.9522, 35.2332],
-  gaza: [31.3547, 34.3088],
-  'west bank': [31.9, 35.2],
-  lebanon: [33.8547, 35.8623],
-  syria: [34.8021, 38.9968],
-  yemen: [15.5527, 48.5164],
-  iraq: [33.2232, 43.6793],
-  iran: [32.4279, 53.688],
-  sudan: [12.8628, 30.2176],
-  'south sudan': [6.877, 31.307],
-  ethiopia: [9.145, 40.4897],
-  somalia: [5.1521, 46.1996],
-  nigeria: [9.082, 8.6753],
-  mali: [17.5707, -3.9962],
-  'burkina faso': [12.3641, -1.5197],
-  niger: [17.607, 8.0817],
-  chad: [15.4542, 18.7322],
-  'democratic republic of congo': [-4.0383, 21.7587],
-  'dr congo': [-4.0383, 21.7587],
-  drc: [-4.0383, 21.7587],
-  congo: [-4.0383, 21.7587],
-  mozambique: [-18.6657, 35.5296],
-  cameroon: [3.848, 11.5021],
-  libya: [26.3351, 17.2283],
-  kenya: [-0.0236, 37.9062],
-  myanmar: [21.9162, 95.956],
-  pakistan: [30.3753, 69.3451],
-  afghanistan: [33.9391, 67.71],
-  india: [20.5937, 78.9629],
-  philippines: [12.8797, 121.774],
-  colombia: [4.5709, -74.2973],
-  mexico: [23.6345, -102.5528],
-  haiti: [18.9712, -72.2852],
-  venezuela: [6.4238, -66.5897],
-  ecuador: [-1.8312, -78.1834],
-  taiwan: [23.6978, 120.9605],
-  china: [35.8617, 104.1954],
-  'north korea': [40.3399, 127.5101],
-  georgia: [42.3154, 43.3569],
-  armenia: [40.0691, 45.0382],
-  azerbaijan: [40.1431, 47.5769],
-  turkey: [38.9637, 35.2433],
-  'saudi arabia': [23.8859, 45.0792],
-  bangladesh: [23.685, 90.3563],
-  indonesia: [-0.7893, 113.9213],
-  thailand: [15.87, 100.9925],
-  'central african republic': [6.6111, 20.9394],
-  burundi: [-3.3731, 29.9189],
-  rwanda: [-1.9403, 29.8739],
-  kosovo: [42.6026, 20.903],
-  serbia: [44.0165, 21.0059],
-  belarus: [53.7098, 27.9534],
-  moldova: [47.4116, 28.3699],
-  kazakhstan: [48.0196, 66.9237],
-  tajikistan: [38.861, 71.2761],
-  kyrgyzstan: [41.2044, 74.7661],
-  brazil: [-14.235, -51.9253],
-  honduras: [15.1999, -86.2419],
-};
+import { extractLocationAndCoords, simpleHash } from './provider-utils';
+import { COUNTRY_TO_REGION } from '../aggregation/clustering';
 
-function extractCountryFromText(text: string): { country: string; lat: number; lon: number } | null {
-  const lower = text.toLowerCase();
-  const sortedKeys = Object.keys(COUNTRY_COORDS).sort((a, b) => b.length - a.length);
-  for (const key of sortedKeys) {
-    if (lower.includes(key)) {
-      const [lat, lon] = COUNTRY_COORDS[key];
-      const country = key
-        .split(' ')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-      return { country, lat, lon };
-    }
-  }
-  return null;
+function extractCountryFromText(text: string): { country: string; location: string; lat: number; lon: number } | null {
+  return extractLocationAndCoords(text);
 }
 
 function parseGdeltDate(seendate: string): string {
@@ -199,7 +125,7 @@ interface GdeltResponse {
 // Module-level rate limiting & caching variables
 let lastGdeltCallTime = 0;
 const MIN_GDELT_INTERVAL_MS = 6500; // GDELT strictly enforces >= 5 seconds
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15-minute cache
+const CACHE_TTL_MS = 60 * 1000; // 1-minute cache
 let cachedEvents: ConflictEvent[] = [];
 let cacheTimestamp = 0;
 
@@ -381,15 +307,27 @@ export class GDELTProvider implements ConflictDataProvider {
         timestamp: isoDate,
       });
 
+      const seed = `${article.url || article.title || i}`;
+      const hashStr = simpleHash(seed);
+      let seedInt = 0;
+      for (let s = 0; s < seed.length; s++) {
+        seedInt = (seedInt << 5) - seedInt + seed.charCodeAt(s);
+        seedInt |= 0;
+      }
+      const absSeed = Math.abs(seedInt);
+      const jitterLat = ((absSeed % 1000) / 1000 - 0.5) * 0.4;
+      const jitterLon = (((absSeed >> 3) % 1000) / 1000 - 0.5) * 0.4;
+
       const event: ConflictEvent = {
-        id: `GDELT-${i.toString().padStart(3, '0')}-${Date.now()}`,
+        id: `GDELT-${hashStr}`,
         eventDate,
         publishedAt: isoDate,
         timestamp: isoDate,
         country: loc.country,
-        location: loc.country,
-        latitude: loc.lat + (Math.random() - 0.5) * 0.4,
-        longitude: loc.lon + (Math.random() - 0.5) * 0.4,
+        location: loc.location || loc.country,
+        region: COUNTRY_TO_REGION[loc.country] || 'Other',
+        latitude: loc.lat + jitterLat,
+        longitude: loc.lon + jitterLon,
         eventType,
         subEventType,
         fatalities,

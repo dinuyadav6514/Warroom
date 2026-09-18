@@ -1,4 +1,5 @@
 import { ConflictEvent } from '@/types/conflict';
+import { classifyEvent } from '@/lib/classification/event-classifier';
 
 /**
  * Deduplicates conflict events by their unique ID or composite key.
@@ -9,6 +10,17 @@ export function deduplicateEvents(events: ConflictEvent[]): ConflictEvent[] {
 
   for (const event of events) {
     if (!event) continue;
+
+    // Ensure event has primaryCategory and categoryConfidence
+    if (!event.primaryCategory) {
+      const text = `${event.location} ${event.subEventType || ''} ${event.eventType || ''} ${event.notes || ''} ${event.actor1 || ''} ${event.actor2 || ''}`;
+      const cl = classifyEvent(text);
+      event.primaryCategory = cl.category;
+      event.categoryConfidence = cl.confidence;
+      if (cl.category === 'Warfare & Combat') {
+        event.isConflict = true;
+      }
+    }
 
     // Use provider event ID, or construct deterministic hash key
     const idKey = event.id && event.id.trim() !== ''

@@ -1,17 +1,35 @@
-'use client';
-
 import React from 'react';
 import { GlobalOverviewStats } from '@/types/conflict';
-import { Flame, Globe, AlertTriangle, Skull, TrendingUp } from 'lucide-react';
+import { Flame, Globe, AlertTriangle, Skull, TrendingUp, X, BarChart3 } from 'lucide-react';
 
 interface GlobalStatsStripProps {
   stats: GlobalOverviewStats | null;
   windowDays: number;
+  onClose?: () => void;
 }
 
-export const GlobalStatsStrip: React.FC<GlobalStatsStripProps> = ({ stats, windowDays }) => {
+export const GlobalStatsStrip: React.FC<GlobalStatsStripProps> = ({ stats, windowDays, onClose }) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-2.5 bg-panel border-b border-border font-mono select-none">
+    <div className="bg-[#0b1016] border-b border-border/90 font-mono select-none shadow-md">
+      <div className="flex items-center justify-between px-3 py-1 bg-panel-subtle/90 border-b border-border/60 text-[10.5px]">
+        <div className="flex items-center gap-2 text-text-secondary">
+          <BarChart3 className="w-3.5 h-3.5 text-accent-cyan" />
+          <span className="text-accent-cyan font-bold tracking-wide">// GLOBAL STRATEGIC OVERVIEW METRICS</span>
+          <span className="text-[10px] text-text-muted hidden sm:inline">[{windowDays}-DAY OPERATIONAL WINDOW]</span>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded hover:bg-panel border border-transparent hover:border-border transition-colors cursor-pointer"
+            title="Hide Global Stats Panel"
+          >
+            <span>HIDE</span>
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-2 md:p-2.5">
       {/* Active Conflict Areas */}
       <div className="flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
         <div className="p-1.5 bg-red-950/40 border border-red-800/40 text-severity-critical">
@@ -80,5 +98,6 @@ export const GlobalStatsStrip: React.FC<GlobalStatsStripProps> = ({ stats, windo
         </div>
       </div>
     </div>
+  </div>
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ConflictEvent,
   Conflict,
@@ -27,6 +27,8 @@ import { ActorsView } from '@/components/views/ActorsView';
 import { TimelineView } from '@/components/views/TimelineView';
 import { isWithinWindow, isHistoricalOrStaleConflict } from '@/lib/data/date-utils';
 import { calculateGlobalOverviewStats } from '@/lib/aggregation/stats';
+import { mergeSimilarStories } from '@/lib/aggregation/story-merging';
+import { IntelFilterBar } from '@/components/filters/IntelFilterBar';
 import { ShieldAlert, Terminal, Menu, X, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function WarRoomDashboard() {
@@ -46,6 +48,9 @@ export default function WarRoomDashboard() {
     region: '',
     country: '',
     searchQuery: '',
+    intelMode: 'ALL',
+    storyMerging: true,
+    sources: [],
   });
 
   // 10-Day Pre-loaded Dataset Store (Request 10 days first as instructed)
@@ -67,8 +72,9 @@ export default function WarRoomDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
 
-  // Load 10-Day Dataset Function (Only called on initial mount, on explicit force refresh, or 4-hour background timer)
+  // Load 10-Day Dataset Function (Only called on initial mount, on explicit force refresh, or 1-minute background timer)
   const load10DayData = useCallback(async (showRefreshingBanner = false) => {
     if (showRefreshingBanner) {
       setIsRefreshing(true);
@@ -123,12 +129,12 @@ export default function WarRoomDashboard() {
     load10DayData(true);
   }, []);
 
-  // 4-Hour Auto-Refresh Timer (maintains fresh 10-day dataset in background)
+  // 1-Minute Auto-Refresh Timer (maintains fresh 10-day dataset in background)
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       load10DayData(false);
-    }, 4 * 60 * 60 * 1000);
+    }, 60 * 1000);
     return () => clearInterval(interval);
   }, [autoRefresh, load10DayData]);
 
@@ -161,13 +167,80 @@ export default function WarRoomDashboard() {
     }
   }, [load10DayData]);
 
-  // Filter events by date window (3D, 7D, 10D) and facets locally - WITHOUT requesting another prompt!
+  // Compute all available unique sources across the 10-day dataset
+  const availableSources = useMemo(() => {
+    const set = new Set<string>();
+    for (const ev of allEvents10D) {
+      if (ev.source) set.add(ev.source);
+      if (ev.mergedSources) {
+        ev.mergedSources.forEach((s) => set.add(s));
+      }
+    }
+    return Array.from(set).sort();
+  }, [allEvents10D]);
+
+  // Smart Story Merging & Deduplication Engine (memoized across 10-day dataset)
+  const mergedResult = useMemo(() => {
+    if (!allEvents10D || allEvents10D.length === 0) {
+      return { mergedEvents: [], totalOriginal: 0, totalUnique: 0, totalMerged: 0 };
+    }
+    if (filters.storyMerging === false) {
+      return {
+        mergedEvents: allEvents10D,
+        totalOriginal: allEvents10D.length,
+        totalUnique: allEvents10D.length,
+        totalMerged: 0,
+      };
+    }
+    return mergeSimilarStories(allEvents10D);
+  }, [allEvents10D, filters.storyMerging]);
+
+  // Category counts calculated dynamically for the Intel mode pills
+  const categoryCounts = useMemo(() => {
+    const inWindow = mergedResult.mergedEvents.filter(
+      (e) => isWithinWindow(e.eventDate, filters.days) && !isHistoricalOrStaleConflict(e)
+    );
+    return {
+      ALL: inWindow.length,
+      WAR_COMBAT: inWindow.filter((e) => e.primaryCategory === 'Warfare & Combat' || e.isConflict).length,
+      DEFENSE_STRATEGY: inWindow.filter((e) => e.primaryCategory === 'Defense & Strategy').length,
+      GEOPOLITICS: inWindow.filter((e) => e.primaryCategory === 'Geopolitics & Policy').length,
+      ECONOMY: inWindow.filter((e) => e.primaryCategory === 'Economy & Global').length,
+    };
+  }, [mergedResult.mergedEvents, filters.days]);
+
+  // Filter events by date window (3D, 7D, 10D), Intel mode, sources, and facets locally
   const events = useMemo(() => {
-    if (!allEvents10D || allEvents10D.length === 0) return [];
-    return allEvents10D.filter((e) => {
+    const base = mergedResult.mergedEvents;
+    if (!base || base.length === 0) return [];
+
+    return base.filter((e) => {
       // Filter according to date window (3D, 7D, 10D)
       if (!isWithinWindow(e.eventDate, filters.days)) return false;
       if (isHistoricalOrStaleConflict(e)) return false;
+
+      // Intel Mode filter
+      if (filters.intelMode && filters.intelMode !== 'ALL') {
+        if (filters.intelMode === 'WAR_COMBAT') {
+          if (e.primaryCategory !== 'Warfare & Combat' && !e.isConflict) return false;
+        } else if (filters.intelMode === 'DEFENSE_STRATEGY') {
+          if (e.primaryCategory !== 'Defense & Strategy') return false;
+        } else if (filters.intelMode === 'GEOPOLITICS') {
+          if (e.primaryCategory !== 'Geopolitics & Policy') return false;
+        } else if (filters.intelMode === 'ECONOMY') {
+          if (e.primaryCategory !== 'Economy & Global') return false;
+        }
+      }
+
+      // Pipeline / Sources filter
+      if (filters.sources && filters.sources.length > 0) {
+        const hasMatchingSource = filters.sources.some((s) => {
+          if (e.source && (e.source.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(e.source.toLowerCase()))) return true;
+          if (e.mergedSources && e.mergedSources.some((ms) => ms.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(ms.toLowerCase()))) return true;
+          return false;
+        });
+        if (!hasMatchingSource) return false;
+      }
 
       // Facet filters
       if (filters.region && filters.region !== 'ALL' && e.region?.toLowerCase() !== filters.region.toLowerCase()) return false;
@@ -182,12 +255,13 @@ export default function WarRoomDashboard() {
           (e.actor1 && e.actor1.toLowerCase().includes(q)) ||
           (e.actor2 && e.actor2.toLowerCase().includes(q)) ||
           (e.notes && e.notes.toLowerCase().includes(q)) ||
+          (e.primaryCategory && e.primaryCategory.toLowerCase().includes(q)) ||
           e.id.toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;
     });
-  }, [allEvents10D, filters]);
+  }, [mergedResult.mergedEvents, filters]);
 
   // Filter conflicts by date window and facets locally - WITHOUT requesting another prompt!
   const conflicts = useMemo(() => {
@@ -293,12 +367,22 @@ export default function WarRoomDashboard() {
     }
   };
 
-  const handleSelectConflict = (c: Conflict | null) => {
+  const handleSelectEvent = useCallback((ev: ConflictEvent | null) => {
+    setSelectedEvent(ev);
+    if (!ev) {
+      setSelectedConflict(null);
+    }
+  }, []);
+
+  const handleSelectConflict = useCallback((c: Conflict | null) => {
     setSelectedConflict(c);
     if (c && typeof window !== 'undefined' && window.innerWidth < 1024) {
       setMobilePanelOpen(true);
     }
-  };
+    if (!c) {
+      setSelectedEvent(null);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-text-primary overflow-hidden font-mono">
@@ -316,6 +400,8 @@ export default function WarRoomDashboard() {
         onToggleMobilePanel={() => setMobilePanelOpen(!mobilePanelOpen)}
         onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
         conflictsCount={conflicts.length}
+        showStatsPanel={showStatsPanel}
+        onToggleStatsPanel={() => setShowStatsPanel((prev) => !prev)}
       />
 
       {/* Live Refresh In-Flight Indicator */}
@@ -353,12 +439,82 @@ export default function WarRoomDashboard() {
           onOpenSources={() => setIsSourcesModalOpen(true)}
           isOpenMobile={mobileNavOpen}
           onCloseMobile={() => setMobileNavOpen(false)}
+          availableSources={availableSources}
+          isRefreshing={isRefreshing}
+          lastSyncAt={freshness?.lastSyncAt}
+          eventsCount={events.length}
+          events={allEvents10D}
+          apiExchange={apiExchange}
+          selectedEvent={selectedEvent}
+          selectedConflict={selectedConflict}
+          onClearSelection={() => {
+            setSelectedEvent(null);
+            setSelectedConflict(null);
+          }}
+          onSelectEvent={handleSelectEvent}
+          onOpenEventModal={(e) => {
+            setSelectedEvent(e);
+            setIsEventModalOpen(true);
+          }}
         />
 
         {/* Primary Operational Center Workspace */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#070a0d] relative overflow-hidden">
-          {/* Headline KPI Metric Strip */}
-          <GlobalStatsStrip stats={globalStats} windowDays={filters.days} />
+          {/* Collapsible Headline KPI Metric Strip */}
+          {showStatsPanel && (
+            <GlobalStatsStrip
+              stats={globalStats}
+              windowDays={filters.days}
+              onClose={() => setShowStatsPanel(false)}
+            />
+          )}
+
+          {/* Intel Category & Pipeline Filter Bar */}
+          <IntelFilterBar
+            intelMode={filters.intelMode || 'ALL'}
+            onSelectIntelMode={(mode) => handleUpdateFilters({ intelMode: mode })}
+            storyMerging={filters.storyMerging !== false}
+            onToggleStoryMerging={() =>
+              handleUpdateFilters({ storyMerging: filters.storyMerging === false ? true : false })
+            }
+            selectedSources={filters.sources || []}
+            onToggleSource={(source) => {
+              const current =
+                filters.sources && filters.sources.length > 0
+                  ? filters.sources
+                  : [...availableSources];
+              const next = current.includes(source)
+                ? current.filter((s) => s !== source)
+                : [...current, source];
+              handleUpdateFilters({
+                sources: next.length === availableSources.length ? [] : next,
+              });
+            }}
+            onSelectAllSources={() => {
+              const isAll =
+                !filters.sources ||
+                filters.sources.length === 0 ||
+                filters.sources.length === availableSources.length;
+              if (isAll) {
+                handleUpdateFilters({ sources: ['__NONE__'] });
+              } else {
+                handleUpdateFilters({ sources: [] });
+              }
+            }}
+            selectedRegion={filters.region || 'ALL'}
+            onSelectRegion={(region) => handleUpdateFilters({ region: region === 'ALL' ? '' : region })}
+            selectedSeverity={filters.severity || 'ALL'}
+            onSelectSeverity={(severity) => handleUpdateFilters({ severity })}
+            selectedEventType={filters.eventType || 'ALL'}
+            onSelectEventType={(eventType) => handleUpdateFilters({ eventType: eventType === 'ALL' ? '' : eventType })}
+            categoryCounts={categoryCounts}
+            storyMergeStats={{
+              original: mergedResult.totalOriginal,
+              unique: mergedResult.totalUnique,
+              merged: mergedResult.totalMerged,
+            }}
+            availableSources={availableSources}
+          />
 
           {/* Center Dynamic Workspace Views */}
           <div className="flex-1 relative overflow-hidden">
@@ -372,9 +528,7 @@ export default function WarRoomDashboard() {
                     selectedConflict={selectedConflict}
                     selectedEvent={selectedEvent}
                     onSelectConflict={handleSelectConflict}
-                    onSelectEvent={(e) => {
-                      setSelectedEvent(e);
-                    }}
+                    onSelectEvent={handleSelectEvent}
                     onOpenEventModal={(e) => {
                       setSelectedEvent(e);
                       setIsEventModalOpen(true);

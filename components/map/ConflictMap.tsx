@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ConflictEvent, Conflict, MapMode, Severity } from '@/types/conflict';
 import { MapLegend } from './MapLegend';
+import { TacticalBleedmarkCursor } from './TacticalBleedmarkCursor';
 import { formatShortDate } from '@/lib/data/date-utils';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, RotateCcw, RefreshCw } from 'lucide-react';
 
@@ -11,14 +12,17 @@ interface ConflictMapProps {
   conflicts: Conflict[];
   selectedConflict: Conflict | null;
   selectedEvent: ConflictEvent | null;
-  onSelectConflict: (conflict: Conflict) => void;
-  onSelectEvent: (event: ConflictEvent) => void;
+  onSelectConflict: (conflict: Conflict | null) => void;
+  onSelectEvent: (event: ConflictEvent | null) => void;
   onOpenEventModal?: (event: ConflictEvent) => void;
   mapMode: MapMode;
   onChangeMapMode: (mode: MapMode) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
+
+const TACTICAL_CURSOR_SVG = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair`;
+const TACTICAL_LOCK_SVG = TACTICAL_CURSOR_SVG;
 
 export const ConflictMap: React.FC<ConflictMapProps> = ({
   events,
@@ -34,8 +38,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   isRefreshing = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [isDotHovered, setIsDotHovered] = useState(false);
   const mapInstanceRef = useRef<any>(null);
-  const hoverPopupRef = useRef<any>(null);
   const clickPopupRef = useRef<any>(null);
 
   // References to always access the freshest state in closures
@@ -45,6 +49,12 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   const conflictsRef = useRef(conflicts);
   conflictsRef.current = conflicts;
 
+  const selectedEventRef = useRef(selectedEvent);
+  selectedEventRef.current = selectedEvent;
+
+  const selectedConflictRef = useRef(selectedConflict);
+  selectedConflictRef.current = selectedConflict;
+
   const onSelectEventRef = useRef(onSelectEvent);
   onSelectEventRef.current = onSelectEvent;
 
@@ -53,6 +63,58 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
   const onSelectConflictRef = useRef(onSelectConflict);
   onSelectConflictRef.current = onSelectConflict;
+
+  const radiatingMarkerRef = useRef<any>(null);
+  const maplibreModuleRef = useRef<any>(null);
+
+  const setRadiatingBeacon = useCallback((lng: number, lat: number, color = '#00f0ff') => {
+    if (!mapInstanceRef.current || !maplibreModuleRef.current) return;
+    const map = mapInstanceRef.current;
+    const maplibre = maplibreModuleRef.current;
+
+    if (!radiatingMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'warroom-radiating-marker';
+      el.style.cssText = `
+        width: 56px;
+        height: 56px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        color: ${color};
+      `;
+
+      el.innerHTML = `
+        <div class="warroom-radiate-ring" style="animation-delay: 0s;"></div>
+        <div class="warroom-radiate-ring" style="animation-delay: 0.7s;"></div>
+        <div class="warroom-radiate-ring" style="animation-delay: 1.4s;"></div>
+        <div class="warroom-reticle"></div>
+        <div class="warroom-radiate-core"></div>
+      `;
+
+      radiatingMarkerRef.current = new maplibre.Marker({
+        element: el,
+        anchor: 'center',
+      })
+        .setLngLat([lng, lat])
+        .addTo(map);
+    } else {
+      radiatingMarkerRef.current.setLngLat([lng, lat]);
+      const el = radiatingMarkerRef.current.getElement();
+      if (el) {
+        el.style.color = color;
+      }
+    }
+  }, []);
+
+  const removeRadiatingBeacon = useCallback(() => {
+    if (radiatingMarkerRef.current) {
+      radiatingMarkerRef.current.remove();
+      radiatingMarkerRef.current = null;
+    }
+  }, []);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -100,12 +162,14 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         clickPopupRef.current?.remove();
-        hoverPopupRef.current?.remove();
+        removeRadiatingBeacon();
+        if (onSelectEventRef.current) onSelectEventRef.current(null);
+        if (onSelectConflictRef.current) onSelectConflictRef.current(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [removeRadiatingBeacon]);
 
   // Initialize MapLibre
   useEffect(() => {
@@ -116,6 +180,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
     const initMap = async () => {
       try {
         const maplibre = await import('maplibre-gl');
+        maplibreModuleRef.current = maplibre;
 
         if (!isMounted || !mapContainerRef.current) return;
 
@@ -129,13 +194,6 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           attributionControl: false,
         });
 
-        hoverPopupRef.current = new maplibre.Popup({
-          closeButton: false,
-          closeOnClick: false,
-          offset: 12,
-          className: 'warroom-hover-tooltip',
-        });
-
         clickPopupRef.current = new maplibre.Popup({
           closeButton: true,
           closeOnClick: true,
@@ -144,10 +202,20 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           maxWidth: '350px',
         });
 
+        clickPopupRef.current.on('close', () => {
+          if (onSelectEventRef.current) onSelectEventRef.current(null);
+          if (onSelectConflictRef.current) onSelectConflictRef.current(null);
+        });
+
         map.on('load', () => {
           if (!isMounted) return;
           mapInstanceRef.current = map;
           setMapLoaded(true);
+          try {
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+          } catch (e) {
+            // Ignore if canvas not yet attached
+          }
 
           // Add GeoJSON sources — NO clustering so every dot is always individually visible
           map.addSource('warroom-conflict-events', {
@@ -192,7 +260,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             layout: { visibility: 'none' },
           });
 
-          // 2. General News Dots — small dark blue circles, always individual, never clustered
+          // 2. General News Dots — compact, individual, decollided
           map.addLayer({
             id: 'news-dots',
             type: 'circle',
@@ -201,17 +269,18 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'circle-color': '#1e3a5f',
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
-                1, 3,
-                5, 4.5,
-                10, 6,
+                1, 2.0,
+                4, 2.75,
+                7, 4.0,
+                11, 5.5,
               ],
-              'circle-stroke-width': 1,
+              'circle-stroke-width': 0.75,
               'circle-stroke-color': '#2563eb',
               'circle-opacity': 0.85,
             },
           });
 
-          // 3. Conflict Dots — colour-coded by severity, larger than news dots
+          // 3. Conflict Dots — colour-coded by severity, sleek compact radius
           map.addLayer({
             id: 'conflict-dots',
             type: 'circle',
@@ -228,15 +297,16 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               ],
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
-                1, 5,
-                5, 7,
-                10, 11,
+                1, 2.75,
+                4, 3.8,
+                7, 5.5,
+                11, 8.0,
               ],
               'circle-stroke-width': [
                 'case',
                 ['boolean', ['get', 'isRecent24h'], false],
-                2.5,
-                1,
+                1.5,
+                0.75,
               ],
               'circle-stroke-color': [
                 'case',
@@ -336,127 +406,100 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           });
 
           // Function to open popup for an event dot (works for both conflict and news dots)
+          let lastDotClickTime = 0;
+          let lastDotClickId = '';
+
           const openEventPopup = (feature: any, coords: any) => {
             if (!feature) return;
-            hoverPopupRef.current?.remove();
 
             const props = feature.properties;
-            const foundEvent = eventsRef.current.find((ev) => ev.id === props.id);
+            const now = Date.now();
 
-            // Notify parent components of selection
-            if (foundEvent) {
-              onSelectEventRef.current(foundEvent);
-              const relatedConflict = conflictsRef.current.find(
-                (c) => c.country?.toLowerCase() === foundEvent.country?.toLowerCase()
-              );
-              if (relatedConflict) onSelectConflictRef.current(relatedConflict);
+            // Ignore duplicate layer click from the same user click (e.g. dots + hit-target layer firing together)
+            if (now - lastDotClickTime < 250 && lastDotClickId === String(props.id)) {
+              return;
+            }
+            lastDotClickTime = now;
+            lastDotClickId = String(props.id);
+
+            // Toggle behavior: clicking the SAME dot again closes news and returns to terminal
+            if (selectedEventRef.current && String(selectedEventRef.current.id) === String(props.id)) {
+              clickPopupRef.current?.remove();
+              removeRadiatingBeacon();
+              selectedEventRef.current = null;
+              selectedConflictRef.current = null;
+              if (onSelectEventRef.current) onSelectEventRef.current(null);
+              if (onSelectConflictRef.current) onSelectConflictRef.current(null);
+              return;
             }
 
+            let foundEvent = eventsRef.current.find((ev) => String(ev.id) === String(props.id));
+            if (!foundEvent) {
+              // Fallback: reconstruct valid ConflictEvent so selection & news display never fails
+              foundEvent = {
+                id: String(props.id),
+                eventDate: props.date || new Date().toISOString().split('T')[0],
+                country: props.country || 'Global',
+                location: props.location || 'Unknown',
+                latitude: coords ? coords[1] : undefined,
+                longitude: coords ? coords[0] : undefined,
+                eventType: props.eventType || 'News Dispatch',
+                severity: (props.severity as Severity) || 'LOW',
+                verificationStatus: 'REPORTED',
+                isConflict: props.isConflict === true || props.isConflict === 'true',
+                source: props.source || 'VERIFIED DISPATCH',
+                sourceUrl: props.sourceUrl || '',
+                notes: props.notes || '',
+                mergedCount: props.mergedCount || 1,
+              };
+            }
+
+            selectedEventRef.current = foundEvent;
+
+            // Guaranteed immediate zoom & center on the clicked dot every single time
+            if (coords && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+              map.flyTo({
+                center: [coords[0], coords[1]],
+                zoom: Math.max(map.getZoom() < 7 ? 7 : map.getZoom(), 7),
+                duration: 800,
+              });
+            } else if (foundEvent && typeof foundEvent.longitude === 'number' && typeof foundEvent.latitude === 'number') {
+              map.flyTo({
+                center: [foundEvent.longitude, foundEvent.latitude],
+                zoom: Math.max(map.getZoom() < 7 ? 7 : map.getZoom(), 7),
+                duration: 800,
+              });
+            }
+
+            // Immediately activate radiating tactical beacon on the opened dot
             const isNewsItem = props.isConflict === false || props.isConflict === 'false';
-            const accentColor = isNewsItem ? '#2563eb' : (
+            const accentColor = isNewsItem ? '#38bdf8' : (
               props.severity === 'CRITICAL' ? '#ef4444' :
               props.severity === 'HIGH' ? '#f97316' :
               props.severity === 'MODERATE' ? '#eab308' : '#00f0ff'
             );
+            const beaconLng = (coords && typeof coords[0] === 'number') ? coords[0] : foundEvent?.longitude;
+            const beaconLat = (coords && typeof coords[1] === 'number') ? coords[1] : foundEvent?.latitude;
+            if (typeof beaconLng === 'number' && typeof beaconLat === 'number') {
+              setRadiatingBeacon(beaconLng, beaconLat, accentColor);
+            }
 
-            const fatalitiesColor = props.fatalities > 0 ? '#ef4444' : '#8b949e';
-            const notesText = foundEvent?.notes || props.notes || '';
-            const sourceText = foundEvent?.source || props.source || 'VERIFIED DISPATCH';
-            const sourceUrl = foundEvent?.sourceUrl || props.sourceUrl || '';
+            // Notify parent components of selection
+            if (onSelectEventRef.current) {
+              onSelectEventRef.current(foundEvent);
+            }
+            const relatedConflict = conflictsRef.current.find(
+              (c) => c.country?.toLowerCase() === foundEvent?.country?.toLowerCase()
+            );
+            if (onSelectConflictRef.current) {
+              onSelectConflictRef.current(relatedConflict || null);
+            }
 
-            const headerLabel = isNewsItem ? '// NEWS DISPATCH ::' : '// INCIDENT ::';
-            const typeLabel = isNewsItem ? 'CATEGORY' : 'TYPE';
-
-            const popupHtml = `
-              <div style="font-family: monospace; font-size: 11px; line-height: 1.45; color: #e6edf3; min-width: 260px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid ${accentColor}55; padding-bottom: 5px; margin-bottom: 6px; padding-right: 22px;">
-                  <span style="color: ${accentColor}; font-weight: bold; letter-spacing: 0.05em;">${headerLabel} ${props.id}</span>
-                  <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid ${accentColor}; color: ${accentColor};">
-                    ${isNewsItem ? 'NEWS' : props.severity}
-                  </span>
-                </div>
-                <div style="display: grid; gap: 3px; margin-bottom: 6px; font-size: 11px;">
-                  <div><span style="color: #8b949e;">${typeLabel} ::</span> <strong style="color: #ffffff;">${props.eventType}</strong></div>
-                  <div><span style="color: #8b949e;">LOC  ::</span> <span style="color: #ffffff;">${props.location}, ${props.country}</span></div>
-                  <div><span style="color: #8b949e;">DATE ::</span> <span style="color: #ffffff;">${props.date}</span></div>
-                  ${!isNewsItem ? `<div><span style="color: #8b949e;">CASUALTIES ::</span> <strong style="color: ${fatalitiesColor};">${props.fatalities > 0 ? props.fatalities + ' reported' : 'None reported'}</strong></div>` : ''}
-                </div>
-                ${
-                  notesText
-                    ? `<div style="padding: 6px 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; margin-bottom: 8px; font-size: 10.5px; color: #cbd5e1; max-height: 75px; overflow-y: auto; line-height: 1.35;">
-                        ${notesText}
-                      </div>`
-                    : ''
-                }
-                <div style="font-size: 9px; color: #8b949e; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">SOURCE: <span style="color: #cbd5e1;">${sourceText}</span></span>
-                  ${
-                    sourceUrl
-                      ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="color: ${accentColor}; text-decoration: underline; flex-shrink: 0; font-weight: bold;">
-                          POST &nearr;
-                        </a>`
-                      : ''
-                  }
-                </div>
-                <div style="display: flex; gap: 6px; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                  <button id="warroom-btn-modal-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; font-weight: bold; background: ${accentColor}22; border: 1px solid ${accentColor}; color: ${accentColor}; cursor: pointer; border-radius: 2px;">
-                    INSPECT FULL INTEL &rarr;
-                  </button>
-                  <button id="warroom-btn-close-${props.id}" style="padding: 3px 8px; font-size: 10px; font-family: monospace; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #cbd5e1; cursor: pointer; border-radius: 2px;">
-                    CLOSE
-                  </button>
-                </div>
-              </div>
-            `;
-
-            clickPopupRef.current
-              .setLngLat(coords)
-              .setHTML(popupHtml)
-              .addTo(map);
-
-            setTimeout(() => {
-              const modalBtn = document.getElementById(`warroom-btn-modal-${props.id}`);
-              if (modalBtn) {
-                modalBtn.onclick = (btnE) => {
-                  btnE.stopPropagation();
-                  clickPopupRef.current?.remove();
-                  if (foundEvent && onOpenEventModalRef.current) {
-                    onOpenEventModalRef.current(foundEvent);
-                  }
-                };
-              }
-
-              const closeBtn = document.getElementById(`warroom-btn-close-${props.id}`);
-              if (closeBtn) {
-                closeBtn.onclick = (btnE) => {
-                  btnE.stopPropagation();
-                  clickPopupRef.current?.remove();
-                };
-              }
-            }, 25);
+            // Ensure any prior map popup is closed so no popup appears on the map canvas itself
+            clickPopupRef.current?.remove();
           };
 
-          // Hover tooltip helper
-          const showHoverTooltip = (e: any, accentColor: string, isNews: boolean) => {
-            if (!e.features || !e.features[0]) return;
-            map.getCanvas().style.cursor = 'pointer';
-            if (clickPopupRef.current?.isOpen()) return;
-
-            const props = e.features[0].properties;
-            const coords = e.features[0].geometry.coordinates.slice();
-
-            const hoverHtml = `
-              <div style="font-family: monospace; font-size: 10px; line-height: 1.35; color: #e6edf3;">
-                <div style="color: ${accentColor}; font-weight: bold; margin-bottom: 2px;">${props.location}, ${props.country}</div>
-                <div style="color: #8b949e;">${props.eventType}${!isNews && props.fatalities > 0 ? ` &bull; <span style="color: #ef4444; font-weight: bold;">${props.fatalities} fatalities</span>` : ''}</div>
-                <div style="color: #00ff66; font-size: 9px; margin-top: 3px;">CLICK TO INSPECT RECORD</div>
-              </div>
-            `;
-
-            hoverPopupRef.current.setLngLat(coords).setHTML(hoverHtml).addTo(map);
-          };
-
-          // Conflict dot interactions
+          // Conflict dot interactions — ONLY responds to clicks
           map.on('click', 'conflict-dots', (e: any) => {
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
@@ -465,12 +508,28 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
-          map.on('mousemove', 'conflict-dots', (e: any) => showHoverTooltip(e, '#ef4444', false));
-          map.on('mouseleave', 'conflict-dots', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
-          map.on('mouseenter', 'conflict-dots-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
-          map.on('mouseleave', 'conflict-dots-hit', () => { map.getCanvas().style.cursor = ''; });
+          map.on('mouseenter', 'conflict-dots-hit', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+          map.on('mouseleave', 'conflict-dots-hit', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
+          map.on('mouseenter', 'conflict-dots', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+          map.on('mouseleave', 'conflict-dots', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
 
-          // News dot interactions
+          // News dot interactions — ONLY responds to clicks
           map.on('click', 'news-dots', (e: any) => {
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
@@ -479,22 +538,52 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             if (!e.features || !e.features[0]) return;
             openEventPopup(e.features[0], e.features[0].geometry.coordinates.slice());
           });
-          map.on('mousemove', 'news-dots', (e: any) => showHoverTooltip(e, '#2563eb', true));
-          map.on('mouseleave', 'news-dots', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
-          map.on('mouseenter', 'news-dots-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
-          map.on('mouseleave', 'news-dots-hit', () => { map.getCanvas().style.cursor = ''; });
+          map.on('mouseenter', 'news-dots-hit', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+          map.on('mouseleave', 'news-dots-hit', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
+          map.on('mouseenter', 'news-dots', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+          map.on('mouseleave', 'news-dots', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
 
           // Interaction: Conflict Centroid Click
           map.on('click', 'conflict-centroids', (e: any) => {
             if (!e.features || !e.features[0]) return;
-            hoverPopupRef.current?.remove();
 
             const props = e.features[0].properties;
+
+            // Toggle behavior: clicking the SAME theater centroid again closes it and returns to terminal
+            if (selectedConflictRef.current && String(selectedConflictRef.current.id) === String(props.id)) {
+              clickPopupRef.current?.remove();
+              selectedConflictRef.current = null;
+              selectedEventRef.current = null;
+              if (onSelectConflictRef.current) onSelectConflictRef.current(null);
+              if (onSelectEventRef.current) onSelectEventRef.current(null);
+              return;
+            }
+
             const coords = e.features[0].geometry.coordinates.slice();
-            const found = conflictsRef.current.find((c) => c.id === props.id);
+            const found = conflictsRef.current.find((c) => String(c.id) === String(props.id));
 
             if (found) {
+              removeRadiatingBeacon();
+              selectedConflictRef.current = found;
+              selectedEventRef.current = null;
               onSelectConflictRef.current(found);
+              if (onSelectEventRef.current) onSelectEventRef.current(null);
               if (found.latitude && found.longitude) {
                 map.flyTo({ center: [found.longitude, found.latitude], zoom: 5.5, duration: 800 });
               }
@@ -542,9 +631,53 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
                 closeBtn.onclick = (btnE) => {
                   btnE.stopPropagation();
                   clickPopupRef.current?.remove();
+                  selectedConflictRef.current = null;
+                  selectedEventRef.current = null;
+                  if (onSelectEventRef.current) onSelectEventRef.current(null);
+                  if (onSelectConflictRef.current) onSelectConflictRef.current(null);
                 };
               }
             }, 25);
+          });
+
+          map.on('mouseenter', 'conflict-centroids', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+          map.on('mouseleave', 'conflict-centroids', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
+
+          // Global canvas click: clicking empty space on the map deselects active dot and returns to terminal
+          map.on('click', (e: any) => {
+            const interactiveLayers = [
+              'conflict-dots',
+              'conflict-dots-hit',
+              'news-dots',
+              'news-dots-hit',
+              'conflict-centroids',
+            ].filter((layerId) => map.getLayer(layerId));
+
+            const bbox: [any, any] = [
+              [e.point.x - 3, e.point.y - 3],
+              [e.point.x + 3, e.point.y + 3],
+            ];
+
+            const features = map.queryRenderedFeatures(bbox, {
+              layers: interactiveLayers,
+            });
+
+            if (!features || features.length === 0) {
+              selectedEventRef.current = null;
+              selectedConflictRef.current = null;
+              removeRadiatingBeacon();
+              if (onSelectEventRef.current) onSelectEventRef.current(null);
+              if (onSelectConflictRef.current) onSelectConflictRef.current(null);
+              clickPopupRef.current?.remove();
+            }
           });
         });
       } catch (err) {
@@ -556,6 +689,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
     return () => {
       isMounted = false;
+      removeRadiatingBeacon();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -591,6 +725,8 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           id: e.id,
           location: e.location,
           country: e.country,
+          latitude: e.latitude,
+          longitude: e.longitude,
           eventType: e.eventType,
           date: formatShortDate(e.eventDate),
           fatalities: e.fatalities || 0,
@@ -601,13 +737,62 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           source: e.source,
           sourceUrl: e.sourceUrl,
           notes: e.notes,
+          mergedCount: e.mergedCount || 1,
+          primaryCategory: e.primaryCategory || e.eventType,
         },
       };
     };
 
-    const validEvents = displayEvents.filter((e) => typeof e.longitude === 'number' && typeof e.latitude === 'number');
-    const conflictEvents = validEvents.filter((e) => e.isConflict !== false);
-    const newsEvents = validEvents.filter((e) => e.isConflict === false);
+/**
+ * Spatial Anti-Collision & Dispersal Engine:
+ * Guarantees that NO TWO DOTS are placed exactly on top of each other.
+ * If two or more events have overlapping coordinates, they are smoothly
+ * dispersed along a golden-angle spiral around the centroid so every single
+ * dot is individually visible and clickable.
+ */
+function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.16): ConflictEvent[] {
+  const placed: Array<{ lat: number; lon: number }> = [];
+
+  return events.map((e) => {
+    let lat = e.latitude!;
+    let lon = e.longitude!;
+
+    const isColliding = (testLat: number, testLon: number) => {
+      return placed.some((p) => {
+        const dLat = p.lat - testLat;
+        const dLon = (p.lon - testLon) * Math.cos((testLat * Math.PI) / 180);
+        return Math.hypot(dLat, dLon) < minDistanceDeg;
+      });
+    };
+
+    let attempts = 0;
+    let angle = 0;
+
+    while (isColliding(lat, lon) && attempts < 50) {
+      attempts++;
+      angle += 2.39996; // Golden angle (approx 137.5 deg)
+      const radius = minDistanceDeg * (1 + 0.18 * Math.sqrt(attempts));
+      lat = e.latitude! + radius * Math.cos(angle);
+      const cosLat = Math.max(0.2, Math.cos((e.latitude! * Math.PI) / 180));
+      lon = e.longitude! + (radius * Math.sin(angle)) / cosLat;
+    }
+
+    placed.push({ lat, lon });
+    return {
+      ...e,
+      latitude: lat,
+      longitude: lon,
+    };
+  });
+}
+
+    const validEvents = displayEvents.filter(
+      (e) => typeof e.longitude === 'number' && !isNaN(e.longitude) && typeof e.latitude === 'number' && !isNaN(e.latitude)
+    );
+    const decollidedEvents = decollideEventCoordinates(validEvents, 0.16);
+
+    const conflictEvents = decollidedEvents.filter((e) => e.isConflict !== false);
+    const newsEvents = decollidedEvents.filter((e) => e.isConflict === false);
 
     const conflictFeatures = conflictEvents.map(toFeature);
     const newsFeatures = newsEvents.map(toFeature);
@@ -697,30 +882,45 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
     }
   }, [mapMode, mapLoaded]);
 
-  const prevConflictRef = useRef<Conflict | null>(null);
+  const prevSelectionRef = useRef<{ event: ConflictEvent | null; conflict: Conflict | null }>({
+    event: null,
+    conflict: null,
+  });
 
-  // Fly to selected conflict or event, or ease to world view when deselected
+  // Fly to selected conflict or event, set radiating beacon, or ease to world view when deselected
   useEffect(() => {
     if (!mapLoaded || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
     if (selectedEvent && typeof selectedEvent.longitude === 'number' && typeof selectedEvent.latitude === 'number') {
+      const isNewsItem = selectedEvent.isConflict === false;
+      const accentColor = isNewsItem ? '#38bdf8' : (
+        selectedEvent.severity === 'CRITICAL' ? '#ef4444' :
+        selectedEvent.severity === 'HIGH' ? '#f97316' :
+        selectedEvent.severity === 'MODERATE' ? '#eab308' : '#00f0ff'
+      );
+      setRadiatingBeacon(selectedEvent.longitude, selectedEvent.latitude, accentColor);
+
       map.flyTo({
         center: [selectedEvent.longitude, selectedEvent.latitude],
-        zoom: 7,
+        zoom: Math.max(map.getZoom() < 7 ? 7 : map.getZoom(), 7),
         duration: 800,
       });
     } else if (selectedConflict && typeof selectedConflict.longitude === 'number' && typeof selectedConflict.latitude === 'number') {
+      removeRadiatingBeacon();
       map.flyTo({
         center: [selectedConflict.longitude, selectedConflict.latitude],
         zoom: 5.5,
         duration: 800,
       });
-    } else if (!selectedConflict && !selectedEvent && prevConflictRef.current) {
-      map.easeTo({ center: [25, 20], zoom: 2.2, duration: 800 });
+    } else if (!selectedConflict && !selectedEvent) {
+      removeRadiatingBeacon();
+      if (prevSelectionRef.current.event || prevSelectionRef.current.conflict) {
+        map.easeTo({ center: [25, 20], zoom: 2.2, duration: 800 });
+      }
     }
-    prevConflictRef.current = selectedConflict;
-  }, [selectedConflict, selectedEvent, mapLoaded]);
+    prevSelectionRef.current = { event: selectedEvent, conflict: selectedConflict };
+  }, [selectedConflict, selectedEvent, mapLoaded, setRadiatingBeacon, removeRadiatingBeacon]);
 
   const handleResetView = () => {
     if (mapInstanceRef.current) {
@@ -731,7 +931,16 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   return (
     <div className={`relative w-full h-full bg-[#07090b] select-none ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Map Container Element */}
-      <div ref={mapContainerRef} className="w-full h-full" />
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full warroom-map-crosshair"
+      />
+
+      {/* White Crosshair with Square Bleedmark Style Click-Animated Borders */}
+      <TacticalBleedmarkCursor
+        containerRef={mapContainerRef}
+        isDotHovered={isDotHovered}
+      />
 
       {/* Map Overlays & Coordinates Header */}
       <div className="absolute top-2 left-2 z-20 bg-panel/90 border border-border px-2 py-1 text-[10px] font-mono flex items-center gap-2 backdrop-blur-sm">

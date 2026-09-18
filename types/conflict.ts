@@ -4,6 +4,20 @@ export type VerificationStatus = 'VERIFIED' | 'REPORTED' | 'UNCONFIRMED';
 
 export type ConflictStatus = 'ACTIVE' | 'ESCALATING' | 'DEESCALATING' | 'CEASEFIRE' | 'UNKNOWN';
 
+export type IntelCategory =
+  | 'Warfare & Combat'
+  | 'Defense & Strategy'
+  | 'Geopolitics & Policy'
+  | 'Economy & Global'
+  | 'News/General';
+
+export type IntelMode =
+  | 'ALL'
+  | 'WAR_COMBAT'
+  | 'DEFENSE_STRATEGY'
+  | 'GEOPOLITICS'
+  | 'ECONOMY';
+
 export interface ConflictEvent {
   id: string;
   eventDate: string; // ISO Date YYYY-MM-DD
@@ -34,6 +48,15 @@ export interface ConflictEvent {
   notes?: string;
 
   timestamp?: string; // Formatted UTC or ISO
+  
+  /** High-level intelligence category determined via probabilistic multi-word scoring */
+  primaryCategory?: IntelCategory;
+  categoryConfidence?: number;
+
+  /** Corroborating / merged news dispatches covering the same event */
+  mergedEvents?: ConflictEvent[];
+  mergedCount?: number;
+  mergedSources?: string[];
 }
 
 export interface Conflict {
@@ -91,6 +114,9 @@ export interface FilterState {
   region: string;
   country?: string;
   searchQuery?: string;
+  intelMode?: IntelMode;
+  storyMerging?: boolean;
+  sources?: string[];
 }
 
 export interface ApiExchange {
