@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getActiveProvider } from '@/lib/providers';
 import { CacheService } from '@/lib/data/cache';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const { isConfigured } = getActiveProvider();
   const cached = CacheService.getCache();

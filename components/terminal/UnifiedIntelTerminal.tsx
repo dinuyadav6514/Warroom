@@ -6,7 +6,6 @@ import {
   Terminal,
   RefreshCw,
   Sparkles,
-  Play,
   Copy,
   Check,
   ChevronDown,
@@ -14,13 +13,11 @@ import {
   Maximize2,
   Minimize2,
   Trash2,
-  HelpCircle,
-  Radio,
-  FileText,
   Send,
-  AlertTriangle,
 } from 'lucide-react';
-import { executeLinuxCommand, isAiQuery, CommandContext } from './terminal-commands';
+import { isAiQuery } from './terminal-commands';
+import { isCountryFilterCommand, parseCountryInput, matchCountryOrContinent } from '@/lib/data/country-coords';
+import { isRelationCommand, RelationshipNetwork } from '@/lib/data/country-relationships';
 
 export interface UnifiedIntelTerminalProps {
   exchange?: ApiExchange | null;
@@ -34,6 +31,8 @@ export interface UnifiedIntelTerminalProps {
   onSelectConflict?: (conflict: Conflict | null) => void;
   onSelectView?: (view: any) => void;
   onUpdateFilters?: (updates: any) => void;
+  onSelectCountries?: (countries: string[]) => void;
+  onShowRelationNetwork?: (countryName: string) => RelationshipNetwork | null;
   windowDays?: number;
 }
 
@@ -47,16 +46,6 @@ interface LogEntry {
   isLoading?: boolean;
 }
 
-const FAST_PILLS = [
-  'help',
-  'top',
-  'sitrep',
-  'ls /theaters',
-  'What is the current situation?',
-  'status',
-  'grep drone',
-];
-
 export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
   exchange,
   isRefreshing = false,
@@ -69,9 +58,10 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
   onSelectConflict,
   onSelectView,
   onUpdateFilters,
+  onSelectCountries,
+  onShowRelationNetwork,
   windowDays = 10,
 }) => {
-  const [terminalMode, setTerminalMode] = useState<'SHELL' | 'TELEMETRY'>('SHELL');
   const [input, setInput] = useState<string>('');
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -91,10 +81,10 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
       output: (
         <div className="space-y-1 text-slate-300">
           <div className="text-accent-cyan font-bold">
-            WARROOM LINUX INTELLIGENCE TERMINAL v1.2 [ONLINE]
+            WARROOM INTELLIGENCE TERMINAL v1.2 [ONLINE]
           </div>
           <div className="text-text-secondary text-[10px]">
-            &bull; Type <span className="text-accent-cyan font-bold">&quot;help&quot;</span> for Linux-style commands (<span className="text-text-primary">ls, top, cat, grep, status, sitrep</span>).
+            &bull; Theater Filter: <span className="text-accent-cyan font-bold">Type country or continent</span> (e.g. &ldquo;Asia&rdquo;, &ldquo;Europe&rdquo;, &ldquo;India &amp; Pakistan&rdquo;) to filter &amp; zoom map.
           </div>
           <div className="text-text-secondary text-[10px]">
             &bull; Type any tactical question ending with <span className="text-amber-300 font-bold">&apos;?&apos;</span> to query the AI Defense Analyst.
@@ -104,25 +94,27 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
     },
   ]);
 
-  // Command context
-  const commandContext: CommandContext = {
-    allConflicts,
-    allEvents,
-    activeConflict,
-    onSelectConflict,
-    onSelectView,
-    onUpdateFilters,
-    onRefresh,
-  };
+  // Global hotkey: Ctrl+K to focus & expand this terminal
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        setIsMinimized(false);
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, []);
 
   // Auto-scroll on logs change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [logs, terminalMode]);
+  }, [logs]);
 
-  // Execute terminal input or clicked pill
+  // Execute terminal input
   const handleExecute = async (rawCommand: string) => {
     const trimmed = rawCommand.trim();
     if (!trimmed) return;
@@ -133,7 +125,218 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
     const logId = `entry-${Date.now()}`;
     const timestamp = new Date().toTimeString().slice(0, 8);
 
-    // 1. Check if AI query
+    // ── Terminal Shortcut Commands ────────────────────────────────────────────
+    const lower = trimmed.toLowerCase();
+
+    // clc — clear logs and collapse terminal
+    if (lower === 'clc') {
+      setLogs([]);
+      setIsMinimized(true);
+      return;
+    }
+
+    // m — switch to Map view
+    if (lower === 'm') {
+      if (onSelectView) onSelectView('WORLD');
+      setLogs((prev) => [...prev, {
+        id: logId, timestamp, command: trimmed,
+        output: <span className="text-accent-cyan">[VIEW] Switching to MAP view...</span>,
+      }]);
+      return;
+    }
+
+    // t — switch to Timeline view
+    if (lower === 't') {
+      if (onSelectView) onSelectView('TIMELINE');
+      setLogs((prev) => [...prev, {
+        id: logId, timestamp, command: trimmed,
+        output: <span className="text-accent-cyan">[VIEW] Switching to TIMELINE view...</span>,
+      }]);
+      return;
+    }
+
+    // 1 / 2 / 3 — change rolling data window
+    if (trimmed === '1') {
+      if (onUpdateFilters) onUpdateFilters({ days: 3 });
+      setLogs((prev) => [...prev, {
+        id: logId, timestamp, command: trimmed,
+        output: <span className="text-amber-300">[FILTER] Data window → 3 DAYS</span>,
+      }]);
+      return;
+    }
+    if (trimmed === '2') {
+      if (onUpdateFilters) onUpdateFilters({ days: 7 });
+      setLogs((prev) => [...prev, {
+        id: logId, timestamp, command: trimmed,
+        output: <span className="text-amber-300">[FILTER] Data window → 7 DAYS</span>,
+      }]);
+      return;
+    }
+    if (trimmed === '3') {
+      if (onUpdateFilters) onUpdateFilters({ days: 10 });
+      setLogs((prev) => [...prev, {
+        id: logId, timestamp, command: trimmed,
+        output: <span className="text-amber-300">[FILTER] Data window → 10 DAYS</span>,
+      }]);
+      return;
+    }
+
+    // ── Tactical Country Relation Map Command (e.g. "Israel map", "Russia rel") ──
+    const relCheck = isRelationCommand(trimmed);
+    if (relCheck.isRelation && relCheck.countryName) {
+      if (onShowRelationNetwork) {
+        const net = onShowRelationNetwork(relCheck.countryName);
+        if (net) {
+          const outgoing = net.relations.filter((r) => r.direction === 'OUTGOING');
+          const incoming = net.relations.filter((r) => r.direction === 'INCOMING');
+
+          setLogs((prev) => [
+            ...prev,
+            {
+              id: logId,
+              timestamp,
+              command: trimmed,
+              output: (
+                <div className="space-y-1 text-[10.5px] font-mono py-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan inline-block animate-pulse" />
+                    <span className="text-accent-cyan font-bold">[TACTICAL VECTORS ACTIVE]</span>
+                    <span className="text-white font-bold uppercase tracking-wide">{net.focalCountry}</span>
+                    <span className="text-text-muted text-[10px]">
+                      &bull; {net.connectedCountries.length} Theaters &bull; {net.totalEvents} Incidents
+                    </span>
+                  </div>
+
+                  <div className="pl-3 text-[10px] text-slate-300 flex flex-wrap gap-x-4 gap-y-0.5">
+                    <div>
+                      <span className="text-accent-cyan font-bold">OUTGOING ({outgoing.length}): </span>
+                      {outgoing.length === 0 ? (
+                        <span className="text-text-muted">None</span>
+                      ) : (
+                        outgoing.map((r) => `${r.toCountry} [${r.eventCount}]`).join(', ')
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-red-400 font-bold">INCOMING ({incoming.length}): </span>
+                      {incoming.length === 0 ? (
+                        <span className="text-text-muted">None</span>
+                      ) : (
+                        incoming.map((r) => `${r.fromCountry} [${r.eventCount}]`).join(', ')
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+          ]);
+          return;
+        } else {
+          setLogs((prev) => [
+            ...prev,
+            {
+              id: logId,
+              timestamp,
+              command: trimmed,
+              isError: true,
+              output: (
+                <div className="text-red-400 text-[11px]">
+                  [RELATION ERROR] Could not locate coordinates or relationship data for &quot;{relCheck.countryName}&quot;.
+                </div>
+              ),
+            },
+          ]);
+          return;
+        }
+      }
+    }
+
+    // ── Country / Multi-Country Filter Command ──────────────────────────────
+    const knownCountries = [
+      ...new Set([
+        ...allConflicts.map((c) => c.country || ''),
+        ...allEvents.map((e) => e.country || ''),
+      ]),
+    ].filter(Boolean);
+
+    if (isCountryFilterCommand(trimmed, knownCountries)) {
+      if (
+        [
+          'all',
+          'world',
+          'reset',
+          'global',
+          'clear country',
+          'clear countries',
+          'reset country',
+          'reset countries',
+          'reset filter',
+          'clear filter',
+        ].includes(lower)
+      ) {
+        if (onSelectCountries) {
+          onSelectCountries([]);
+        } else if (onUpdateFilters) {
+          onUpdateFilters({ countries: [], country: '' });
+          if (onSelectView) onSelectView('WORLD');
+        }
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: logId,
+            timestamp,
+            command: trimmed,
+            output: (
+              <div className="text-accent-cyan flex items-center gap-1.5 text-[11px]">
+                <span className="font-bold">●</span>
+                <span>[FILTER RESET] Cleared all country filters. Reset to global theater on map.</span>
+              </div>
+            ),
+          },
+        ]);
+        return;
+      }
+
+      const countries = parseCountryInput(trimmed);
+      if (countries.length > 0) {
+        if (onSelectCountries) {
+          onSelectCountries(countries);
+        } else if (onUpdateFilters) {
+          onUpdateFilters({ countries, country: countries.length === 1 ? countries[0] : '' });
+          if (onSelectView) onSelectView('WORLD');
+        }
+
+        const countEvents = allEvents.filter((e) => matchCountryOrContinent(e, countries)).length;
+
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: logId,
+            timestamp,
+            command: trimmed,
+            output: (
+              <div className="space-y-1 text-[11px]">
+                <div className="text-accent-green font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-accent-green inline-block animate-pulse" />
+                  <span>[THEATER LOCK]</span>
+                  <span className="text-text-primary uppercase tracking-wide">
+                    {countries.join(' & ')}
+                  </span>
+                </div>
+                <div className="text-text-secondary text-[10px]">
+                  Map focused &amp; zoomed. Markers filtered to {countries.join(', ')} ({countEvents} incidents).
+                </div>
+                <div className="text-text-muted text-[9px]">
+                  Type <span className="text-accent-cyan font-bold">&quot;all&quot;</span> to reset global view.
+                </div>
+              </div>
+            ),
+          },
+        ]);
+        return;
+      }
+    }
+
+    // Route to AI analyst
     if (isAiQuery(trimmed)) {
       setLogs((prev) => [
         ...prev,
@@ -239,113 +442,22 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
       return;
     }
 
-    // 2. Execute Linux-style command
-    const res = executeLinuxCommand(trimmed, commandContext);
-
-    if (res.isClear) {
-      setLogs([]);
-      return;
-    }
-
-    if (res.isSitRep) {
-      setLogs((prev) => [
-        ...prev,
-        {
-          id: logId,
-          timestamp,
-          command: trimmed,
-          isLoading: true,
-          output: (
-            <div className="flex items-center gap-2 text-red-400 animate-pulse text-[11px]">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>&gt;&gt;&gt; COMPILING EXECUTIVE DEFENSE SITUATION REPORT (SITREP)...</span>
-            </div>
-          ),
-        },
-      ]);
-
-      try {
-        const r = await fetch('/api/ai/analyst', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Gemini-Key': localStorage.getItem('warroom_gemini_key') || '',
-          },
-          body: JSON.stringify({ mode: 'SITREP', days: windowDays }),
-        });
-        const data = await r.json();
-        if (!data.success || !data.sitrep) {
-          throw new Error(data.error || 'Failed to compile SitRep');
-        }
-        const sr = data.sitrep;
-
-        setLogs((prev) =>
-          prev.map((entry) =>
-            entry.id === logId
-              ? {
-                  ...entry,
-                  isLoading: false,
-                  output: (
-                    <div className="space-y-2 text-slate-200 bg-black/60 p-2.5 border-l-2 border-red-500 text-[11px]">
-                      <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                        <span className="text-red-400 font-bold text-xs">{sr.title}</span>
-                        <span className="px-1.5 py-0.2 bg-red-950 text-red-300 font-bold border border-red-700 text-[9px]">
-                          THREAT: {sr.threatLevel}
-                        </span>
-                      </div>
-
-                      <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
-                        {sr.executiveSummary}
-                      </div>
-
-                      {sr.flashpoints && sr.flashpoints.length > 0 && (
-                        <div className="space-y-1 pt-1">
-                          <div className="text-accent-cyan font-bold text-[9px]">PRIMARY MONITORED THEATERS:</div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                            {sr.flashpoints.slice(0, 4).map((fp: any, idx: number) => (
-                              <div key={idx} className="bg-panel-subtle p-1.5 border border-border text-[10px]">
-                                <div className="flex items-center justify-between font-bold text-text-primary">
-                                  <span>{fp.theater} ({fp.country})</span>
-                                  <span className="text-red-400 text-[9px]">{fp.fatalities} KIA</span>
-                                </div>
-                                <div className="text-text-muted text-[9px] mt-0.5">{fp.assessment}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ),
-                }
-              : entry
-          )
-        );
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setLogs((prev) =>
-          prev.map((entry) =>
-            entry.id === logId
-              ? {
-                  ...entry,
-                  isLoading: false,
-                  isError: true,
-                  output: `[SITREP ERROR]: ${msg}`,
-                }
-              : entry
-          )
-        );
-      }
-      return;
-    }
-
+    // Non-AI input: prompt the user to use AI syntax
     setLogs((prev) => [
       ...prev,
       {
         id: logId,
         timestamp,
         command: trimmed,
-        output: res.output,
-        isError: res.isError,
+        output: (
+          <div className="text-text-muted text-[11px]">
+            Ask the AI analyst a question — end your query with{' '}
+            <span className="text-amber-300 font-bold">&apos;?&apos;</span> or prefix with{' '}
+            <span className="text-accent-cyan font-bold">ask</span> /{' '}
+            <span className="text-accent-cyan font-bold">intel</span>.
+          </div>
+        ),
+        isError: false,
       },
     ]);
   };
@@ -464,119 +576,52 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
         </div>
       )}
 
-      {/* 2. Mode Strip & Fast Action Pills */}
+      {/* 2. AI Query Context Strip */}
       {!isMinimized && (
         <>
           <div className="h-7 px-2.5 bg-[#05090e] border-b border-border/50 flex items-center justify-between text-[10px] shrink-0 pointer-events-auto select-none">
-            {/* View Mode Switches */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setTerminalMode('SHELL')}
-                className={`px-2 py-0.5 border transition-colors cursor-pointer flex items-center gap-1 ${
-                  terminalMode === 'SHELL'
-                    ? 'border-accent-green text-accent-green bg-emerald-950/40 font-bold'
-                    : 'border-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <Terminal className="w-2.5 h-2.5" />
-                <span>[SHELL CLI &amp; AI]</span>
-              </button>
-
-              <button
-                onClick={() => setTerminalMode('TELEMETRY')}
-                className={`px-2 py-0.5 border transition-colors cursor-pointer flex items-center gap-1 ${
-                  terminalMode === 'TELEMETRY'
-                    ? 'border-accent-cyan text-accent-cyan bg-cyan-950/40 font-bold'
-                    : 'border-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <Radio className="w-2.5 h-2.5" />
-                <span>[RAW TELEMETRY]</span>
-              </button>
+            <div className="flex items-center gap-2 text-text-muted">
+              <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+              <span>AI DEFENSE ANALYST</span>
+              <span className="text-border">|</span>
+              <span>
+                CONTEXT:{' '}
+                <strong className="text-accent-cyan">
+                  {activeConflict ? activeConflict.name : 'WORLD AREA'}
+                </strong>
+              </span>
             </div>
-
-            {/* Context indicator */}
-            <div className="hidden sm:flex items-center gap-2 text-[9px] text-text-muted">
-              <span>CONTEXT: <strong className="text-accent-cyan">{activeConflict ? activeConflict.name : 'WORLD AREA'}</strong></span>
-              <span>PROMPT: <strong className="text-amber-300">Linux CLI / &apos;?&apos; for AI</strong></span>
-            </div>
+            <span className="hidden sm:inline text-[9px] text-text-muted">
+              End query with <span className="text-amber-300 font-bold">&apos;?&apos;</span> · prefix with{' '}
+              <span className="text-accent-cyan">ask</span> /{' '}
+              <span className="text-accent-cyan">intel</span>
+            </span>
           </div>
 
-          {/* Quick Command Pills */}
-          {terminalMode === 'SHELL' && (
-            <div className="px-2.5 py-1.5 bg-[#040810] border-b border-border/40 flex items-center gap-1.5 overflow-x-auto text-[9px] shrink-0 select-none">
-              <span className="text-text-muted shrink-0">COMMANDS:</span>
-              {FAST_PILLS.map((pill) => (
-                <button
-                  key={pill}
-                  onClick={() => {
-                    handleExecute(pill);
-                    inputRef.current?.focus();
-                  }}
-                  className="px-1.5 py-0.5 bg-panel-subtle hover:bg-panel-hover text-text-secondary hover:text-accent-cyan border border-border transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  {pill}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* 3. Terminal Body: SHELL MODE */}
-          {terminalMode === 'SHELL' && (
-            <div
-              ref={scrollRef}
-              onClick={() => inputRef.current?.focus()}
-              className="flex-1 overflow-y-auto p-2.5 space-y-2 bg-[#03060a] text-slate-300 select-text cursor-text pointer-events-auto relative font-mono text-[11px]"
-            >
-              {logs.map((entry) => (
-                <div key={entry.id} className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-accent-green">
-                    <span className="text-text-muted text-[10px]">[{entry.timestamp}]</span>
-                    <span className="font-bold">war@warroom:~$</span>
-                    <span className="text-text-primary font-semibold">{entry.command}</span>
-                  </div>
-
-                  {entry.output && (
-                    <div className={`pl-4 leading-relaxed ${entry.isError ? 'text-red-400' : ''}`}>
-                      {entry.output}
-                    </div>
-                  )}
+          {/* Terminal Body: AI Query Log */}
+          <div
+            ref={scrollRef}
+            onClick={() => inputRef.current?.focus()}
+            className="flex-1 overflow-y-auto p-2.5 space-y-2 bg-[#03060a] text-slate-300 select-text cursor-text pointer-events-auto relative font-mono text-[11px]"
+          >
+            {logs.map((entry) => (
+              <div key={entry.id} className="space-y-1">
+                <div className="flex items-center gap-1.5 text-accent-green">
+                  <span className="text-text-muted text-[10px]">[{entry.timestamp}]</span>
+                  <span className="font-bold">war@warroom:~$</span>
+                  <span className="text-text-primary font-semibold">{entry.command}</span>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* 3b. Terminal Body: RAW TELEMETRY MODE */}
-          {terminalMode === 'TELEMETRY' && (
-            <div className="flex-1 overflow-y-auto p-2.5 font-mono text-[10px] leading-relaxed bg-[#03060a] text-slate-300 whitespace-pre-wrap select-text cursor-text pointer-events-auto">
-              <div className="text-accent-cyan font-bold mb-1">// MULTI-STREAM TELEMETRY EXCHANGE LOG</div>
-              {exchange ? (
-                <div className="space-y-2">
-                  <div className="text-text-secondary">
-                    [REQ: {exchange.timestamp}] {exchange.request.method} {exchange.request.endpoint}
+                {entry.output && (
+                  <div className={`pl-4 leading-relaxed ${entry.isError ? 'text-red-400' : ''}`}>
+                    {entry.output}
                   </div>
-                  <div>MODEL    : {exchange.request.model}</div>
-                  <div>TOOLS    : {exchange.request.tools.join(', ')}</div>
-                  <div>WINDOW   : {exchange.request.dateWindow.start} -&gt; {exchange.request.dateWindow.end} ({exchange.request.dateWindow.days}D)</div>
-                  <div>SOURCES  : {exchange.request.sourcesQueried.join(' • ')}</div>
-                  <div className="border-t border-border/50 pt-1 text-accent-green">
-                    [RES: {exchange.response.status}] {exchange.response.statusText} ({exchange.response.latencyMs}ms latency)
-                  </div>
-                  <div>INCIDENTS PARSED: {exchange.response.eventsCount} | CONFLICT THEATERS: {exchange.response.conflictsCount}</div>
-                  <div className="border-t border-border/50 pt-1 text-[9px] text-text-muted">
-                    SAMPLE INGESTED RECORD:
-                  </div>
-                  <div className="bg-black/50 p-2 border border-border/60 text-slate-300">
-                    {JSON.stringify(exchange.response.sampleRecords.slice(0, 2), null, 2)}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-text-muted">No raw exchange packet logged yet. Run &quot;sync&quot; or press R to fetch live data.</div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            ))}
+          </div>
 
-          {/* 4. Interactive Linux Command Prompt Line */}
+          {/* AI Command Prompt Line */}
           <div
             onClick={() => inputRef.current?.focus()}
             className="h-10 px-3 bg-[#060c16] border-t border-border flex items-center gap-2 shrink-0 cursor-text pointer-events-auto relative z-20"
@@ -591,7 +636,7 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type Linux command ('help', 'ls', 'top', 'status') or ask question ending with '?'"
+              placeholder="Type country, relation map (e.g. 'Israel map'), continent, or ask AI '?'"
               className="flex-1 bg-transparent text-text-primary text-xs focus:outline-none placeholder:text-text-muted font-mono select-text cursor-text pointer-events-auto"
               autoComplete="off"
               spellCheck="false"
@@ -613,10 +658,10 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
                 }}
                 disabled={!input.trim()}
                 className="px-2 py-1 bg-accent-cyan/20 hover:bg-accent-cyan/30 border border-accent-cyan/60 text-accent-cyan text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-30 flex items-center gap-1"
-                title="Execute Command [Enter]"
+                title="Send Query [Enter]"
               >
                 <Send className="w-3 h-3" />
-                <span>EXEC</span>
+                <span>SEND</span>
               </button>
             </div>
           </div>

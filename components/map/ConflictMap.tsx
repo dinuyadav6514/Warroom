@@ -7,6 +7,8 @@ import { TacticalBleedmarkCursor } from './TacticalBleedmarkCursor';
 import { formatShortDate } from '@/lib/data/date-utils';
 import { Plus, Minus } from 'lucide-react';
 
+import { RelationshipNetwork, CountryRelation } from '@/lib/data/country-relationships';
+
 interface ConflictMapProps {
   events: ConflictEvent[];
   conflicts: Conflict[];
@@ -15,10 +17,13 @@ interface ConflictMapProps {
   onSelectConflict: (conflict: Conflict | null) => void;
   onSelectEvent: (event: ConflictEvent | null) => void;
   onOpenEventModal?: (event: ConflictEvent) => void;
+  onSelectRelation?: (relation: CountryRelation) => void;
   mapMode: MapMode;
   onChangeMapMode: (mode: MapMode) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  targetLocation?: { lng: number; lat: number; zoom?: number; timestamp: number; noZoom?: boolean } | null;
+  relationNetwork?: RelationshipNetwork | null;
 }
 
 const TACTICAL_CURSOR_SVG = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair`;
@@ -28,7 +33,7 @@ function registerTacticalMilitaryIcons(map: any) {
   if (typeof document === 'undefined') return;
 
   const createIconData = (
-    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon',
+    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon' | 'arrow',
     fillColor: string,
     strokeColor: string,
     accentColor?: string
@@ -182,6 +187,32 @@ function registerTacticalMilitaryIcons(map: any) {
       ctx.beginPath();
       ctx.arc(32, 32, 2, 0, Math.PI * 2);
       ctx.fill();
+    } else if (shape === 'arrow') {
+      // Aerodynamic tactical chevron arrowhead pointing East (along 0 deg tangent)
+      ctx.beginPath();
+      ctx.moveTo(14, 14);
+      ctx.lineTo(48, 32);
+      ctx.lineTo(14, 50);
+      ctx.lineTo(24, 32);
+      ctx.closePath();
+
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+
+      ctx.strokeStyle = '#020617';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // Sharp central optical groove
+      ctx.beginPath();
+      ctx.moveTo(24, 32);
+      ctx.lineTo(44, 32);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
     }
 
     return ctx.getImageData(0, 0, size, size);
@@ -189,7 +220,7 @@ function registerTacticalMilitaryIcons(map: any) {
 
   const icons: Array<{
     id: string;
-    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon';
+    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon' | 'arrow';
     fillColor: string;
     strokeColor: string;
     accentColor?: string;
@@ -202,6 +233,8 @@ function registerTacticalMilitaryIcons(map: any) {
     { id: 'army-moderate-24h', shape: 'diamond-lock', fillColor: '#ca8a04', strokeColor: '#0f172a', accentColor: '#22c55e' },
     { id: 'army-low', shape: 'circle', fillColor: '#4d7c0f', strokeColor: '#0f172a' },
     { id: 'army-news', shape: 'recon', fillColor: '#64748b', strokeColor: '#0f172a' },
+    { id: 'vector-arrow-cyan', shape: 'arrow', fillColor: '#06b6d4', strokeColor: '#050a12' },
+    { id: 'vector-arrow-red', shape: 'arrow', fillColor: '#ef4444', strokeColor: '#050a12' },
   ];
 
   for (const { id, shape, fillColor, strokeColor, accentColor } of icons) {
@@ -222,10 +255,13 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   onSelectConflict,
   onSelectEvent,
   onOpenEventModal,
+  onSelectRelation,
   mapMode,
   onChangeMapMode,
   onRefresh,
   isRefreshing = false,
+  targetLocation,
+  relationNetwork,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isDotHovered, setIsDotHovered] = useState(false);
@@ -253,6 +289,12 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
   const onSelectConflictRef = useRef(onSelectConflict);
   onSelectConflictRef.current = onSelectConflict;
+
+  const onSelectRelationRef = useRef(onSelectRelation);
+  onSelectRelationRef.current = onSelectRelation;
+
+  const relationNetworkRef = useRef(relationNetwork);
+  relationNetworkRef.current = relationNetwork;
 
   const radiatingMarkerRef = useRef<any>(null);
   const maplibreModuleRef = useRef<any>(null);
@@ -304,6 +346,117 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       radiatingMarkerRef.current = null;
     }
   }, []);
+
+  // ── Hovered Animated Line Controller ────────────────────────────────────────
+  const lineAnimationRef = useRef<{ animId: number | null; activeRelId: string | null }>({
+    animId: null,
+    activeRelId: null,
+  });
+
+  const stopLineAnimation = useCallback(() => {
+    if (lineAnimationRef.current.animId !== null) {
+      cancelAnimationFrame(lineAnimationRef.current.animId);
+      lineAnimationRef.current.animId = null;
+      lineAnimationRef.current.activeRelId = null;
+    }
+    if (mapInstanceRef.current) {
+      const map = mapInstanceRef.current;
+      const hSource = map.getSource('warroom-hovered-relationship-line');
+      if (hSource) hSource.setData({ type: 'FeatureCollection', features: [] });
+      const tSource = map.getSource('warroom-hovered-tracer');
+      if (tSource) tSource.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, []);
+
+  const startLineAnimation = useCallback((feature: any) => {
+    if (!mapInstanceRef.current || !feature || !feature.geometry || !feature.geometry.coordinates) return;
+    const map = mapInstanceRef.current;
+    const hSource = map.getSource('warroom-hovered-relationship-line');
+    const tSource = map.getSource('warroom-hovered-tracer');
+    if (!hSource || !tSource) return;
+
+    const relId = feature.properties?.id;
+    if (lineAnimationRef.current.activeRelId === relId && lineAnimationRef.current.animId !== null) {
+      return; // Already animating this line
+    }
+
+    if (lineAnimationRef.current.animId !== null) {
+      cancelAnimationFrame(lineAnimationRef.current.animId);
+    }
+    lineAnimationRef.current.activeRelId = relId;
+
+    // Light up the hovered line
+    hSource.setData({
+      type: 'FeatureCollection',
+      features: [feature],
+    });
+
+    const rawCoords: Array<[number, number]> = feature.geometry.coordinates;
+    if (!rawCoords || rawCoords.length < 2) return;
+
+    const totalPoints = rawCoords.length;
+    const duration = 1200; // 1.2s per full pulse cycle
+    const animStart = performance.now();
+
+    const frame = (now: number) => {
+      const elapsed = now - animStart;
+      const progress = (elapsed % duration) / duration; // 0.0 to 1.0
+
+      const totalSegments = totalPoints - 1;
+      const exactIndex = progress * totalSegments;
+      const baseIndex = Math.min(Math.floor(exactIndex), totalSegments - 1);
+      const frac = exactIndex - baseIndex;
+
+      const p1 = rawCoords[baseIndex];
+      const p2 = rawCoords[baseIndex + 1];
+      const headLng = p1[0] + (p2[0] - p1[0]) * frac;
+      const headLat = p1[1] + (p2[1] - p1[1]) * frac;
+
+      // Trailing kinetic comet (~25% of line length behind the head)
+      const tailLength = 0.25;
+      const tailStartProgress = Math.max(0, progress - tailLength);
+      const tailStartIndex = Math.min(Math.floor(tailStartProgress * totalSegments), totalSegments - 1);
+
+      const tailCoords = rawCoords.slice(tailStartIndex, baseIndex + 1);
+      tailCoords.push([headLng, headLat]);
+
+      tSource.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: tailCoords,
+            },
+            properties: {
+              color: feature.properties?.color || '#06b6d4',
+            },
+          },
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [headLng, headLat],
+            },
+            properties: {
+              color: feature.properties?.color || '#06b6d4',
+            },
+          },
+        ],
+      });
+
+      lineAnimationRef.current.animId = requestAnimationFrame(frame);
+    };
+
+    lineAnimationRef.current.animId = requestAnimationFrame(frame);
+  }, []);
+
+  const startLineAnimationRef = useRef(startLineAnimation);
+  startLineAnimationRef.current = startLineAnimation;
+
+  const stopLineAnimationRef = useRef(stopLineAnimation);
+  stopLineAnimationRef.current = stopLineAnimation;
 
   const [mapLoaded, setMapLoaded] = useState(false);
 
@@ -448,6 +601,216 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'heatmap-opacity': 0.8,
             },
             layout: { visibility: 'none' },
+          });
+
+          // ── Tactical Relationship Trajectory Lines (Kinetic Vectors) ───────
+          map.addSource('warroom-relationship-lines', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+
+          // 1. Elevated Glow Halo
+          map.addLayer({
+            id: 'relationship-lines-glow',
+            type: 'line',
+            source: 'warroom-relationship-lines',
+            paint: {
+              'line-color': ['get', 'glowColor'],
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 5.0,
+                6, 12.0,
+              ],
+              'line-blur': 4,
+              'line-opacity': 0.75,
+            },
+          });
+
+          // 2. Main Directed Vector (Cyan for Outgoing, Red for Incoming)
+          map.addLayer({
+            id: 'relationship-lines',
+            type: 'line',
+            source: 'warroom-relationship-lines',
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 2.4,
+                6, 4.0,
+              ],
+              'line-opacity': 0.95,
+            },
+          });
+
+          // 3. Kinetic Core Pulsing Dash
+          map.addLayer({
+            id: 'relationship-lines-dash',
+            type: 'line',
+            source: 'warroom-relationship-lines',
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': 1.4,
+              'line-dasharray': [2, 5],
+              'line-opacity': 0.85,
+            },
+          });
+
+          // 4. Directional Tactical Vector Arrows along the lines
+          map.addLayer({
+            id: 'relationship-lines-arrows',
+            type: 'symbol',
+            source: 'warroom-relationship-lines',
+            layout: {
+              'symbol-placement': 'line',
+              'symbol-spacing': 60,
+              'icon-image': [
+                'match',
+                ['get', 'direction'],
+                'OUTGOING', 'vector-arrow-cyan',
+                'vector-arrow-red',
+              ],
+              'icon-size': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 0.40,
+                5, 0.52,
+                9, 0.70,
+              ],
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+              'icon-keep-upright': false,
+            },
+          });
+
+          // ── Hovered Animated Line Layers ───────────────────────────────────
+          map.addSource('warroom-hovered-relationship-line', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+
+          map.addSource('warroom-hovered-tracer', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+
+          // 5. Intense Animated Glow for Hovered Line
+          map.addLayer({
+            id: 'hovered-line-glow',
+            type: 'line',
+            source: 'warroom-hovered-relationship-line',
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 8.0,
+                6, 16.0,
+              ],
+              'line-blur': 6,
+              'line-opacity': 0.95,
+            },
+          });
+
+          // 6. High-contrast Core for Hovered Line
+          map.addLayer({
+            id: 'hovered-line-core',
+            type: 'line',
+            source: 'warroom-hovered-relationship-line',
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 3.2,
+                6, 5.0,
+              ],
+              'line-opacity': 0.95,
+            },
+          });
+
+          // 7. Hovered Line Highlighted Arrows
+          map.addLayer({
+            id: 'hovered-line-arrows',
+            type: 'symbol',
+            source: 'warroom-hovered-relationship-line',
+            layout: {
+              'symbol-placement': 'line',
+              'symbol-spacing': 48,
+              'icon-image': [
+                'match',
+                ['get', 'direction'],
+                'OUTGOING', 'vector-arrow-cyan',
+                'vector-arrow-red',
+              ],
+              'icon-size': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 0.55,
+                5, 0.72,
+                9, 0.95,
+              ],
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+              'icon-keep-upright': false,
+            },
+          });
+
+          // 8. Kinetic Traveling Pulse Comet Trail
+          map.addLayer({
+            id: 'hovered-tracer-trail',
+            type: 'line',
+            source: 'warroom-hovered-tracer',
+            filter: ['==', '$type', 'LineString'],
+            layout: {
+              'line-cap': 'round',
+              'line-join': 'round',
+            },
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 3.5,
+                6, 6.0,
+              ],
+              'line-blur': 2,
+              'line-opacity': 0.95,
+            },
+          });
+
+          // 9. Kinetic Traveling Pulse Leading Orb Head
+          map.addLayer({
+            id: 'hovered-tracer-head',
+            type: 'circle',
+            source: 'warroom-hovered-tracer',
+            filter: ['==', '$type', 'Point'],
+            paint: {
+              'circle-color': '#ffffff',
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 4.5,
+                6, 7.5,
+              ],
+              'circle-stroke-color': ['get', 'color'],
+              'circle-stroke-width': 2.5,
+              'circle-blur': 0.15,
+            },
+          });
+
+          // 10. Invisible hit-target buffer for effortless clicking
+          map.addLayer({
+            id: 'relationship-lines-hit',
+            type: 'line',
+            source: 'warroom-relationship-lines',
+            paint: {
+              'line-width': 24,
+              'line-opacity': 0,
+            },
           });
 
           // 2. Tactical Military Operational Symbology
@@ -825,6 +1188,65 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             map.getCanvas().classList.remove('tactical-lock');
           });
 
+          // ── Relationship Trajectory Vector Interaction ──────────────────
+          const handleRelationLineClick = (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            const props = e.features[0].properties || {};
+            const relId = props.id;
+
+            // Dismiss any active on-map mini-popup so only the full Vector Intel Modal displays
+            clickPopupRef.current?.remove();
+
+            // Find matching relation in current network
+            const currentNet = relationNetworkRef.current;
+            const foundRel = currentNet?.relations.find(
+              (r) =>
+                r.id === relId ||
+                (r.fromCountry.toLowerCase() === (props.fromCountry || '').toLowerCase() &&
+                  r.toCountry.toLowerCase() === (props.toCountry || '').toLowerCase() &&
+                  r.direction === props.direction)
+            );
+
+            if (foundRel && onSelectRelationRef.current) {
+              onSelectRelationRef.current(foundRel);
+            }
+          };
+
+          map.on('click', 'relationship-lines', handleRelationLineClick);
+          map.on('click', 'relationship-lines-hit', handleRelationLineClick);
+          map.on('click', 'hovered-line-core', handleRelationLineClick);
+          map.on('click', 'hovered-line-glow', handleRelationLineClick);
+
+          map.on('mouseenter', 'relationship-lines-hit', (e: any) => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = 'pointer';
+            if (e.features && e.features[0]) {
+              startLineAnimationRef.current(e.features[0]);
+            }
+          });
+          map.on('mousemove', 'relationship-lines-hit', (e: any) => {
+            if (e.features && e.features[0]) {
+              startLineAnimationRef.current(e.features[0]);
+            }
+          });
+          map.on('mouseleave', 'relationship-lines-hit', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            stopLineAnimationRef.current();
+          });
+          map.on('mouseenter', 'relationship-lines', (e: any) => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = 'pointer';
+            if (e.features && e.features[0]) {
+              startLineAnimationRef.current(e.features[0]);
+            }
+          });
+          map.on('mouseleave', 'relationship-lines', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            stopLineAnimationRef.current();
+          });
+
           // Global canvas click: clicking empty space on the map deselects active dot and returns to terminal
           map.on('click', (e: any) => {
             const interactiveLayers = [
@@ -833,6 +1255,10 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'warroom-news-markers',
               'news-dots-hit',
               'conflict-centroids',
+              'relationship-lines',
+              'relationship-lines-hit',
+              'hovered-line-glow',
+              'hovered-line-core',
             ].filter((layerId) => map.getLayer(layerId));
 
             const bbox: [any, any] = [
@@ -864,6 +1290,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
     return () => {
       isMounted = false;
       removeRadiatingBeacon();
+      stopLineAnimationRef.current();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -1105,6 +1532,41 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
     }
     prevSelectionRef.current = { event: selectedEvent, conflict: selectedConflict };
   }, [selectedConflict, selectedEvent, mapLoaded, setRadiatingBeacon, removeRadiatingBeacon]);
+
+  // Smoothly fly to target location (e.g. from terminal country selection)
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current || !targetLocation) return;
+    const map = mapInstanceRef.current;
+    clickPopupRef.current?.remove();
+    removeRadiatingBeacon();
+
+    const currentZoom = map.getZoom();
+    const targetZoom = targetLocation.noZoom
+      ? Math.min(currentZoom, 2.5) // Prevent zooming in: keep current zoom or zoom out to wide overview (<= 2.5)
+      : (targetLocation.zoom ?? currentZoom);
+
+    map.flyTo({
+      center: [targetLocation.lng, targetLocation.lat],
+      zoom: targetZoom,
+      duration: 1200,
+    });
+  }, [targetLocation, mapLoaded, removeRadiatingBeacon]);
+
+  // Update relationship lines GeoJSON data
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const source = map.getSource('warroom-relationship-lines');
+    if (!source) return;
+
+    stopLineAnimationRef.current();
+
+    if (relationNetwork && relationNetwork.geoJson) {
+      source.setData(relationNetwork.geoJson);
+    } else {
+      source.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, [relationNetwork, mapLoaded]);
 
   return (
     <div className="relative w-full h-full bg-[#07090b] select-none">

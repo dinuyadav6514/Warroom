@@ -21,6 +21,7 @@ import { EventModal } from '@/components/intelligence/EventModal';
 import { CommandLine } from '@/components/terminal/CommandLine';
 import { SourcesModal } from '@/components/modals/SourcesModal';
 import { SetupModal } from '@/components/modals/SetupModal';
+import { VectorIntelModal } from '@/components/intelligence/VectorIntelModal';
 import { ConflictsView } from '@/components/views/ConflictsView';
 import { EscalationView } from '@/components/views/EscalationView';
 import { ActorsView } from '@/components/views/ActorsView';
@@ -31,7 +32,22 @@ import { mergeSimilarStories } from '@/lib/aggregation/story-merging';
 import { IntelFilterBar } from '@/components/filters/IntelFilterBar';
 import { ShieldAlert, Terminal, Menu, X, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 
+import { getMultiCountryView, parseCountryInput, matchCountryOrContinent } from '@/lib/data/country-coords';
+import { RelationshipNetwork, buildRelationshipNetwork, CountryRelation } from '@/lib/data/country-relationships';
+
 export default function WarRoomDashboard() {
+  /** Target map center & zoom dispatched from terminal country selection or UI navigation */
+  const [mapTargetLocation, setMapTargetLocation] = useState<{
+    lng: number;
+    lat: number;
+    zoom?: number;
+    timestamp: number;
+    noZoom?: boolean;
+  } | null>(null);
+
+  /** Active kinetic relationship vector network (rendered as trajectory lines on the map) */
+  const [relationNetwork, setRelationNetwork] = useState<RelationshipNetwork | null>(null);
+
   // Navigation & View State
   const [currentView, setCurrentView] = useState<NavView>('WORLD');
   const [mapMode, setMapMode] = useState<MapMode>('EVENTS');
@@ -62,8 +78,10 @@ export default function WarRoomDashboard() {
   // Selection & Modals
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ConflictEvent | null>(null);
+  const [selectedRelation, setSelectedRelation] = useState<CountryRelation | null>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isVectorModalOpen, setIsVectorModalOpen] = useState(false);
   const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isFullStreamModalOpen, setIsFullStreamModalOpen] = useState(false);
@@ -244,7 +262,10 @@ export default function WarRoomDashboard() {
 
       // Facet filters
       if (filters.region && filters.region !== 'ALL' && e.region?.toLowerCase() !== filters.region.toLowerCase()) return false;
-      if (filters.country && filters.country !== 'ALL' && e.country?.toLowerCase() !== filters.country.toLowerCase()) return false;
+      // Multi-country / continent terminal filter takes precedence over single country UI filter
+      if (filters.countries && filters.countries.length > 0) {
+        if (!matchCountryOrContinent(e, filters.countries)) return false;
+      } else if (filters.country && filters.country !== 'ALL' && e.country?.toLowerCase() !== filters.country.toLowerCase()) return false;
       if (filters.severity && filters.severity !== 'ALL' && e.severity !== filters.severity) return false;
       if (filters.eventType && filters.eventType !== 'ALL' && !e.eventType?.toLowerCase().includes(filters.eventType.toLowerCase())) return false;
       if (filters.searchQuery && filters.searchQuery.trim() !== '') {
@@ -282,7 +303,9 @@ export default function WarRoomDashboard() {
       .filter((c) => {
         if (c.recentEvents.length === 0) return false;
         if (filters.region && filters.region !== 'ALL' && c.region?.toLowerCase() !== filters.region.toLowerCase()) return false;
-        if (filters.country && filters.country !== 'ALL' && c.country?.toLowerCase() !== filters.country.toLowerCase()) return false;
+        if (filters.countries && filters.countries.length > 0) {
+          if (!matchCountryOrContinent(c, filters.countries)) return false;
+        } else if (filters.country && filters.country !== 'ALL' && c.country?.toLowerCase() !== filters.country.toLowerCase()) return false;
         return true;
       });
   }, [allConflicts10D, filters]);
@@ -304,38 +327,24 @@ export default function WarRoomDashboard() {
     });
   };
 
-  // Keyboard Shortcuts (M, T, 1: 3D, 2: 7D, 3: 10D, R: Refresh, Esc)
+  // Keyboard Shortcuts — only Escape (safe non-character key) to close modals
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-        return;
-      }
-
       if (e.key === 'Escape') {
         setIsConflictModalOpen(false);
         setIsEventModalOpen(false);
+        setIsVectorModalOpen(false);
         setSelectedEvent(null);
+        setSelectedRelation(null);
         setIsSourcesModalOpen(false);
         setIsSetupModalOpen(false);
         setIsFullStreamModalOpen(false);
-      } else if (e.key === 'm' || e.key === 'M') {
-        setCurrentView('WORLD');
-      } else if (e.key === 't' || e.key === 'T') {
-        setCurrentView('TIMELINE');
-      } else if (e.key === 'r' || e.key === 'R') {
-        handleForceRefresh();
-      } else if (e.key === '1') {
-        handleUpdateFilters({ days: 3 });
-      } else if (e.key === '2') {
-        handleUpdateFilters({ days: 7 });
-      } else if (e.key === '3') {
-        handleUpdateFilters({ days: 10 });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleForceRefresh]);
+  }, []);
 
   // Command handlers
   const handleSelectEventById = (id: string) => {
@@ -348,9 +357,120 @@ export default function WarRoomDashboard() {
     }
   };
 
+  const handleSelectCountries = useCallback(
+    (countryNames: string[], keepRelations = false) => {
+      // If not keeping relations, clear any active relationship lines
+      if (!keepRelations) {
+        setRelationNetwork(null);
+        setSelectedRelation(null);
+        setIsVectorModalOpen(false);
+      }
+
+      // 1. If empty or cleared, reset filter and reset map view
+      if (!countryNames || countryNames.length === 0) {
+        setRelationNetwork(null);
+        setSelectedRelation(null);
+        setIsVectorModalOpen(false);
+        setFilters((prev) => ({ ...prev, countries: [], country: '' }));
+        setSelectedEvent(null);
+        setSelectedConflict(null);
+        setMapTargetLocation({ lng: 25, lat: 20, zoom: 2.2, timestamp: Date.now() });
+        return;
+      }
+
+      // 2. Ensure we are in Map/WORLD view so user sees the result immediately
+      setCurrentView('WORLD');
+      setSelectedEvent(null);
+      setSelectedConflict(null);
+
+      // 3. Update filters (multi-country array takes precedence in useMemo)
+      setFilters((prev) => ({
+        ...prev,
+        countries: countryNames,
+        country: countryNames.length === 1 ? countryNames[0] : '',
+      }));
+
+      // 4. Calculate map view & fly to it
+      const view = getMultiCountryView(countryNames, allEvents10D);
+      if (view) {
+        setMapTargetLocation({ ...view, timestamp: Date.now() });
+      } else {
+        // Fallback: search in loaded 10D events
+        const matched = allEvents10D.filter(
+          (e) =>
+            typeof e.longitude === 'number' &&
+            typeof e.latitude === 'number' &&
+            matchCountryOrContinent(e, countryNames)
+        );
+        if (matched.length > 0) {
+          const avgLng = matched.reduce((s, e) => s + e.longitude!, 0) / matched.length;
+          const avgLat = matched.reduce((s, e) => s + e.latitude!, 0) / matched.length;
+          setMapTargetLocation({ lng: avgLng, lat: avgLat, zoom: 5.5, timestamp: Date.now() });
+        }
+      }
+    },
+    [allEvents10D]
+  );
+
   const handleSelectCountry = (countryName: string) => {
-    setFilters((prev) => ({ ...prev, country: countryName }));
+    if (!countryName || countryName === 'ALL') {
+      handleSelectCountries([]);
+    } else {
+      handleSelectCountries([countryName]);
+    }
   };
+
+  /**
+   * Builds and displays the kinetic relationship network for a focal country.
+   * Renders incoming (red) and outgoing (cyan) trajectory lines on the map,
+   * isolates marker dots to the connected nations, and zooms to frame the theater.
+   */
+  const handleShowRelationNetwork = useCallback(
+    (countryName: string): RelationshipNetwork | null => {
+      if (!countryName) {
+        setRelationNetwork(null);
+        handleSelectCountries([]);
+        return null;
+      }
+
+      const network = buildRelationshipNetwork(countryName, allEvents10D, allConflicts10D);
+      if (!network) {
+        handleSelectCountry(countryName);
+        return null;
+      }
+
+      setRelationNetwork(network);
+
+      // 1. Switch to Map/WORLD view
+      setCurrentView('WORLD');
+      setSelectedEvent(null);
+      setSelectedConflict(null);
+
+      // 2. Filter events & conflicts to only show dots of the focal and connected countries
+      setFilters((prev) => ({
+        ...prev,
+        countries: network.connectedCountries,
+        country: '',
+      }));
+
+      // 3. Recenter map on focal country without zooming in, keeping wide overview
+      // so all incoming and outgoing trajectory lines across nations remain fully visible.
+      setMapTargetLocation({
+        lng: network.focalCoords.lng,
+        lat: network.focalCoords.lat,
+        timestamp: Date.now(),
+        noZoom: true,
+      });
+
+      return network;
+    },
+    [allEvents10D, allConflicts10D, handleSelectCountries, handleSelectCountry]
+  );
+
+  const handleSelectRelation = useCallback((relation: CountryRelation) => {
+    setSelectedRelation(relation);
+    setIsVectorModalOpen(true);
+  }, []);
 
   const handleSelectRegion = (regionName: string) => {
     setFilters((prev) => ({ ...prev, region: regionName }));
@@ -502,6 +622,12 @@ export default function WarRoomDashboard() {
           apiExchange={apiExchange}
           selectedEvent={selectedEvent}
           selectedConflict={selectedConflict}
+          relationNetwork={relationNetwork}
+          onSelectRelation={handleSelectRelation}
+          onClearRelationNetwork={() => {
+            setRelationNetwork(null);
+            handleSelectCountries([]);
+          }}
           onClearSelection={() => {
             setSelectedEvent(null);
             setSelectedConflict(null);
@@ -542,6 +668,9 @@ export default function WarRoomDashboard() {
                   }}
                   mapMode={mapMode}
                   onChangeMapMode={setMapMode}
+                  targetLocation={mapTargetLocation}
+                  relationNetwork={relationNetwork}
+                  onSelectRelation={handleSelectRelation}
                 />
               </div>
             )}
@@ -589,6 +718,24 @@ export default function WarRoomDashboard() {
               />
             )}
           </div>
+
+          {/* Bottom Terminal Command Line (Anchored directly inside map/workspace area, never spanning below LeftNav or RightNav) */}
+          <CommandLine
+            onSelectView={setCurrentView}
+            onUpdateFilters={handleUpdateFilters}
+            onRefresh={handleForceRefresh}
+            onOpenSources={() => setIsSourcesModalOpen(true)}
+            onExecuteSearch={handleExecuteSearch}
+            onSelectEventById={handleSelectEventById}
+            onSelectCountry={handleSelectCountry}
+            onSelectCountries={handleSelectCountries}
+            onShowRelationNetwork={handleShowRelationNetwork}
+            onSelectRegion={handleSelectRegion}
+            allConflicts={conflicts}
+            allEvents={events}
+            activeConflict={selectedConflict}
+            onSelectConflict={handleSelectConflict}
+          />
         </main>
 
         {/* Right-Side Strategic Conflict Intelligence & Telemetry Workstation (Desktop) */}
@@ -652,22 +799,6 @@ export default function WarRoomDashboard() {
         </>
       )}
 
-      {/* Bottom Terminal Command Line */}
-      <CommandLine
-        onSelectView={setCurrentView}
-        onUpdateFilters={handleUpdateFilters}
-        onRefresh={handleForceRefresh}
-        onOpenSources={() => setIsSourcesModalOpen(true)}
-        onExecuteSearch={handleExecuteSearch}
-        onSelectEventById={handleSelectEventById}
-        onSelectCountry={handleSelectCountry}
-        onSelectRegion={handleSelectRegion}
-        allConflicts={conflicts}
-        allEvents={events}
-        activeConflict={selectedConflict}
-        onSelectConflict={handleSelectConflict}
-      />
-
       {/* Modals */}
       {isConflictModalOpen && (selectedConflict || conflicts[0]) && (
         <ConflictModal
@@ -689,6 +820,25 @@ export default function WarRoomDashboard() {
           onClose={() => {
             setIsEventModalOpen(false);
             setSelectedEvent(null);
+          }}
+        />
+      )}
+
+      {isVectorModalOpen && selectedRelation && (
+        <VectorIntelModal
+          relation={selectedRelation}
+          isOpen={isVectorModalOpen}
+          onClose={() => {
+            setIsVectorModalOpen(false);
+            setSelectedRelation(null);
+          }}
+          onSelectEvent={(e) => {
+            setSelectedEvent(e);
+            setIsEventModalOpen(true);
+          }}
+          onFilterPair={(countries) => {
+            handleSelectCountries(countries, true);
+            setIsVectorModalOpen(false);
           }}
         />
       )}

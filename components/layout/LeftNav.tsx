@@ -5,6 +5,8 @@ import { FilterState, Severity, ConflictEvent, Conflict, ApiExchange } from '@/t
 import { IsometricRadarGlobe } from '@/components/navigation/IsometricRadarGlobe';
 import { LiveTerminalOutput } from '@/components/navigation/LiveTerminalOutput';
 import { SelectedNewsDisplay } from '@/components/navigation/SelectedNewsDisplay';
+import { RelationNetworkTable } from '@/components/navigation/RelationNetworkTable';
+import { RelationshipNetwork, CountryRelation } from '@/lib/data/country-relationships';
 
 export type NavView = 'WORLD' | 'CONFLICTS' | 'ESCALATION' | 'TIMELINE' | 'ACTORS' | 'SOURCES';
 
@@ -24,6 +26,9 @@ interface LeftNavProps {
   apiExchange?: ApiExchange | null;
   selectedEvent?: ConflictEvent | null;
   selectedConflict?: Conflict | null;
+  relationNetwork?: RelationshipNetwork | null;
+  onSelectRelation?: (relation: CountryRelation) => void;
+  onClearRelationNetwork?: () => void;
   onClearSelection?: () => void;
   onSelectEvent?: (event: ConflictEvent) => void;
   onOpenEventModal?: (event: ConflictEvent) => void;
@@ -58,6 +63,9 @@ export const LeftNav: React.FC<LeftNavProps> = ({
   apiExchange,
   selectedEvent = null,
   selectedConflict = null,
+  relationNetwork = null,
+  onSelectRelation,
+  onClearRelationNetwork,
   onClearSelection,
   onSelectEvent,
   onOpenEventModal,
@@ -87,7 +95,7 @@ export const LeftNav: React.FC<LeftNavProps> = ({
         </div>
 
         {/* Navigation Sections */}
-        <div className="flex-1 min-h-0 flex flex-col p-2 gap-2 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col p-2 gap-2 overflow-y-auto overflow-x-hidden">
           {/* Rotating Isometric Radar Globe */}
           <div className="shrink-0 flex justify-center">
             <IsometricRadarGlobe
@@ -98,9 +106,15 @@ export const LeftNav: React.FC<LeftNavProps> = ({
             />
           </div>
 
-          {/* Dynamic Display: Related News when dot clicked, or Live Terminal by default */}
-          <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
-            {selectedEvent || selectedConflict ? (
+          {/* Dynamic Display: Line Relation Table when country map active, Related News when dot clicked, or Live Terminal by default */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {relationNetwork ? (
+              <RelationNetworkTable
+                network={relationNetwork}
+                onSelectRelation={onSelectRelation}
+                onClose={onClearRelationNetwork}
+              />
+            ) : selectedEvent || selectedConflict ? (
               <SelectedNewsDisplay
                 event={selectedEvent}
                 conflict={selectedConflict}

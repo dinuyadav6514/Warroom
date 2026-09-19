@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runConflictSync } from '@/lib/providers';
 import { isWithinWindow, isHistoricalOrStaleConflict } from '@/lib/data/date-utils';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

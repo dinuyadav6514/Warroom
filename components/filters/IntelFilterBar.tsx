@@ -170,40 +170,44 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
 
   return (
     <div
-      className="bg-[#090d12] border-b border-border px-2 py-0.5 font-mono text-xs select-none flex items-center gap-1.5 z-20 overflow-x-auto no-scrollbar"
+      className="relative z-50 bg-[#090d12] border-b border-border px-2 py-0.5 font-mono text-xs select-none flex items-center gap-1.5 overflow-visible"
       ref={containerRef}
     >
-      {/* Intel Mode buttons */}
-      {modes.map((m) => {
-        const Icon = m.icon;
-        const isActive = intelMode === m.id;
-        return (
-          <button
-            key={m.id}
-            onClick={() => onSelectIntelMode(m.id)}
-            className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] transition-all text-[10px] font-medium tracking-wide whitespace-nowrap cursor-pointer shrink-0 ${
-              isActive
-                ? m.activeClass
-                : 'bg-panel-subtle/70 border-border/80 text-text-secondary hover:text-text-primary hover:bg-panel-hover'
-            }`}
-            title={`Filter by ${m.label}`}
-          >
-            <Icon className="w-2.5 h-2.5 shrink-0" />
-            <span>{m.label}</span>
-            <span className={`text-[9px] px-1 border rounded-[2px] font-bold ${m.badgeClass}`}>
-              {m.count}
-            </span>
-          </button>
-        );
-      })}
+      {/* Intel Mode buttons (Scrollable independently if screen is narrow) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+        {modes.map((m) => {
+          const Icon = m.icon;
+          const isActive = intelMode === m.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onSelectIntelMode(m.id)}
+              className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] transition-all text-[10px] font-medium tracking-wide whitespace-nowrap cursor-pointer shrink-0 ${
+                isActive
+                  ? m.activeClass
+                  : 'bg-panel-subtle/70 border-border/80 text-text-secondary hover:text-text-primary hover:bg-panel-hover'
+              }`}
+              title={`Filter by ${m.label}`}
+            >
+              <Icon className="w-2.5 h-2.5 shrink-0" />
+              <span>{m.label}</span>
+              <span className={`text-[9px] px-1 border rounded-[2px] font-bold ${m.badgeClass}`}>
+                {m.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Divider */}
       <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
 
       {/* Right Controls: Story Merging, Region, Severity, Event Type, Pipelines */}
-      <div className="flex items-center gap-1 ml-auto shrink-0">
+      <div className="flex items-center gap-1 ml-auto shrink-0 relative overflow-visible z-50">
         {/* Story Merging Deduplication Toggle */}
         <button
+          type="button"
           onClick={onToggleStoryMerging}
           className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
             storyMerging
@@ -231,6 +235,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
         {/* 1. REGION / THEATER DROPDOWN */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => toggleDropdown('REGION')}
             className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-medium tracking-wide transition-all cursor-pointer ${
               selectedRegion && selectedRegion !== 'ALL'
@@ -248,11 +253,12 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
           </button>
 
           {openDropdown === 'REGION' && (
-            <div className="absolute right-0 mt-1.5 w-52 bg-[#090d12] border border-border/90 shadow-2xl z-50 p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
+            <div className="absolute right-0 top-full mt-1.5 w-52 bg-[#090d12]/95 backdrop-blur-md border border-border shadow-[0_10px_35px_rgba(0,0,0,0.95)] z-[100] p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
               <div className="flex items-center justify-between pb-1 mb-1 border-b border-border/60 text-[10px] text-text-muted px-1.5">
                 <span>// THEATER / REGION</span>
                 {selectedRegion && selectedRegion !== 'ALL' && (
                   <button
+                    type="button"
                     onClick={() => {
                       onSelectRegion?.('ALL');
                       setOpenDropdown(null);
@@ -269,6 +275,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
                   return (
                     <button
                       key={region}
+                      type="button"
                       onClick={() => {
                         onSelectRegion?.(region);
                         setOpenDropdown(null);
@@ -292,6 +299,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
         {/* 2. SEVERITY THRESHOLD DROPDOWN */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => toggleDropdown('SEVERITY')}
             className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-medium tracking-wide transition-all cursor-pointer ${
               selectedSeverity && selectedSeverity !== 'ALL'
@@ -309,11 +317,12 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
           </button>
 
           {openDropdown === 'SEVERITY' && (
-            <div className="absolute right-0 mt-1.5 w-48 bg-[#090d12] border border-border/90 shadow-2xl z-50 p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
+            <div className="absolute right-0 top-full mt-1.5 w-48 bg-[#090d12]/95 backdrop-blur-md border border-border shadow-[0_10px_35px_rgba(0,0,0,0.95)] z-[100] p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
               <div className="flex items-center justify-between pb-1 mb-1 border-b border-border/60 text-[10px] text-text-muted px-1.5">
                 <span>// SEVERITY THRESHOLD</span>
                 {selectedSeverity && selectedSeverity !== 'ALL' && (
                   <button
+                    type="button"
                     onClick={() => {
                       onSelectSeverity?.('ALL');
                       setOpenDropdown(null);
@@ -340,6 +349,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
                   return (
                     <button
                       key={sev}
+                      type="button"
                       onClick={() => {
                         onSelectSeverity?.(sev);
                         setOpenDropdown(null);
@@ -366,6 +376,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
         {/* 3. EVENT TYPE DROPDOWN */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => toggleDropdown('EVENT_TYPE')}
             className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-medium tracking-wide transition-all cursor-pointer ${
               selectedEventType && selectedEventType !== 'ALL'
@@ -383,11 +394,12 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
           </button>
 
           {openDropdown === 'EVENT_TYPE' && (
-            <div className="absolute right-0 mt-1.5 w-60 bg-[#090d12] border border-border/90 shadow-2xl z-50 p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
+            <div className="absolute right-0 top-full mt-1.5 w-60 bg-[#090d12]/95 backdrop-blur-md border border-border shadow-[0_10px_35px_rgba(0,0,0,0.95)] z-[100] p-1.5 text-xs font-mono space-y-0.5 rounded-[2px]">
               <div className="flex items-center justify-between pb-1 mb-1 border-b border-border/60 text-[10px] text-text-muted px-1.5">
                 <span>// EVENT TYPE</span>
                 {selectedEventType && selectedEventType !== 'ALL' && (
                   <button
+                    type="button"
                     onClick={() => {
                       onSelectEventType?.('ALL');
                       setOpenDropdown(null);
@@ -404,6 +416,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
                   return (
                     <button
                       key={type}
+                      type="button"
                       onClick={() => {
                         onSelectEventType?.(type);
                         setOpenDropdown(null);
@@ -427,6 +440,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
         {/* 4. PIPELINE SOURCES DROPDOWN */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => toggleDropdown('PIPELINES')}
             className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-medium tracking-wide transition-all cursor-pointer ${
               !areAllSourcesSelected
@@ -445,10 +459,11 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
 
           {/* Dropdown Menu */}
           {openDropdown === 'PIPELINES' && (
-            <div className="absolute right-0 mt-1.5 w-64 bg-[#090d12] border border-border/90 shadow-2xl z-50 p-2 text-xs font-mono space-y-1 rounded-[2px]">
+            <div className="absolute right-0 top-full mt-1.5 w-64 bg-[#090d12]/95 backdrop-blur-md border border-border shadow-[0_10px_35px_rgba(0,0,0,0.95)] z-[100] p-2 text-xs font-mono space-y-1 rounded-[2px]">
               <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-border/60 text-[10px] text-text-muted">
                 <span>// SELECT PIPELINES</span>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectAllSources();
                   }}
@@ -465,6 +480,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
                   return (
                     <button
                       key={sourceName}
+                      type="button"
                       onClick={() => onToggleSource(sourceName)}
                       className="w-full flex items-center justify-between pt-1 px-1.5 py-1 text-left text-[11px] hover:bg-panel-subtle rounded transition-colors cursor-pointer group"
                     >

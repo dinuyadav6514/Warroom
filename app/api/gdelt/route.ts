@@ -1,5 +1,7 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import https from 'https';
+
+export const dynamic = 'force-dynamic';
 
 const GDELT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const GDELT_QUERY = '("fire exchange" OR "armed clash" OR "artillery" OR "airstrike" OR "drone strike" OR "missile attack" OR "shelling" OR "troops killed" OR "soldiers killed" OR "military operation" OR "offensive launched" OR "insurgent attack")';

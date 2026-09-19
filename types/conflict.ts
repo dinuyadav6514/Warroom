@@ -113,6 +113,8 @@ export interface FilterState {
   eventType: string;
   region: string;
   country?: string;
+  /** Multi-country filter set from terminal. When non-empty, takes precedence over `country`. */
+  countries?: string[];
   searchQuery?: string;
   intelMode?: IntelMode;
   storyMerging?: boolean;

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runConflictSync } from '@/lib/providers';
 import { generateConflictBrief } from '@/lib/ai/summarizer';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));

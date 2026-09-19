@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { FreeNewsApiProvider } from '@/lib/providers/freenewsapi.provider';
 import { CurrentsNewsProvider } from '@/lib/providers/currents.provider';
 import { NewsApiOrgProvider } from '@/lib/providers/newsapi.provider';

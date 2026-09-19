@@ -46,7 +46,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         : 'text-amber-400 border-amber-600 bg-amber-950/40';
 
     return (
-      <div className="h-full flex flex-col bg-transparent overflow-hidden select-none font-mono">
+      <div className="w-full flex-1 flex flex-col bg-transparent select-none font-mono min-h-[380px]">
         {/* Minimal Transparent Return Link (No heavy header) */}
         <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
           <button
@@ -162,7 +162,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
     .slice(0, 3);
 
   return (
-    <div className="h-full flex flex-col bg-transparent overflow-hidden select-none font-mono">
+    <div className="w-full flex-1 flex flex-col bg-transparent select-none font-mono min-h-[380px]">
       {/* Minimal Transparent Return Link (No heavy header) */}
       <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
         <button

@@ -211,7 +211,7 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
   const progressPercent = Math.min(100, Math.max(0, ((30 - timeLeft) / 30) * 100));
 
   return (
-    <div className="w-full h-full flex-1 min-h-0 flex flex-col bg-transparent overflow-hidden select-none font-mono text-xs">
+    <div className="w-full flex flex-col bg-transparent select-none font-mono text-xs space-y-2">
       {/* Top Action Button: Open Full Live Conflict Stream */}
       {onOpenFullStream && (
         <button
@@ -258,8 +258,8 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
         </div>
       </div>
 
-      {/* Featured Live Conflict Dispatch Card - ENLARGED VERTICALLY (345px fixed, strictly invariant) */}
-      <div className="h-[345px] shrink-0 bg-white/[0.03] border border-white/10 rounded-[2px] p-3 flex flex-col justify-between overflow-hidden">
+      {/* Featured Live Conflict Dispatch Card */}
+      <div className="min-h-[290px] shrink-0 bg-white/[0.03] border border-white/10 rounded-[2px] p-3 flex flex-col justify-between">
         {/* Badges Row - Fixed 22px */}
         <div className="flex items-center justify-between gap-1 flex-wrap h-[22px] shrink-0">
           <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${severityColor}`}>
@@ -280,17 +280,17 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
           </span>
         </div>
 
-        {/* Live Headline Container - EXPANDED FIXED HEIGHT (195px) */}
+        {/* Live Headline Container */}
         <div
           onClick={() => onSelectEvent?.(currentEvent)}
-          className="h-[195px] shrink-0 overflow-hidden cursor-pointer group flex items-start py-0.5"
+          className="min-h-[145px] max-h-[180px] shrink-0 overflow-hidden cursor-pointer group flex items-start py-0.5"
           title="Click to zoom to this conflict on map"
         >
           <TypewriterText
             key={`headline-${currentEvent.id}-${currentIndex}`}
             as="div"
             text={currentEvent.notes || `${currentEvent.eventType} in ${currentEvent.location}`}
-            className="text-[12px] font-bold text-text-primary group-hover:text-accent-cyan leading-relaxed line-clamp-9 transition-colors"
+            className="text-[12px] font-bold text-text-primary group-hover:text-accent-cyan leading-relaxed line-clamp-8 transition-colors"
             speed={12}
           />
         </div>
@@ -328,16 +328,16 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
         )}
       </div>
 
-      {/* Live Stream Terminal History Feed - FILLS EXACT REMAINING SPACE ADAPTING TO SCREEN HEIGHT */}
-      <div className="flex-1 min-h-0 flex flex-col pt-2 overflow-hidden">
-        <div className="text-[9px] font-bold text-text-muted tracking-wider pb-1 shrink-0 flex items-center justify-between h-[16px]">
+      {/* Live Stream Terminal History Feed - With fixed scrollable height */}
+      <div className="flex flex-col pt-1 shrink-0">
+        <div className="text-[9px] font-bold text-text-muted tracking-wider pb-1 shrink-0 flex items-center justify-between h-[18px]">
           <span>// STREAM FEED LOG</span>
           <span className="text-[8px] text-accent-cyan">30S POLLING</span>
         </div>
 
         <div
           ref={scrollRef}
-          className="flex-1 min-h-0 overflow-y-auto space-y-1 text-[9.5px] leading-tight select-text pr-0.5"
+          className="h-48 min-h-[140px] overflow-y-auto space-y-1 text-[9.5px] leading-tight select-text pr-1 bg-black/30 p-2 rounded border border-white/5"
         >
           {history.map((item) => (
             <div key={item.id} className="flex items-start gap-1 font-mono text-text-secondary/90">
