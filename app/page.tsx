@@ -147,12 +147,12 @@ export default function WarRoomDashboard() {
     load10DayData(true);
   }, []);
 
-  // 1-Minute Auto-Refresh Timer (maintains fresh 10-day dataset in background)
+  // 15-Second High-Frequency Auto-Refresh Timer (maintains live 10-day dataset in minimum time)
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       load10DayData(false);
-    }, 60 * 1000);
+    }, 15 * 1000);
     return () => clearInterval(interval);
   }, [autoRefresh, load10DayData]);
 

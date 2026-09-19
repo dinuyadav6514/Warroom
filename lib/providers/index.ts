@@ -72,8 +72,8 @@ export interface SyncEngineResult {
   error?: string;
 }
 
-// 1-Minute Freshness TTL: fetches live conflict data every minute
-const CACHE_TTL_MS = 60 * 1000;
+// 15-Second Freshness TTL: fetches live conflict data in minimum possible turnaround time
+const CACHE_TTL_MS = 15 * 1000;
 
 let inFlightSyncPromise: Promise<SyncEngineResult> | null = null;
 

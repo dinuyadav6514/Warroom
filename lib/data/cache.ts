@@ -202,9 +202,9 @@ export class CacheService {
   }
 
   /**
-   * Checks if the cached data was synced within the 1-minute freshness TTL (60,000 ms).
+   * Checks if the cached data was synced within the 15-second freshness TTL (15,000 ms).
    */
-  static isCacheFresh(maxAgeMs = 60 * 1000): boolean {
+  static isCacheFresh(maxAgeMs = 15 * 1000): boolean {
     if (!globalCache.lastSyncAt || globalCache.events.length === 0) return false;
     const syncTime = new Date(globalCache.lastSyncAt).getTime();
     if (isNaN(syncTime)) return false;

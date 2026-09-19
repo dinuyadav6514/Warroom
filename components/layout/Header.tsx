@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleStatsPanel,
 }) => {
   const [utcClock, setUtcClock] = useState<string>('');
-  const [nextRefreshSec, setNextRefreshSec] = useState<number>(60);
+  const [nextRefreshSec, setNextRefreshSec] = useState<number>(15);
 
   // Live UTC World Clock
   useEffect(() => {
@@ -55,11 +55,11 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // 1-Minute countdown timer for next background auto-refresh
+  // 15-Second high-frequency countdown timer for next background auto-refresh
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
-      setNextRefreshSec((prev) => (prev <= 1 ? 60 : prev - 1));
+      setNextRefreshSec((prev) => (prev <= 1 ? 15 : prev - 1));
     }, 1000);
     return () => clearInterval(interval);
   }, [autoRefresh]);
@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
   // Reset countdown upon active refresh execution
   useEffect(() => {
     if (isRefreshing) {
-      setNextRefreshSec(60);
+      setNextRefreshSec(15);
     }
   }, [isRefreshing]);
 
@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* 6. Next Refresh Timer (with countdown & auto-refresh toggle) */}
         <button
           onClick={onToggleAutoRefresh}
-          title={`Click to ${autoRefresh ? 'pause' : 'resume'} 1-minute auto-refresh`}
+          title={`Click to ${autoRefresh ? 'pause' : 'resume'} 15-second high-speed auto-refresh`}
           className={`flex items-center gap-1.5 px-2 py-1 border rounded-[2px] text-[10.5px] font-mono transition-colors cursor-pointer shrink-0 ${
             autoRefresh
               ? 'border-emerald-700/70 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/40'
@@ -206,11 +206,11 @@ export const Header: React.FC<HeaderProps> = ({
           <span
             className={`text-[9px] px-1 py-0.2 rounded-[2px] border ${
               autoRefresh
-                ? 'bg-emerald-900/80 border-emerald-600 text-emerald-300'
+                ? 'bg-emerald-900/80 border-emerald-600 text-emerald-300 font-bold'
                 : 'bg-black/50 border-border text-text-muted'
             }`}
           >
-            {autoRefresh ? '1M ON' : 'OFF'}
+            {autoRefresh ? '15S LIVE' : 'OFF'}
           </span>
         </button>
 
