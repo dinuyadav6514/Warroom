@@ -233,6 +233,7 @@ function registerTacticalMilitaryIcons(map: any) {
     { id: 'army-moderate-24h', shape: 'diamond-lock', fillColor: '#ca8a04', strokeColor: '#0f172a', accentColor: '#22c55e' },
     { id: 'army-low', shape: 'circle', fillColor: '#4d7c0f', strokeColor: '#0f172a' },
     { id: 'army-news', shape: 'recon', fillColor: '#64748b', strokeColor: '#0f172a' },
+    { id: 'army-global', shape: 'circle', fillColor: '#0284c7', strokeColor: '#0f172a' },
     { id: 'vector-arrow-cyan', shape: 'arrow', fillColor: '#06b6d4', strokeColor: '#050a12' },
     { id: 'vector-arrow-red', shape: 'arrow', fillColor: '#ef4444', strokeColor: '#050a12' },
   ];
@@ -1317,7 +1318,9 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
       const isRecent24h = !isNaN(time) && now - time <= oneDayMs;
 
       let markerIcon = 'army-low';
-      if (e.isConflict === false) {
+      if (e.country === 'Global / Strategic' || e.location?.includes('Global / Transnational')) {
+        markerIcon = 'army-global';
+      } else if (e.isConflict === false) {
         markerIcon = 'army-news';
       } else if (e.severity === 'CRITICAL') {
         markerIcon = isRecent24h ? 'army-critical-24h' : 'army-critical';

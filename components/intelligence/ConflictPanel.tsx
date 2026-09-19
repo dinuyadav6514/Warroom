@@ -107,12 +107,13 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
   // Filtered recent events for the events tab
   const filteredEvents = useMemo(() => {
     const rawEvents = activeConflict ? activeConflict.recentEvents : allEvents;
+    if (!rawEvents) return [];
     if (!eventSearch.trim()) return rawEvents;
     const q = eventSearch.toLowerCase();
     return rawEvents.filter(
       (e) =>
-        e.eventType.toLowerCase().includes(q) ||
-        e.location.toLowerCase().includes(q) ||
+        (e.eventType && e.eventType.toLowerCase().includes(q)) ||
+        (e.location && e.location.toLowerCase().includes(q)) ||
         (e.country && e.country.toLowerCase().includes(q)) ||
         (e.notes && e.notes.toLowerCase().includes(q))
     );

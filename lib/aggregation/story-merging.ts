@@ -48,7 +48,7 @@ export function areEventsSimilar(a: ConflictEvent, b: ConflictEvent): boolean {
   if (a.id === b.id) return true;
 
   // 1. Geographic Check: Must be in the same country
-  if (a.country.toLowerCase() !== b.country.toLowerCase()) {
+  if ((a.country || '').toLowerCase() !== (b.country || '').toLowerCase()) {
     return false;
   }
 

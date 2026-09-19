@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface EventRegistryArticle {
   uri?: string;
@@ -71,6 +71,8 @@ export class NewsApiAiProvider implements ConflictDataProvider {
               description: a.body ? a.body.slice(0, 300) : undefined,
               url: a.url,
               publishedAt: a.dateTime,
+              country: a.location?.country?.label?.eng,
+              location: a.location?.label?.eng,
               source: a.source?.title ? `NewsAPI.ai (${a.source.title})` : 'NewsAPI.ai (Event Registry)',
             });
             if (ev) events.push(ev);
@@ -79,8 +81,21 @@ export class NewsApiAiProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[NewsAPI.ai] Live fetch failed, engaging telemetry stream:', err);
+        console.warn('[NewsAPI.ai] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via Deutsche Welle World RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.dw.com/en/top-stories/s-9097?maca=en-rss-en-all-1125-rdf', 'NewsAPI.ai (Deutsche Welle Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[NewsAPI.ai] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

@@ -172,6 +172,7 @@ const COORDS: Record<string, CountryCoord> = {
   yemen:              { lng: 48.52, lat: 15.55, zoom: 6.0 },
   zambia:             { lng: 27.85, lat: -13.13, zoom: 5.8 },
   zimbabwe:           { lng: 29.15, lat: -19.02, zoom: 6.2 },
+  'global / strategic': { lng: -25.00, lat: 0.00, zoom: 2.5, aliases: ['global', 'transnational', 'international', 'un'] },
 
   // ── Continents & Major Geopolitical Regions ───────────────────────────────
   asia: {

@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface MediastackArticle {
   author?: string;
@@ -54,6 +54,7 @@ export class MediastackProvider implements ConflictDataProvider {
               description: a.description,
               url: a.url,
               publishedAt: a.published_at,
+              countryCode: a.country,
               source: a.source ? `Mediastack (${a.source})` : 'Mediastack',
             });
             if (ev) events.push(ev);
@@ -62,8 +63,21 @@ export class MediastackProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[Mediastack] Live fetch failed, engaging telemetry stream:', err);
+        console.warn('[Mediastack] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via Voice of America Global News RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.voanews.com/api/zyr_o_pem_', 'Mediastack (VOA Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[Mediastack] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

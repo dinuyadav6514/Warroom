@@ -149,7 +149,7 @@ export const COUNTRY_TO_REGION: Record<string, string> = {
   Australia: 'Oceania & Pacific',
   'New Zealand': 'Oceania & Pacific',
 
-  // Maritime & Strategic Chokepoints
+  // Maritime & Strategic Chokepoints & Global Node
   'Red Sea': 'Maritime & Global',
   'Persian Gulf': 'Maritime & Global',
   'Strait of Hormuz': 'Maritime & Global',
@@ -157,6 +157,10 @@ export const COUNTRY_TO_REGION: Record<string, string> = {
   'Black Sea': 'Maritime & Global',
   'South China Sea': 'Maritime & Global',
   'International Maritime': 'Maritime & Global',
+  'Global / Strategic': 'Maritime & Global',
+  'Global': 'Maritime & Global',
+  'Transnational': 'Maritime & Global',
+  'International': 'Maritime & Global',
 };
 
 export function getRegionForCountry(country: string): string {

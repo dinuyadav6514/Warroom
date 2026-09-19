@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface WorldNewsArticle {
   id?: number;
@@ -59,6 +59,7 @@ export class WorldNewsApiProvider implements ConflictDataProvider {
               description: a.text ? a.text.slice(0, 300) : undefined,
               url: a.url,
               publishedAt: a.publish_date,
+              countryCode: a.source_country,
               source: 'World News API',
             });
             if (ev) events.push(ev);
@@ -67,8 +68,21 @@ export class WorldNewsApiProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[World News API] Live fetch failed, engaging telemetry stream:', err);
+        console.warn('[World News API] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via France24 World News RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.france24.com/en/rss', 'World News (France24 Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[World News API] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

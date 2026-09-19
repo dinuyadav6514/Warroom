@@ -22,8 +22,8 @@ import { extractLocationAndCoords, simpleHash } from './provider-utils';
 import { COUNTRY_TO_REGION } from '../aggregation/clustering';
 import { classifyEvent } from '../classification/event-classifier';
 
-function extractCountry(text: string): { country: string; location: string; lat: number; lon: number } | null {
-  return extractLocationAndCoords(text);
+function extractCountry(text: string, metadata?: { country?: string; latitude?: number; longitude?: number }): { country: string; location: string; lat: number; lon: number } {
+  return extractLocationAndCoords(text, metadata);
 }
 
 function inferEventType(title: string): { eventType: string; subEventType: string } {
@@ -143,10 +143,13 @@ export class ReliefWebProvider {
                 const title = fields.title || '';
                 if (!title) continue;
 
-                const loc =
-                  (fields.country && fields.country[0] && extractCountry(fields.country[0].name)) ||
-                  extractCountry(title);
-                if (!loc) continue;
+                const rawCountry = fields.country?.[0]?.name;
+                const rawLoc = fields.country?.[0]?.location;
+                const loc = extractCountry(title, {
+                  country: rawCountry,
+                  latitude: rawLoc?.lat,
+                  longitude: rawLoc?.lon,
+                });
 
                 const isoDate = fields.date?.original || fields.date?.created || new Date().toISOString();
                 const eventDate = isoDate.slice(0, 10);
@@ -230,8 +233,7 @@ export class ReliefWebProvider {
       for (const item of items) {
         const text = `${item.title} ${item.description}`;
 
-        const loc = extractCountry(text) || extractCountry(item.title);
-        if (!loc) continue;
+        const loc = extractCountry(text);
 
         let isoDate = new Date().toISOString();
         try {

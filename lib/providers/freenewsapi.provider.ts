@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface FreeNewsArticle {
   uuid?: string;
@@ -59,6 +59,7 @@ export class FreeNewsApiProvider implements ConflictDataProvider {
               description: a.description,
               url: a.url,
               publishedAt: a.published_at,
+              country: a.country,
               source: a.source || 'FreeNewsApi',
             });
             if (ev) events.push(ev);
@@ -67,11 +68,23 @@ export class FreeNewsApiProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[FreeNewsApi] Live API fetch failed, engaging verified telemetry stream:', err);
+        console.warn('[FreeNewsApi] Live API fetch failed, falling back to open RSS stream:', err);
       }
     }
 
-    // Verified real-world conflict & geopolitical dispatches formatted for FreeNewsApi stream
+    // Zero-Key Hardcoded Live Stream via The Independent World News RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.independent.co.uk/news/world/rss', 'FreeNewsApi (The Independent Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[FreeNewsApi] Open RSS stream failed:', err);
+    }
+
     return this.getVerifiedStream();
   }
 

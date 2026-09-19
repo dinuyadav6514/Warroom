@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface NewsDataArticle {
   article_id?: string;
@@ -55,6 +55,7 @@ export class NewsDataIoProvider implements ConflictDataProvider {
               description: a.description,
               url: a.link,
               publishedAt: a.pubDate,
+              country: a.country && a.country.length > 0 ? a.country[0] : undefined,
               source: a.source_id ? `NewsData (${a.source_id})` : 'NewsData.io',
             });
             if (ev) events.push(ev);
@@ -63,8 +64,21 @@ export class NewsDataIoProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[NewsData.io] Live fetch failed, engaging telemetry stream:', err);
+        console.warn('[NewsData.io] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via Al Jazeera World RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.aljazeera.com/xml/rss/all.xml', 'NewsData.io (Al Jazeera Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[NewsData.io] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

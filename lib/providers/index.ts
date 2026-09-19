@@ -10,6 +10,7 @@ import { NewsApiAiProvider } from './newsapi-ai.provider';
 import { MediastackProvider } from './mediastack.provider';
 import { GuardianProvider } from './guardian.provider';
 import { HackerNewsProvider } from './hackernews.provider';
+import { GoogleNewsScraperProvider } from './googlenews-scraper.provider';
 import { ConflictDataProvider } from '@/types/provider';
 import { ConflictEvent, Conflict, GlobalOverviewStats, DataFreshness, ApiExchange } from '@/types/conflict';
 import { getRecentDateRange, isWithinWindow, isHistoricalOrStaleConflict } from '../data/date-utils';
@@ -31,10 +32,12 @@ const newsApiAiProvider = new NewsApiAiProvider();
 const mediastackProvider = new MediastackProvider();
 const guardianProvider = new GuardianProvider();
 const hackerNewsProvider = new HackerNewsProvider();
+const googleNewsScraperProvider = new GoogleNewsScraperProvider();
 
 export const ALL_PROVIDERS = [
   gdeltProvider,
   reliefWebProvider,
+  googleNewsScraperProvider,
   freeNewsApiProvider,
   currentsProvider,
   newsApiOrgProvider,
@@ -147,6 +150,7 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
     const [
       gdeltResult,
       reliefWebResult,
+      gnewsScraperResult,
       fnaResult,
       currentsResult,
       newsApiResult,
@@ -160,6 +164,7 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
     ] = await Promise.allSettled([
       gdeltProvider.fetchRecentArticles(full10DayRange),
       reliefWebProvider.fetchRecentReports(full10DayRange),
+      googleNewsScraperProvider.fetchRecentEvents(full10DayRange),
       freeNewsApiProvider.fetchRecentEvents(full10DayRange),
       currentsProvider.fetchRecentEvents(full10DayRange),
       newsApiOrgProvider.fetchRecentEvents(full10DayRange),
@@ -174,6 +179,7 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
 
     const gdeltEvents = gdeltResult.status === 'fulfilled' ? gdeltResult.value : [];
     const reliefWebEvents = reliefWebResult.status === 'fulfilled' ? reliefWebResult.value : [];
+    const gnewsScraperEvents = gnewsScraperResult.status === 'fulfilled' ? gnewsScraperResult.value : [];
     const fnaEvents = fnaResult.status === 'fulfilled' ? fnaResult.value : [];
     const currentsEvents = currentsResult.status === 'fulfilled' ? currentsResult.value : [];
     const newsApiEvents = newsApiResult.status === 'fulfilled' ? newsApiResult.value : [];
@@ -188,6 +194,7 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
     rawEvents = [
       ...gdeltEvents,
       ...reliefWebEvents,
+      ...gnewsScraperEvents,
       ...fnaEvents,
       ...currentsEvents,
       ...newsApiEvents,
@@ -201,10 +208,10 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
     ];
 
     console.log(
-      `[Sync] Multi-source live fetch: GDELT(${gdeltEvents.length}), ReliefWeb(${reliefWebEvents.length}), FreeNewsApi(${fnaEvents.length}), Currents(${currentsEvents.length}), NewsAPI.org(${newsApiEvents.length}), GNews(${gnewsEvents.length}), NewsData.io(${newsDataEvents.length}), WorldNews(${worldNewsEvents.length}), NewsAPI.ai(${newsApiAiEvents.length}), Mediastack(${mediastackEvents.length}), Guardian(${guardianEvents.length}), HackerNews(${hnEvents.length}) => Total Ingested: ${rawEvents.length}`
+      `[Sync] Multi-source live fetch: GDELT(${gdeltEvents.length}), ReliefWeb(${reliefWebEvents.length}), GNewsScraper(${gnewsScraperEvents.length}), FreeNewsApi(${fnaEvents.length}), Currents(${currentsEvents.length}), NewsAPI.org(${newsApiEvents.length}), GNews(${gnewsEvents.length}), NewsData.io(${newsDataEvents.length}), WorldNews(${worldNewsEvents.length}), NewsAPI.ai(${newsApiAiEvents.length}), Mediastack(${mediastackEvents.length}), Guardian(${guardianEvents.length}), HackerNews(${hnEvents.length}) => Total Ingested: ${rawEvents.length}`
     );
 
-    providerName = 'MULTI-SOURCE GLOBAL NEWS MESH (12 ACTIVE PIPELINES)';
+    providerName = 'MULTI-SOURCE GLOBAL NEWS MESH (12 PIPELINES + GOOGLE NEWS SCRAPER)';
     status = 'LIVE';
   } catch (err: unknown) {
     syncError = err instanceof Error ? err.message : String(err);

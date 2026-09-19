@@ -13,6 +13,7 @@ import { GuardianProvider } from '@/lib/providers/guardian.provider';
 import { HackerNewsProvider } from '@/lib/providers/hackernews.provider';
 import { GDELTProvider } from '@/lib/providers/gdelt.provider';
 import { ReliefWebProvider } from '@/lib/providers/reliefweb.provider';
+import { GoogleNewsScraperProvider } from '@/lib/providers/googlenews-scraper.provider';
 import { getRecentDateRange } from '@/lib/data/date-utils';
 import { classifyEvent } from '@/lib/classification/event-classifier';
 import { mergeSimilarStories } from '@/lib/aggregation/story-merging';
@@ -23,6 +24,10 @@ export async function GET(request: NextRequest) {
   const dateRange = getRecentDateRange(10);
 
   const providerMap: Record<string, { name: string; run: () => Promise<any> }> = {
+    'googlenews-scraper': {
+      name: 'Google News Multi-Theater Scraper Engine',
+      run: () => new GoogleNewsScraperProvider().fetchRecentEvents(dateRange),
+    },
     freenewsapi: {
       name: 'FreeNewsApi',
       run: () => new FreeNewsApiProvider().fetchRecentEvents(dateRange),

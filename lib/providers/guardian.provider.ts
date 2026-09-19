@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface GuardianResult {
   id: string;
@@ -69,8 +69,21 @@ export class GuardianProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[The Guardian] Live fetch failed, engaging telemetry stream:', err);
+        console.warn('[The Guardian] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via Guardian World RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://www.theguardian.com/world/rss', 'The Guardian', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[The Guardian] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

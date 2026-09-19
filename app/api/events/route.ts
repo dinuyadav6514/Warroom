@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
     if (search && search.trim() !== '') {
       filtered = filtered.filter((e) => {
         return (
-          e.location.toLowerCase().includes(search) ||
-          e.country.toLowerCase().includes(search) ||
+          (e.location && e.location.toLowerCase().includes(search)) ||
+          (e.country && e.country.toLowerCase().includes(search)) ||
           (e.actor1 && e.actor1.toLowerCase().includes(search)) ||
           (e.actor2 && e.actor2.toLowerCase().includes(search)) ||
           (e.notes && e.notes.toLowerCase().includes(search)) ||
-          e.id.toLowerCase().includes(search)
+          (e.id && e.id.toLowerCase().includes(search))
         );
       });
     }

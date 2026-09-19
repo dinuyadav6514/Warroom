@@ -271,13 +271,13 @@ export default function WarRoomDashboard() {
       if (filters.searchQuery && filters.searchQuery.trim() !== '') {
         const q = filters.searchQuery.toLowerCase();
         const match =
-          e.location.toLowerCase().includes(q) ||
-          e.country.toLowerCase().includes(q) ||
+          (e.location && e.location.toLowerCase().includes(q)) ||
+          (e.country && e.country.toLowerCase().includes(q)) ||
           (e.actor1 && e.actor1.toLowerCase().includes(q)) ||
           (e.actor2 && e.actor2.toLowerCase().includes(q)) ||
           (e.notes && e.notes.toLowerCase().includes(q)) ||
           (e.primaryCategory && e.primaryCategory.toLowerCase().includes(q)) ||
-          e.id.toLowerCase().includes(q);
+          (e.id && (e.id.toLowerCase().includes(q) || e.id.includes(q)));
         if (!match) return false;
       }
       return true;
@@ -348,7 +348,9 @@ export default function WarRoomDashboard() {
 
   // Command handlers
   const handleSelectEventById = (id: string) => {
-    const found = events.find((e) => e.id.toLowerCase() === id.toLowerCase() || e.id.includes(id));
+    if (!id) return;
+    const searchId = id.toLowerCase();
+    const found = events.find((e) => (e.id && e.id.toLowerCase() === searchId) || (e.id && e.id.includes(id)));
     if (found) {
       setSelectedEvent(found);
       setIsEventModalOpen(true);

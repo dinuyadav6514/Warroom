@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
 
 interface CurrentsArticle {
   id: string;
@@ -61,8 +61,21 @@ export class CurrentsNewsProvider implements ConflictDataProvider {
           if (events.length > 0) return events;
         }
       } catch (err) {
-        console.warn('[Currents News] Live API fetch failed, engaging telemetry stream:', err);
+        console.warn('[Currents News] Live API fetch failed, falling back to open RSS stream:', err);
       }
+    }
+
+    // Zero-Key Hardcoded Live Stream via Sky News World RSS
+    try {
+      const rssEvents = await fetchOpenRssFeed('https://feeds.skynews.com/feeds/rss/world.xml', 'Currents News (Sky News Wire)', {
+        maxItems: 30,
+        timeoutMs: 8000,
+      });
+      if (rssEvents.length > 0) {
+        return rssEvents;
+      }
+    } catch (err) {
+      console.warn('[Currents News] Open RSS stream failed:', err);
     }
 
     return this.getVerifiedStream();

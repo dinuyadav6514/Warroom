@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { DataFreshness, ApiExchange } from '@/types/conflict';
 import { formatRelativeTime } from '@/lib/data/date-utils';
-import { RefreshCw, ShieldAlert, Radio, HelpCircle, Menu, Globe, Clock, BarChart3 } from 'lucide-react';
+import { RefreshCw, ShieldAlert, Radio, HelpCircle, Menu, Globe, Clock, BarChart3, KeyRound } from 'lucide-react';
 
 interface HeaderProps {
   freshness: DataFreshness | null;
@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   autoRefresh,
   onToggleAutoRefresh,
   onOpenSources,
+  onOpenSetup,
   onSelectDays,
   onToggleMobilePanel,
   onToggleMobileNav,
@@ -254,6 +255,19 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
         )}
+
+        {/* Pipeline & API Keys Configuration Button */}
+        <button
+          onClick={onOpenSetup}
+          className="flex items-center gap-1.5 px-2 py-1 border border-accent-cyan/60 bg-cyan-950/40 hover:bg-cyan-900/60 text-accent-cyan rounded-[2px] text-[10.5px] font-mono transition-colors cursor-pointer shrink-0 shadow-[0_0_8px_rgba(0,240,255,0.15)]"
+          title="Configure 12 Intelligence Pipelines & API Keys"
+        >
+          <KeyRound className="w-3.5 h-3.5 text-accent-cyan" />
+          <span className="font-bold hidden lg:inline">PIPELINES</span>
+          <span className="text-[9px] px-1 bg-cyan-900/80 border border-cyan-600 rounded-[1px] font-bold">
+            12
+          </span>
+        </button>
 
         {/* Sources Attribution Modal Trigger */}
         <button
