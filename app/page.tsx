@@ -92,6 +92,32 @@ export default function WarRoomDashboard() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
 
+  // NASA FIRMS Satellite Thermal Anomaly State
+  const [showFirmsOverlay, setShowFirmsOverlay] = useState<boolean>(true);
+  const [firmsGeoJson, setFirmsGeoJson] = useState<any>(null);
+  const [firmsCount, setFirmsCount] = useState<number>(0);
+  const [isFirmsLoading, setIsFirmsLoading] = useState<boolean>(false);
+
+  const loadFirmsData = useCallback(async (force = false) => {
+    setIsFirmsLoading(true);
+    try {
+      const res = await fetch(`/api/firms${force ? '?force=true' : ''}`);
+      const data = await res.json();
+      if (data.success && data.geojson) {
+        setFirmsGeoJson(data.geojson);
+        setFirmsCount(data.count || data.geojson.features?.length || 0);
+      }
+    } catch (e) {
+      console.warn('Failed to load NASA FIRMS data:', e);
+    } finally {
+      setIsFirmsLoading(false);
+    }
+  }, []);
+
+  const handleToggleFirms = useCallback(() => {
+    setShowFirmsOverlay((prev) => !prev);
+  }, []);
+
   // Load 10-Day Dataset Function (Only called on initial mount, on explicit force refresh, or 1-minute background timer)
   const load10DayData = useCallback(async (showRefreshingBanner = false) => {
     if (showRefreshingBanner) {
@@ -142,10 +168,11 @@ export default function WarRoomDashboard() {
     }
   }, [filters.days]);
 
-  // Initial 10-Day Data Load
+  // Initial 10-Day Data Load & NASA FIRMS satellite data
   useEffect(() => {
     load10DayData(true);
-  }, []);
+    loadFirmsData(false);
+  }, [load10DayData, loadFirmsData]);
 
   // 15-Second High-Frequency Auto-Refresh Timer (maintains live 10-day dataset in minimum time)
   useEffect(() => {
@@ -156,7 +183,7 @@ export default function WarRoomDashboard() {
     return () => clearInterval(interval);
   }, [autoRefresh, load10DayData]);
 
-  // Force Live API Refresh Function (bypasses cache, calls Gemini live, refreshes 10-day dataset)
+  // Force Live API Refresh Function (bypasses cache, calls Gemini live, refreshes 10-day dataset and FIRMS)
   const handleForceRefresh = useCallback(async () => {
     setIsRefreshing(true);
     setErrorMessage(null);
@@ -176,14 +203,17 @@ export default function WarRoomDashboard() {
         setApiExchange(syncJson.apiExchange);
       }
 
-      await load10DayData(false);
+      await Promise.all([
+        load10DayData(false),
+        loadFirmsData(true),
+      ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMessage(msg);
     } finally {
       setIsRefreshing(false);
     }
-  }, [load10DayData]);
+  }, [load10DayData, loadFirmsData]);
 
   // Compute all available unique sources across the 10-day dataset
   const availableSources = useMemo(() => {
@@ -673,6 +703,11 @@ export default function WarRoomDashboard() {
                   targetLocation={mapTargetLocation}
                   relationNetwork={relationNetwork}
                   onSelectRelation={handleSelectRelation}
+                  showFirms={showFirmsOverlay}
+                  onToggleFirms={handleToggleFirms}
+                  firmsGeoJson={firmsGeoJson}
+                  firmsCount={firmsCount}
+                  isFirmsLoading={isFirmsLoading}
                 />
               </div>
             )}

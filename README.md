@@ -31,6 +31,11 @@ Unlike generic news portals or consumer dashboards, WARROOM operates as an intel
   - Multi-tier severity markers: Critical (Red), High (Orange), Moderate (Yellow), Low (Cyan).
   - Subtle pulsing indicator for events occurring within the last 24 hours.
   - Tactical modes: `[CONFLICTS]`, `[EVENTS]`, `[ESCALATION]`, and `[HEATMAP]`.
+  - **NASA FIRMS Satellite Thermal Anomaly & Strike Sensor Overlay**:
+    - Near-Real-Time space-based detection from **NOAA-20 / Suomi-NPP VIIRS (375m)** sensors.
+    - Highlights active kinetic artillery barrages, airstrikes, and burning infrastructure within hours of occurrence.
+    - Scaled Fire Radiative Power (MW) and Brightness Temperature (Kelvin) heat orbs with dedicated tactical HUD inspector card.
+    - Zero API key required by default with automatic 15-minute server-side caching.
 - **Conflict Intelligence Panel**:
   - Live theater metrics, intensity histogram, reported fatalities, and identified belligerents.
   - Chronological developments feed with raw incident logs.

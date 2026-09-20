@@ -24,6 +24,11 @@ interface ConflictMapProps {
   isRefreshing?: boolean;
   targetLocation?: { lng: number; lat: number; zoom?: number; timestamp: number; noZoom?: boolean } | null;
   relationNetwork?: RelationshipNetwork | null;
+  showFirms?: boolean;
+  onToggleFirms?: () => void;
+  firmsGeoJson?: any;
+  firmsCount?: number;
+  isFirmsLoading?: boolean;
 }
 
 const TACTICAL_CURSOR_SVG = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair`;
@@ -263,6 +268,11 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   isRefreshing = false,
   targetLocation,
   relationNetwork,
+  showFirms = false,
+  onToggleFirms,
+  firmsGeoJson,
+  firmsCount,
+  isFirmsLoading = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isDotHovered, setIsDotHovered] = useState(false);
@@ -576,6 +586,12 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           });
 
           map.addSource('warroom-conflicts', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+
+          // NASA FIRMS Satellite Thermal Anomaly GeoJSON Source
+          map.addSource('warroom-firms-hotspots', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           });
@@ -942,6 +958,70 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             },
           });
 
+          // ── NASA FIRMS Satellite Thermal Anomaly & Kinetic Strike Layers ────
+          // 1. Incandescent Thermal Halo Glow (scaled by Fire Radiative Power MW)
+          map.addLayer({
+            id: 'firms-thermal-glow',
+            type: 'circle',
+            source: 'warroom-firms-hotspots',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                1, ['interpolate', ['linear'], ['get', 'frp'], 5, 2.5, 50, 7, 150, 14],
+                5, ['interpolate', ['linear'], ['get', 'frp'], 5, 5, 50, 14, 150, 28],
+                10, ['interpolate', ['linear'], ['get', 'frp'], 5, 10, 50, 24, 150, 48],
+              ],
+              'circle-color': [
+                'interpolate', ['linear'], ['get', 'frp'],
+                5, '#f59e0b',   // Amber
+                25, '#f97316',  // Orange
+                60, '#ef4444',  // Red
+                120, '#ffffff', // Incandescent Blast White
+              ],
+              'circle-blur': 0.6,
+              'circle-opacity': 0.75,
+            },
+            layout: { visibility: 'none' },
+          });
+
+          // 2. Precision Thermal Reticle Core
+          map.addLayer({
+            id: 'firms-thermal-core',
+            type: 'circle',
+            source: 'warroom-firms-hotspots',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                1, 1.5,
+                5, 2.5,
+                10, 4.0,
+              ],
+              'circle-color': '#ffffff',
+              'circle-stroke-width': 1.2,
+              'circle-stroke-color': '#f97316',
+              'circle-opacity': 0.95,
+            },
+            layout: { visibility: 'none' },
+          });
+
+          // 3. Invisible Hit-target for clicking & hovering
+          map.addLayer({
+            id: 'firms-thermal-hit',
+            type: 'circle',
+            source: 'warroom-firms-hotspots',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                1, 8,
+                5, 12,
+                10, 18,
+              ],
+              'circle-opacity': 0,
+              'circle-stroke-width': 0,
+            },
+            layout: { visibility: 'none' },
+          });
+
           // Function to open popup for an event dot (works for both conflict and news dots)
           let lastDotClickTime = 0;
           let lastDotClickId = '';
@@ -1248,6 +1328,66 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             stopLineAnimationRef.current();
           });
 
+          // ── NASA FIRMS Thermal Anomaly Interactions ──────────────────────
+          map.on('click', 'firms-thermal-hit', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            const props = e.features[0].properties || {};
+            const coords = e.features[0].geometry.coordinates.slice();
+
+            map.flyTo({
+              center: [coords[0], coords[1]],
+              zoom: Math.max(map.getZoom() < 6.5 ? 6.5 : map.getZoom(), 6.5),
+              duration: 700,
+            });
+
+            setRadiatingBeacon(coords[0], coords[1], '#f59e0b');
+
+            const firmsPopupHtml = `
+              <div style="font-family: monospace; font-size: 11px; line-height: 1.45; color: #e6edf3; min-width: 255px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(245,158,11,0.4); padding-bottom: 4px; margin-bottom: 6px;">
+                  <span style="color: #f59e0b; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></span>
+                    // SATELLITE THERMAL HIT
+                  </span>
+                  <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid #f97316; color: #f97316; background: rgba(249,115,22,0.1);">
+                    NASA VIIRS
+                  </span>
+                </div>
+                <div style="font-size: 12px; font-weight: bold; color: #ffffff; margin-bottom: 6px;">
+                  ${props.theater || 'Kinetic Thermal Anomaly'}
+                </div>
+                <div style="display: grid; gap: 3px; font-size: 10px; margin-bottom: 7px;">
+                  <div><span style="color: #8b949e;">RADIATIVE POWER ::</span> <strong style="color: #f97316;">${props.frp} MW (FRP)</strong></div>
+                  <div><span style="color: #8b949e;">BRIGHTNESS TEMP ::</span> <strong style="color: #fbbf24;">${props.brightTi4} K</strong></div>
+                  <div><span style="color: #8b949e;">DETECTED UTC    ::</span> <span style="color: #e2e8f0;">${props.acqDate} ${props.acqTime} UTC</span></div>
+                  <div><span style="color: #8b949e;">SENSOR / ORBIT  ::</span> <span style="color: #94a3b8;">${props.satellite} (${props.daynight === 'N' ? 'NIGHT' : 'DAY'})</span></div>
+                  <div><span style="color: #8b949e;">CONFIDENCE      ::</span> <span style="color: #22c55e;">${props.confidence}</span></div>
+                  <div><span style="color: #8b949e;">COORDINATES     ::</span> <span style="color: #64748b;">${Number(props.latitude).toFixed(4)}°, ${Number(props.longitude).toFixed(4)}°</span></div>
+                </div>
+                <div style="font-size: 9px; color: #71717a; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px;">
+                  * Infrared signature indicates active kinetic blast, heavy artillery, or burning infrastructure.
+                </div>
+              </div>
+            `;
+
+            clickPopupRef.current
+              .setLngLat(coords)
+              .setHTML(firmsPopupHtml)
+              .addTo(map);
+          });
+
+          map.on('mouseenter', 'firms-thermal-hit', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+
+          map.on('mouseleave', 'firms-thermal-hit', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
+
           // Global canvas click: clicking empty space on the map deselects active dot and returns to terminal
           map.on('click', (e: any) => {
             const interactiveLayers = [
@@ -1260,6 +1400,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'relationship-lines-hit',
               'hovered-line-glow',
               'hovered-line-core',
+              'firms-thermal-hit',
             ].filter((layerId) => map.getLayer(layerId));
 
             const bbox: [any, any] = [
@@ -1571,6 +1712,72 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
     }
   }, [relationNetwork, mapLoaded]);
 
+  // Update NASA FIRMS GeoJSON data when loaded
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const source: any = map.getSource('warroom-firms-hotspots');
+    if (source && firmsGeoJson) {
+      source.setData(firmsGeoJson);
+    }
+  }, [firmsGeoJson, mapLoaded]);
+
+  // Adjust FIRMS layer visibility based on showFirms toggle
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const setVisibility = (layerId: string, visible: boolean) => {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    };
+    const firmsLayers = ['firms-thermal-glow', 'firms-thermal-core', 'firms-thermal-hit'];
+    firmsLayers.forEach((id) => setVisibility(id, showFirms ?? false));
+  }, [showFirms, mapLoaded]);
+
+  // Real-time infrared thermal breathing/pulse animation for FIRMS dots
+  const firmsPulseAnimRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current || !showFirms) {
+      if (firmsPulseAnimRef.current !== null) {
+        cancelAnimationFrame(firmsPulseAnimRef.current);
+        firmsPulseAnimRef.current = null;
+      }
+      return;
+    }
+
+    const map = mapInstanceRef.current;
+    const animStart = performance.now();
+
+    const frame = (now: number) => {
+      const elapsed = now - animStart;
+      // 1.8s smooth breathing cycle
+      const cycle = (elapsed % 1800) / 1800;
+      const wave = Math.sin(cycle * Math.PI * 2); // -1 to 1
+
+      // Oscillate opacity between 0.45 and 0.88
+      const opacity = 0.66 + wave * 0.22;
+      // Oscillate blur between 0.40 and 0.80
+      const blur = 0.60 + wave * 0.20;
+
+      if (map.getLayer('firms-thermal-glow')) {
+        map.setPaintProperty('firms-thermal-glow', 'circle-opacity', opacity);
+        map.setPaintProperty('firms-thermal-glow', 'circle-blur', blur);
+      }
+
+      firmsPulseAnimRef.current = requestAnimationFrame(frame);
+    };
+
+    firmsPulseAnimRef.current = requestAnimationFrame(frame);
+
+    return () => {
+      if (firmsPulseAnimRef.current !== null) {
+        cancelAnimationFrame(firmsPulseAnimRef.current);
+        firmsPulseAnimRef.current = null;
+      }
+    };
+  }, [showFirms, mapLoaded]);
+
   return (
     <div className="relative w-full h-full bg-[#07090b] select-none">
       {/* Map Container Element */}
@@ -1603,10 +1810,14 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
         </button>
       </div>
 
-      {/* Map Mode Selector */}
+      {/* Map Mode Selector & NASA FIRMS Thermal Sensor */}
       <MapLegend
         mapMode={mapMode}
         onChangeMode={onChangeMapMode}
+        showFirms={showFirms}
+        onToggleFirms={onToggleFirms}
+        firmsCount={firmsCount}
+        isFirmsLoading={isFirmsLoading}
       />
     </div>
   );

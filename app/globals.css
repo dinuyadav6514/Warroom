@@ -150,6 +150,28 @@ body {
   z-index: 25;
 }
 
+.warroom-radiating-marker::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0.9;
+  animation: warroom-beacon-radar-pulse 2s cubic-bezier(0.1, 0.7, 0.1, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes warroom-beacon-radar-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
 .warroom-modern-reticle {
   position: relative;
   width: 38px;

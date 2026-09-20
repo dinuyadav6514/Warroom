@@ -119,7 +119,57 @@ export interface FilterState {
   intelMode?: IntelMode;
   storyMerging?: boolean;
   sources?: string[];
+  firmsOverlay?: boolean;
 }
+
+export interface FirmsThermalPoint {
+  id: string;
+  latitude: number;
+  longitude: number;
+  brightTi4: number; // Brightness Temperature (Kelvin)
+  scan?: number;
+  track?: number;
+  acqDate: string; // YYYY-MM-DD
+  acqTime: string; // HHMM UTC
+  satellite: string;
+  confidence: string;
+  brightTi5?: number;
+  frp: number; // Fire Radiative Power in MW
+  daynight: 'D' | 'N';
+  theater?: string;
+}
+
+export interface FirmsFeatureProperties {
+  id: string;
+  latitude: number;
+  longitude: number;
+  brightTi4: number;
+  acqDate: string;
+  acqTime: string;
+  satellite: string;
+  confidence: string;
+  frp: number;
+  daynight: 'D' | 'N';
+  theater?: string;
+}
+
+export interface FirmsGeoJsonResponse {
+  success: boolean;
+  count: number;
+  lastUpdated: string;
+  geojson: {
+    type: 'FeatureCollection';
+    features: Array<{
+      type: 'Feature';
+      geometry: {
+        type: 'Point';
+        coordinates: [number, number];
+      };
+      properties: FirmsFeatureProperties;
+    }>;
+  };
+}
+
 
 export interface ApiExchange {
   id: string;
