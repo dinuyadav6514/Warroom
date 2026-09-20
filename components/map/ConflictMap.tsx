@@ -29,6 +29,11 @@ interface ConflictMapProps {
   firmsGeoJson?: any;
   firmsCount?: number;
   isFirmsLoading?: boolean;
+  showAviation?: boolean;
+  onToggleAviation?: () => void;
+  aviationGeoJson?: any;
+  aviationCount?: number;
+  isAviationLoading?: boolean;
 }
 
 const TACTICAL_CURSOR_SVG = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%20fill='none'%3E%3Cdefs%3E%3Cfilter%20id='s'%20x='-30%25'%20y='-30%25'%20width='160%25'%20height='160%25'%3E%3CfeDropShadow%20dx='0'%20dy='0'%20stdDeviation='1.2'%20flood-color='%23000000'%20flood-opacity='0.9'/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter='url(%23s)'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='13.5'%20y2='16'/%3E%3Cline%20x1='18.5'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='16'%20y1='9'%20x2='16'%20y2='13.5'/%3E%3Cline%20x1='16'%20y1='18.5'%20x2='16'%20y2='23'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.25'%20fill='%23ffffff'%20stroke='none'/%3E%3C/g%3E%3C/svg%3E") 16 16, crosshair`;
@@ -38,7 +43,19 @@ function registerTacticalMilitaryIcons(map: any) {
   if (typeof document === 'undefined') return;
 
   const createIconData = (
-    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon' | 'arrow',
+    shape:
+      | 'diamond'
+      | 'diamond-lock'
+      | 'square'
+      | 'circle'
+      | 'recon'
+      | 'arrow'
+      | 'plane-recon'
+      | 'plane-awacs'
+      | 'plane-tanker'
+      | 'plane-fighter'
+      | 'plane-transport'
+      | 'plane-default',
     fillColor: string,
     strokeColor: string,
     accentColor?: string
@@ -218,6 +235,166 @@ function registerTacticalMilitaryIcons(map: any) {
       ctx.lineWidth = 1.6;
       ctx.lineCap = 'round';
       ctx.stroke();
+    } else if (shape === 'plane-recon') {
+      // Sleek High-Altitude Strategic Glider (RQ-4 / U-2 / P-8) pointing North (up)
+      ctx.beginPath();
+      // Fuselage
+      ctx.ellipse(32, 32, 3.5, 20, 0, 0, Math.PI * 2);
+      // High-aspect ratio wings
+      ctx.moveTo(6, 28);
+      ctx.lineTo(32, 25);
+      ctx.lineTo(58, 28);
+      ctx.lineTo(58, 31);
+      ctx.lineTo(32, 30);
+      ctx.lineTo(6, 31);
+      ctx.closePath();
+      // V-tail
+      ctx.moveTo(22, 50);
+      ctx.lineTo(32, 47);
+      ctx.lineTo(42, 50);
+      ctx.lineTo(40, 53);
+      ctx.lineTo(32, 49);
+      ctx.lineTo(24, 53);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // Optical radar core
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(32, 28, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (shape === 'plane-awacs') {
+      // Swept-wing AWACS with rotodome saucer disc
+      ctx.beginPath();
+      ctx.ellipse(32, 32, 4.5, 22, 0, 0, Math.PI * 2);
+      ctx.moveTo(10, 38);
+      ctx.lineTo(32, 26);
+      ctx.lineTo(54, 38);
+      ctx.lineTo(53, 42);
+      ctx.lineTo(32, 34);
+      ctx.lineTo(11, 42);
+      ctx.closePath();
+      ctx.moveTo(20, 52);
+      ctx.lineTo(32, 48);
+      ctx.lineTo(44, 52);
+      ctx.lineTo(43, 55);
+      ctx.lineTo(32, 51);
+      ctx.lineTo(21, 55);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // Radome saucer disc on fuselage
+      ctx.beginPath();
+      ctx.arc(32, 36, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.strokeStyle = accentColor || '#facc15';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+    } else if (shape === 'plane-tanker') {
+      // Heavy swept-wing aerial refueler
+      ctx.beginPath();
+      ctx.ellipse(32, 32, 5.0, 23, 0, 0, Math.PI * 2);
+      ctx.moveTo(8, 38);
+      ctx.lineTo(32, 24);
+      ctx.lineTo(56, 38);
+      ctx.lineTo(55, 43);
+      ctx.lineTo(32, 33);
+      ctx.lineTo(9, 43);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // Refueling boom probe extending behind tail
+      ctx.beginPath();
+      ctx.moveTo(32, 53);
+      ctx.lineTo(32, 61);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+    } else if (shape === 'plane-fighter') {
+      // Supersonic combat delta fighter (chevron arrow)
+      ctx.beginPath();
+      ctx.moveTo(32, 10);
+      ctx.lineTo(52, 44);
+      ctx.lineTo(42, 44);
+      ctx.lineTo(36, 38);
+      ctx.lineTo(36, 50);
+      ctx.lineTo(32, 46);
+      ctx.lineTo(28, 50);
+      ctx.lineTo(28, 38);
+      ctx.lineTo(22, 44);
+      ctx.lineTo(12, 44);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(32, 20);
+      ctx.lineTo(32, 36);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    } else if (shape === 'plane-transport') {
+      // Heavy military cargo transport (C-17 / C-130)
+      ctx.beginPath();
+      ctx.ellipse(32, 32, 6.0, 21, 0, 0, Math.PI * 2);
+      ctx.moveTo(6, 30);
+      ctx.lineTo(32, 22);
+      ctx.lineTo(58, 30);
+      ctx.lineTo(57, 36);
+      ctx.lineTo(32, 30);
+      ctx.lineTo(7, 36);
+      ctx.closePath();
+      ctx.moveTo(18, 51);
+      ctx.lineTo(46, 51);
+      ctx.lineTo(45, 54);
+      ctx.lineTo(19, 54);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+    } else if (shape === 'plane-default') {
+      // Clean tactical aircraft arrow pointing North
+      ctx.beginPath();
+      ctx.moveTo(32, 12);
+      ctx.lineTo(50, 46);
+      ctx.lineTo(32, 38);
+      ctx.lineTo(14, 46);
+      ctx.closePath();
+      ctx.fillStyle = fillColor;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
     }
 
     return ctx.getImageData(0, 0, size, size);
@@ -225,7 +402,19 @@ function registerTacticalMilitaryIcons(map: any) {
 
   const icons: Array<{
     id: string;
-    shape: 'diamond' | 'diamond-lock' | 'square' | 'circle' | 'recon' | 'arrow';
+    shape:
+      | 'diamond'
+      | 'diamond-lock'
+      | 'square'
+      | 'circle'
+      | 'recon'
+      | 'arrow'
+      | 'plane-recon'
+      | 'plane-awacs'
+      | 'plane-tanker'
+      | 'plane-fighter'
+      | 'plane-transport'
+      | 'plane-default';
     fillColor: string;
     strokeColor: string;
     accentColor?: string;
@@ -241,6 +430,12 @@ function registerTacticalMilitaryIcons(map: any) {
     { id: 'army-global', shape: 'circle', fillColor: '#0284c7', strokeColor: '#0f172a' },
     { id: 'vector-arrow-cyan', shape: 'arrow', fillColor: '#06b6d4', strokeColor: '#050a12' },
     { id: 'vector-arrow-red', shape: 'arrow', fillColor: '#ef4444', strokeColor: '#050a12' },
+    { id: 'aircraft-recon', shape: 'plane-recon', fillColor: '#06b6d4', strokeColor: '#020617', accentColor: '#22d3ee' },
+    { id: 'aircraft-awacs', shape: 'plane-awacs', fillColor: '#eab308', strokeColor: '#020617', accentColor: '#facc15' },
+    { id: 'aircraft-tanker', shape: 'plane-tanker', fillColor: '#a855f7', strokeColor: '#020617', accentColor: '#c084fc' },
+    { id: 'aircraft-fighter', shape: 'plane-fighter', fillColor: '#ef4444', strokeColor: '#020617', accentColor: '#f87171' },
+    { id: 'aircraft-transport', shape: 'plane-transport', fillColor: '#3b82f6', strokeColor: '#020617', accentColor: '#60a5fa' },
+    { id: 'aircraft-default', shape: 'plane-default', fillColor: '#10b981', strokeColor: '#020617', accentColor: '#34d399' },
   ];
 
   for (const { id, shape, fillColor, strokeColor, accentColor } of icons) {
@@ -273,6 +468,11 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
   firmsGeoJson,
   firmsCount,
   isFirmsLoading = false,
+  showAviation = false,
+  onToggleAviation,
+  aviationGeoJson,
+  aviationCount,
+  isAviationLoading = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isDotHovered, setIsDotHovered] = useState(false);
@@ -592,6 +792,12 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
           // NASA FIRMS Satellite Thermal Anomaly GeoJSON Source
           map.addSource('warroom-firms-hotspots', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+
+          // Military ADS-B Flight Radar GeoJSON Source
+          map.addSource('warroom-military-aircraft', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           });
@@ -1022,6 +1228,91 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             layout: { visibility: 'none' },
           });
 
+          // ── Military ADS-B Flight Radar Layers ─────────────────────────────
+          // 1. Subtle Radar Scanning Glow
+          map.addLayer({
+            id: 'aviation-aircraft-glow',
+            type: 'circle',
+            source: 'warroom-military-aircraft',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 10,
+                6, 16,
+                10, 22,
+              ],
+              'circle-color': ['get', 'color'],
+              'circle-blur': 0.75,
+              'circle-opacity': 0.45,
+            },
+            layout: { visibility: 'none' },
+          });
+
+          // 2. Rotated Directional Aircraft Symbol (True Track orientation)
+          map.addLayer({
+            id: 'aviation-aircraft-symbols',
+            type: 'symbol',
+            source: 'warroom-military-aircraft',
+            layout: {
+              'icon-image': ['get', 'iconName'],
+              'icon-rotate': ['get', 'trackDeg'],
+              'icon-rotation-alignment': 'map',
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-size': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 0.20,
+                5, 0.28,
+                9, 0.40,
+              ],
+              visibility: 'none',
+            },
+          });
+
+          // 3. Monospace Callsign & Flight Level Altitude Label
+          map.addLayer({
+            id: 'aviation-callsign-labels',
+            type: 'symbol',
+            source: 'warroom-military-aircraft',
+            layout: {
+              'text-field': ['concat', ['get', 'callsign'], '\n', ['get', 'altitudeLabel']],
+              'text-size': [
+                'interpolate', ['linear'], ['zoom'],
+                2, 8,
+                5, 9.5,
+                9, 11,
+              ],
+              'text-offset': [0, 1.8],
+              'text-anchor': 'top',
+              'text-font': ['Open Sans Bold'],
+              'text-allow-overlap': false,
+              visibility: 'none',
+            },
+            paint: {
+              'text-color': ['get', 'color'],
+              'text-halo-color': '#07090b',
+              'text-halo-width': 1.8,
+            },
+          });
+
+          // 4. Invisible hit-target for effortless clicking and hovering
+          map.addLayer({
+            id: 'aviation-hit-target',
+            type: 'circle',
+            source: 'warroom-military-aircraft',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                1, 12,
+                5, 16,
+                10, 24,
+              ],
+              'circle-opacity': 0,
+              'circle-stroke-width': 0,
+            },
+            layout: { visibility: 'none' },
+          });
+
           // Function to open popup for an event dot (works for both conflict and news dots)
           let lastDotClickTime = 0;
           let lastDotClickId = '';
@@ -1388,6 +1679,73 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             map.getCanvas().classList.remove('tactical-lock');
           });
 
+          // ── Military Aviation Interactions ───────────────────────────────
+          map.on('click', 'aviation-hit-target', (e: any) => {
+            if (!e.features || !e.features[0]) return;
+            const props = e.features[0].properties || {};
+            const coords = e.features[0].geometry.coordinates.slice();
+
+            map.flyTo({
+              center: [coords[0], coords[1]],
+              zoom: Math.max(map.getZoom() < 7 ? 7 : map.getZoom(), 7),
+              duration: 700,
+            });
+
+            setRadiatingBeacon(coords[0], coords[1], props.color || '#06b6d4');
+
+            const altDisplay =
+              props.altitudeFt === 'GROUND'
+                ? 'GROUND / TAXIING'
+                : `${props.altitudeLabel} (${Number(props.altitudeFt).toLocaleString()} FT)`;
+
+            const aviationPopupHtml = `
+              <div style="font-family: monospace; font-size: 11px; line-height: 1.45; color: #e6edf3; min-width: 265px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(6,182,212,0.4); padding-bottom: 4px; margin-bottom: 6px;">
+                  <span style="color: ${props.color || '#06b6d4'}; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${props.color || '#06b6d4'};"></span>
+                    // MILITARY AIR MISSION
+                  </span>
+                  <span style="font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; border: 1px solid ${props.color || '#06b6d4'}; color: ${props.color || '#06b6d4'}; background: rgba(6,182,212,0.1);">
+                    ${props.category || 'AIRBORNE'}
+                  </span>
+                </div>
+                <div style="font-size: 13px; font-weight: bold; color: #ffffff; margin-bottom: 2px;">
+                  ${props.callsign}
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; margin-bottom: 6px;">
+                  ${props.modelDescription || props.typeCode || 'Military Airframe'}
+                </div>
+                <div style="display: grid; gap: 3px; font-size: 10px; margin-bottom: 7px;">
+                  <div><span style="color: #8b949e;">ALTITUDE        ::</span> <strong style="color: #38bdf8;">${altDisplay}</strong></div>
+                  <div><span style="color: #8b949e;">GROUND SPEED    ::</span> <strong style="color: #e2e8f0;">${props.speedKnots} KTS</strong></div>
+                  <div><span style="color: #8b949e;">TRUE TRACK / HDG::</span> <strong style="color: #e2e8f0;">${props.trackDeg}°</strong></div>
+                  <div><span style="color: #8b949e;">TRANSPONDER / SQ::</span> <span style="color: #eab308;">${props.squawk || 'MIL'}</span> [HEX: ${props.hex}]</div>
+                  <div><span style="color: #8b949e;">COORDINATES     ::</span> <span style="color: #64748b;">${Number(props.latitude).toFixed(4)}°, ${Number(props.longitude).toFixed(4)}°</span></div>
+                </div>
+                <div style="font-size: 9px; color: #71717a; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px;">
+                  * Live 1090MHz ADS-B / Mode-S transponder broadcast tracked via global military feeder network.
+                </div>
+              </div>
+            `;
+
+            clickPopupRef.current
+              .setLngLat(coords)
+              .setHTML(aviationPopupHtml)
+              .addTo(map);
+          });
+
+          map.on('mouseenter', 'aviation-hit-target', () => {
+            setIsDotHovered(true);
+            map.getCanvas().style.cursor = TACTICAL_LOCK_SVG;
+            map.getCanvas().classList.add('tactical-lock');
+          });
+
+          map.on('mouseleave', 'aviation-hit-target', () => {
+            setIsDotHovered(false);
+            map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
+            map.getCanvas().classList.remove('tactical-lock');
+          });
+
           // Global canvas click: clicking empty space on the map deselects active dot and returns to terminal
           map.on('click', (e: any) => {
             const interactiveLayers = [
@@ -1401,6 +1759,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'hovered-line-glow',
               'hovered-line-core',
               'firms-thermal-hit',
+              'aviation-hit-target',
             ].filter((layerId) => map.getLayer(layerId));
 
             const bbox: [any, any] = [
@@ -1778,6 +2137,72 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
     };
   }, [showFirms, mapLoaded]);
 
+  // Update Military Aviation GeoJSON data when loaded
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const source: any = map.getSource('warroom-military-aircraft');
+    if (source && aviationGeoJson) {
+      source.setData(aviationGeoJson);
+    }
+  }, [aviationGeoJson, mapLoaded]);
+
+  // Adjust Military Aviation layer visibility based on showAviation toggle
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const setVisibility = (layerId: string, visible: boolean) => {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    };
+    const aviationLayers = [
+      'aviation-aircraft-glow',
+      'aviation-aircraft-symbols',
+      'aviation-callsign-labels',
+      'aviation-hit-target',
+    ];
+    aviationLayers.forEach((id) => setVisibility(id, showAviation ?? false));
+  }, [showAviation, mapLoaded]);
+
+  // Radar sweeping pulse animation for military aircraft
+  const aviationPulseAnimRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!mapLoaded || !mapInstanceRef.current || !showAviation) {
+      if (aviationPulseAnimRef.current !== null) {
+        cancelAnimationFrame(aviationPulseAnimRef.current);
+        aviationPulseAnimRef.current = null;
+      }
+      return;
+    }
+
+    const map = mapInstanceRef.current;
+    const animStart = performance.now();
+
+    const frame = (now: number) => {
+      const elapsed = now - animStart;
+      // 2.2s radar rotation/sweep cycle
+      const cycle = (elapsed % 2200) / 2200;
+      const wave = Math.sin(cycle * Math.PI * 2);
+      const opacity = 0.35 + wave * 0.20; // 0.15 to 0.55
+
+      if (map.getLayer('aviation-aircraft-glow')) {
+        map.setPaintProperty('aviation-aircraft-glow', 'circle-opacity', opacity);
+      }
+
+      aviationPulseAnimRef.current = requestAnimationFrame(frame);
+    };
+
+    aviationPulseAnimRef.current = requestAnimationFrame(frame);
+
+    return () => {
+      if (aviationPulseAnimRef.current !== null) {
+        cancelAnimationFrame(aviationPulseAnimRef.current);
+        aviationPulseAnimRef.current = null;
+      }
+    };
+  }, [showAviation, mapLoaded]);
+
   return (
     <div className="relative w-full h-full bg-[#07090b] select-none">
       {/* Map Container Element */}
@@ -1810,14 +2235,19 @@ function decollideEventCoordinates(events: ConflictEvent[], minDistanceDeg = 0.1
         </button>
       </div>
 
-      {/* Map Mode Selector & NASA FIRMS Thermal Sensor */}
+      {/* Map Mode Selector, FIRMS Thermal, and Military ADS-B Radar */}
       <MapLegend
+        activePage="MAIN"
         mapMode={mapMode}
         onChangeMode={onChangeMapMode}
         showFirms={showFirms}
         onToggleFirms={onToggleFirms}
         firmsCount={firmsCount}
         isFirmsLoading={isFirmsLoading}
+        showAviation={showAviation}
+        onToggleAviation={onToggleAviation}
+        aviationCount={aviationCount}
+        isAviationLoading={isAviationLoading}
       />
     </div>
   );

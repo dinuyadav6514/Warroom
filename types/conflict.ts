@@ -170,6 +170,72 @@ export interface FirmsGeoJsonResponse {
   };
 }
 
+export type MilitaryAircraftCategory =
+  | 'RECON_ISR'
+  | 'AIRBORNE_EARLY_WARNING'
+  | 'TANKER_REFUEL'
+  | 'TRANSPORT_CARGO'
+  | 'FIGHTER_STRIKE'
+  | 'SPECIAL_OPS'
+  | 'TRAINER_PATROL'
+  | 'UNKNOWN';
+
+export interface MilitaryAircraft {
+  id: string;
+  hex: string;
+  callsign: string;
+  registration?: string;
+  typeCode: string;
+  modelDescription: string;
+  category: MilitaryAircraftCategory;
+  latitude: number;
+  longitude: number;
+  altitudeFt: number | 'GROUND';
+  altitudeLabel: string;
+  speedKnots: number;
+  trackDeg: number;
+  squawk?: string;
+  iconName: string;
+  seenSeconds?: number;
+}
+
+export interface AviationFeatureProperties {
+  id: string;
+  hex: string;
+  callsign: string;
+  registration?: string;
+  typeCode: string;
+  modelDescription: string;
+  category: MilitaryAircraftCategory;
+  latitude: number;
+  longitude: number;
+  altitudeFt: number | 'GROUND';
+  altitudeLabel: string;
+  speedKnots: number;
+  trackDeg: number;
+  squawk?: string;
+  iconName: string;
+  color: string;
+}
+
+export interface AviationGeoJsonResponse {
+  success: boolean;
+  count: number;
+  lastUpdated: string;
+  geojson: {
+    type: 'FeatureCollection';
+    features: Array<{
+      type: 'Feature';
+      geometry: {
+        type: 'Point';
+        coordinates: [number, number];
+      };
+      properties: AviationFeatureProperties;
+    }>;
+  };
+}
+
+
 
 export interface ApiExchange {
   id: string;

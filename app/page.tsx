@@ -92,30 +92,38 @@ export default function WarRoomDashboard() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
 
-  // NASA FIRMS Satellite Thermal Anomaly State
-  const [showFirmsOverlay, setShowFirmsOverlay] = useState<boolean>(true);
-  const [firmsGeoJson, setFirmsGeoJson] = useState<any>(null);
-  const [firmsCount, setFirmsCount] = useState<number>(0);
-  const [isFirmsLoading, setIsFirmsLoading] = useState<boolean>(false);
-
-  const loadFirmsData = useCallback(async (force = false) => {
-    setIsFirmsLoading(true);
-    try {
-      const res = await fetch(`/api/firms${force ? '?force=true' : ''}`);
-      const data = await res.json();
-      if (data.success && data.geojson) {
-        setFirmsGeoJson(data.geojson);
-        setFirmsCount(data.count || data.geojson.features?.length || 0);
+  // Sync Map Mode from URL query parameters (e.g. returning from /firms or /radar)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get('mode')?.toUpperCase();
+      if (m && ['CONFLICTS', 'EVENTS', 'ESCALATION', 'HEATMAP'].includes(m)) {
+        setMapMode(m as MapMode);
       }
-    } catch (e) {
-      console.warn('Failed to load NASA FIRMS data:', e);
-    } finally {
-      setIsFirmsLoading(false);
     }
   }, []);
 
-  const handleToggleFirms = useCallback(() => {
-    setShowFirmsOverlay((prev) => !prev);
+  // Sensor Counts for HUD buttons (Lightweight status badges)
+  const [firmsCount, setFirmsCount] = useState<number>(0);
+  const [aviationCount, setAviationCount] = useState<number>(0);
+
+  const loadSensorCounts = useCallback(async () => {
+    try {
+      const [firmsRes, aviationRes] = await Promise.allSettled([
+        fetch('/api/firms'),
+        fetch('/api/aviation'),
+      ]);
+      if (firmsRes.status === 'fulfilled') {
+        const d = await firmsRes.value.json();
+        if (d.success && d.count) setFirmsCount(d.count);
+      }
+      if (aviationRes.status === 'fulfilled') {
+        const d = await aviationRes.value.json();
+        if (d.success && d.count) setAviationCount(d.count);
+      }
+    } catch {
+      // Quietly ignore
+    }
   }, []);
 
   // Load 10-Day Dataset Function (Only called on initial mount, on explicit force refresh, or 1-minute background timer)
@@ -168,11 +176,11 @@ export default function WarRoomDashboard() {
     }
   }, [filters.days]);
 
-  // Initial 10-Day Data Load & NASA FIRMS satellite data
+  // Initial 10-Day Data Load & Sensor Status Count Badges
   useEffect(() => {
     load10DayData(true);
-    loadFirmsData(false);
-  }, [load10DayData, loadFirmsData]);
+    loadSensorCounts();
+  }, [load10DayData, loadSensorCounts]);
 
   // 15-Second High-Frequency Auto-Refresh Timer (maintains live 10-day dataset in minimum time)
   useEffect(() => {
@@ -183,7 +191,7 @@ export default function WarRoomDashboard() {
     return () => clearInterval(interval);
   }, [autoRefresh, load10DayData]);
 
-  // Force Live API Refresh Function (bypasses cache, calls Gemini live, refreshes 10-day dataset and FIRMS)
+  // Force Live API Refresh Function (bypasses cache, calls Gemini live, refreshes 10-day dataset and sensor counts)
   const handleForceRefresh = useCallback(async () => {
     setIsRefreshing(true);
     setErrorMessage(null);
@@ -205,7 +213,7 @@ export default function WarRoomDashboard() {
 
       await Promise.all([
         load10DayData(false),
-        loadFirmsData(true),
+        loadSensorCounts(),
       ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -213,7 +221,7 @@ export default function WarRoomDashboard() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [load10DayData, loadFirmsData]);
+  }, [load10DayData, loadSensorCounts]);
 
   // Compute all available unique sources across the 10-day dataset
   const availableSources = useMemo(() => {
@@ -703,11 +711,10 @@ export default function WarRoomDashboard() {
                   targetLocation={mapTargetLocation}
                   relationNetwork={relationNetwork}
                   onSelectRelation={handleSelectRelation}
-                  showFirms={showFirmsOverlay}
-                  onToggleFirms={handleToggleFirms}
-                  firmsGeoJson={firmsGeoJson}
+                  showFirms={false}
                   firmsCount={firmsCount}
-                  isFirmsLoading={isFirmsLoading}
+                  showAviation={false}
+                  aviationCount={aviationCount}
                 />
               </div>
             )}
