@@ -116,27 +116,27 @@ export const FullLiveStreamModal: React.FC<FullLiveStreamModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 font-mono select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 font-mono select-none cursor-pointer animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-panel border border-border w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl rounded-[2px] overflow-hidden cursor-default"
+        className="glass-panel border border-white/12 w-full max-w-5xl max-h-[92vh] flex flex-col shadow-[0_30px_70px_rgba(0,0,0,0.9)] rounded-[32px] overflow-hidden cursor-default backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header */}
-        <div className="px-4 py-3 bg-panel-subtle border-b border-border flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
             </div>
             <div className="flex items-center gap-2 ml-2">
-              <Radio className="w-4 h-4 text-accent-green animate-pulse" />
-              <span className="text-accent-cyan font-bold text-xs sm:text-sm tracking-wider">
-                // FULL LIVE CONFLICT STREAM TERMINAL
+              <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="text-white font-bold text-xs sm:text-sm tracking-wider">
+                FULL LIVE CONFLICT STREAM
               </span>
-              <span className="hidden sm:inline text-[10px] text-text-muted bg-white/5 px-2 py-0.5 rounded border border-white/10">
+              <span className="hidden sm:inline text-[10px] text-zinc-400 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                 {events.length} ACTIVE INCIDENTS
               </span>
             </div>
@@ -147,16 +147,16 @@ export const FullLiveStreamModal: React.FC<FullLiveStreamModalProps> = ({
               <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-text-muted hover:text-accent-cyan border border-border hover:border-accent-cyan/40 rounded transition-colors cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1 text-[11px] text-zinc-300 hover:text-white border border-white/10 hover:border-cyan-400/50 rounded-full transition-all cursor-pointer disabled:opacity-50 glass-panel-subtle"
                 title="Refresh live news feeds"
               >
-                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-accent-cyan' : ''}`} />
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
                 <span className="hidden md:inline">SYNC WIRE</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1 text-text-secondary hover:text-white rounded hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
               title="Close Stream (Esc)"
             >
               <X className="w-4 h-4" />
@@ -404,13 +404,13 @@ export const FullLiveStreamModal: React.FC<FullLiveStreamModalProps> = ({
         </div>
 
         {/* Tactical Footer */}
-        <div className="px-4 py-2.5 bg-panel-subtle border-t border-border flex items-center justify-between text-[10px] text-text-muted shrink-0 flex-wrap gap-2">
+        <div className="px-5 py-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-500 shrink-0 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
-            <span>LIVE INTEL STREAM READY</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <span className="text-zinc-300 font-semibold">LIVE INTEL STREAM READY</span>
           </div>
-          <div className="text-[9.5px] font-mono text-text-secondary">
-            CLICK "LOCATE ON MAP" TO PINPOINT • PRESS [ESC] TO CLOSE
+          <div className="text-[10px] font-mono text-zinc-500">
+            CLICK &quot;LOCATE ON MAP&quot; TO PINPOINT • PRESS [ESC] TO CLOSE
           </div>
         </div>
       </div>

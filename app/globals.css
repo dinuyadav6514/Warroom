@@ -3,13 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --background: #080b0e;
-  --foreground: #e6edf3;
+  --background: #000000;
+  --foreground: #f8fafc;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Space Mono', 'Consolas', monospace;
+  --glass-bg: rgba(8, 14, 26, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(56, 189, 248, 0.5);
+  --glass-glow: 0 24px 60px 0 rgba(0, 0, 0, 0.85);
+  --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 body {
-  background-color: var(--background);
+  background-color: #000000 !important;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56, 189, 248, 0.10), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(99, 102, 241, 0.08), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 10% 80%, rgba(16, 185, 129, 0.06), transparent 60%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-mono);
   overflow-x: hidden;
@@ -18,23 +29,234 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Terminal Custom Scrollbar */
+/* Glassmorphism System Utilities — 85% Transparency Frosted Depth */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(8, 14, 26, 0.22) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.70), inset 0 1px 1px rgba(255, 255, 255, 0.18) !important;
+}
+
+.glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.glass-pill:hover {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-0.5px);
+}
+
+.glass-glow-cyan {
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Light Theme Glassmorphism & High-Contrast Design */
+html.theme-light,
+.theme-light,
+body.theme-light {
+  --background: #f8fafc;
+  --foreground: #000000;
+  --panel-bg: #ffffff;
+  --panel-subtle: #f1f5f9;
+  --panel-hover: #e2e8f0;
+  --border: rgba(0, 0, 0, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.10);
+  --glass-border-hover: rgba(15, 23, 42, 0.4);
+  --glass-glow: 0 20px 45px 0 rgba(0, 0, 0, 0.06);
+  --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+  background-color: #f8fafc !important;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(203, 213, 225, 0.35), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(226, 232, 240, 0.30), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 10% 80%, rgba(241, 245, 249, 0.30), transparent 60%) !important;
+  color: #000000 !important;
+}
+
+/* Light Theme Frosted Glass Containers */
+.theme-light .glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.68) 100%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 1) !important;
+  color: #000000 !important;
+}
+
+.theme-light .glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.60) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
+}
+
+.theme-light .glass-pill {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  color: #000000 !important;
+}
+
+.theme-light .glass-pill:hover {
+  border-color: rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  color: #000000 !important;
+}
+
+/* 1. Make text inside containers black */
+.theme-light .glass-panel,
+.theme-light .glass-panel-subtle,
+.theme-light .glass-pill,
+.theme-light aside,
+.theme-light main,
+.theme-light header,
+.theme-light [role="dialog"],
+.theme-light input,
+.theme-light textarea,
+.theme-light select,
+.theme-light .text-white,
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-slate-300,
+.theme-light .text-zinc-100,
+.theme-light .text-zinc-200,
+.theme-light .text-zinc-300,
+.theme-light .text-gray-100,
+.theme-light .text-gray-200,
+.theme-light .text-gray-300,
+.theme-light .text-text-primary {
+  color: #000000 !important;
+}
+
+.theme-light .text-slate-400,
+.theme-light .text-zinc-400,
+.theme-light .text-gray-400,
+.theme-light .text-text-secondary {
+  color: #111111 !important;
+}
+
+.theme-light .text-slate-500,
+.theme-light .text-zinc-500,
+.theme-light .text-gray-500,
+.theme-light .text-text-muted {
+  color: #2b2b2b !important;
+}
+
+/* 4. Make all darker cards and containers light */
+.theme-light .bg-black,
+.theme-light .bg-panel,
+.theme-light .bg-panel-subtle,
+.theme-light .bg-background,
+.theme-light .bg-zinc-900,
+.theme-light .bg-zinc-950,
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-950,
+.theme-light .bg-\[\#040810\],
+.theme-light .bg-\[\#050a12\],
+.theme-light .bg-\[\#070e1a\],
+.theme-light .bg-\[\#03060c\],
+.theme-light .bg-\[\#090d12\],
+.theme-light .bg-\[\#0b101b\],
+.theme-light .bg-\[\#0d1217\],
+.theme-light .bg-\[\#03070d\],
+.theme-light .bg-\[\#020408\],
+.theme-light .bg-\[\#0d121d\],
+.theme-light .bg-\[\#080b0e\] {
+  background-color: #ffffff !important;
+}
+
+.theme-light [class*="bg-black\/"],
+.theme-light [class*="bg-zinc-900\/"],
+.theme-light [class*="bg-zinc-950\/"],
+.theme-light [class*="bg-slate-900\/"],
+.theme-light [class*="bg-slate-950\/"],
+.theme-light [class*="bg-\[\#090d12\]\/"],
+.theme-light [class*="bg-\[\#03070d\]\/"],
+.theme-light [class*="bg-\[\#070e1a\]\/"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.theme-light .bg-white\/\[0\.02\],
+.theme-light .bg-white\/\[0\.03\],
+.theme-light .bg-white\/\[0\.04\],
+.theme-light .bg-white\/5,
+.theme-light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-light .hover\:bg-panel-hover:hover,
+.theme-light .hover\:bg-white\/\[0\.04\]:hover,
+.theme-light .hover\:bg-white\/5:hover,
+.theme-light .hover\:bg-white\/10:hover,
+.theme-light .hover\:bg-zinc-800:hover,
+.theme-light .hover\:bg-zinc-900:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.theme-light .border-border,
+.theme-light [class*="border-border"],
+.theme-light .border-zinc-800,
+.theme-light .border-zinc-700,
+.theme-light .border-zinc-900,
+.theme-light .border-slate-800,
+.theme-light .border-slate-700,
+.theme-light .border-white\/10,
+.theme-light .border-white\/\[0\.08\],
+.theme-light .border-white\/\[0\.06\],
+.theme-light .border-white\/\[0\.10\],
+.theme-light .border-white\/\[0\.12\],
+.theme-light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.theme-light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.7);
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.20);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+/* Custom Scrollbar - Sleek Glassmorphism Track */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d10;
+  background: rgba(3, 7, 13, 0.5);
+  backdrop-filter: blur(8px);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e2c38;
-  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff88;
+  background: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
 }
 
 /* MapLibre Terminal Popup Theme Overrides */
@@ -82,8 +304,17 @@ body {
 }
 
 /* Hover tooltip must not capture pointer events so clicks pass through */
-.warroom-hover-tooltip {
+.warroom-hover-tooltip,
+.scene-tooltip {
   pointer-events: none !important;
+  z-index: 9999 !important;
+}
+
+.scene-tooltip {
+  font-family: var(--font-mono) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
 }
 
 .warroom-hover-tooltip .maplibregl-popup-content {

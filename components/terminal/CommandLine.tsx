@@ -9,6 +9,7 @@ import {
 } from './terminal-commands';
 import { isCountryFilterCommand, parseCountryInput, matchCountryOrContinent } from '@/lib/data/country-coords';
 import { isRelationCommand, RelationshipNetwork } from '@/lib/data/country-relationships';
+import { parseIntelCommand, isIntelCommand } from '@/lib/intelligence/command-parser';
 
 export interface CommandLineProps {
   onSelectView: (view: NavView) => void;
@@ -25,6 +26,8 @@ export interface CommandLineProps {
   allEvents?: ConflictEvent[];
   activeConflict?: Conflict | null;
   onSelectConflict?: (conflict: Conflict | null) => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: (targetTheme?: 'dark' | 'light') => void;
 }
 
 interface CommandLog {
@@ -49,6 +52,8 @@ export const CommandLine: React.FC<CommandLineProps> = ({
   allEvents = [],
   activeConflict = null,
   onSelectConflict,
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -62,7 +67,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({
           <span className="w-1.5 h-1.5 rounded-full bg-accent-green inline-block animate-pulse" />
           <span className="text-accent-green font-bold">[TERMINAL READY]</span>
           <span className="text-text-secondary">
-            Type country or &ldquo;&lt;country&gt; map&rdquo; (e.g. &ldquo;Israel map&rdquo;) for vectors &bull; Shortcuts: m, t, 1-3, clc
+            Type country, &ldquo;&lt;country&gt; map&rdquo;, or &ldquo;theme [light|dark]&rdquo; &bull; Shortcuts: m, t, 1-3, clc
           </span>
         </div>
       ),
@@ -154,6 +159,83 @@ export const CommandLine: React.FC<CommandLineProps> = ({
         id: logId, command: trimmed,
         output: <span className="text-amber-300">[FILTER] Data window → 10 DAYS</span>,
       }]);
+      return;
+    }
+
+    // ── Theme Switcher Command (theme, theme light, theme dark, light, dark, theme toggle) ──
+    if (
+      lower === 'theme' ||
+      lower === 'theme toggle' ||
+      lower === 'theme light' ||
+      lower === 'theme dark' ||
+      lower === 'light' ||
+      lower === 'dark' ||
+      lower === 'mode light' ||
+      lower === 'mode dark' ||
+      lower === 'theme day' ||
+      lower === 'theme night' ||
+      lower.startsWith('theme ')
+    ) {
+      let targetTheme: 'dark' | 'light';
+      if (lower.includes('light') || lower.includes('day')) {
+        targetTheme = 'light';
+      } else if (lower.includes('dark') || lower.includes('night')) {
+        targetTheme = 'dark';
+      } else {
+        const currentIsLight =
+          theme === 'light' ||
+          (typeof document !== 'undefined' && document.documentElement.classList.contains('theme-light'));
+        targetTheme = currentIsLight ? 'dark' : 'light';
+      }
+
+      if (onToggleTheme) {
+        onToggleTheme(targetTheme);
+      } else if (typeof document !== 'undefined') {
+        if (targetTheme === 'light') {
+          document.documentElement.classList.add('theme-light');
+          localStorage.setItem('warroom_theme', 'light');
+        } else {
+          document.documentElement.classList.remove('theme-light');
+          localStorage.setItem('warroom_theme', 'dark');
+        }
+      }
+
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: logId,
+          command: trimmed,
+          output: (
+            <div className="space-y-1 text-[11px] font-mono bg-black/60 p-2 border-l-2 border-sky-400">
+              <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                <span className="text-sky-400 font-bold">
+                  // SYSTEM THEME ENGINE [MODE: {targetTheme.toUpperCase()}]
+                </span>
+                <span className="text-[9px] text-zinc-400">
+                  VISUAL SUBSYSTEM SYNCHRONIZED
+                </span>
+              </div>
+              <div className="text-slate-300 text-[10px] space-y-0.5 pt-0.5">
+                <div>
+                  GLOBE SHADER:{' '}
+                  <span className="text-white font-bold">
+                    {targetTheme === 'light' ? 'PURE WHITE WATERS / GREY CONTINENTS / DARK RETICLES' : 'DEEP VOID / CYAN RETICLES'}
+                  </span>
+                </div>
+                <div>
+                  UI SURFACE:{' '}
+                  <span className="text-white font-bold">
+                    {targetTheme === 'light' ? 'LIGHT FROSTED GLASS / BLACK TYPOGRAPHY' : 'DEEP FROSTED GLASS (DARK)'}
+                  </span>
+                </div>
+                <div className="text-zinc-400">
+                  High-contrast monochrome palette with dark markers applied across telemetry and 3D globe.
+                </div>
+              </div>
+            </div>
+          ),
+        },
+      ]);
       return;
     }
     // ── End Shortcut Commands ─────────────────────────────────────────────────
@@ -302,6 +384,90 @@ export const CommandLine: React.FC<CommandLineProps> = ({
       }
     }
 
+    // ── Deterministic Fuzzy Command Parser (< 2ms, No LLMs) ─────────────────
+    if (isIntelCommand(trimmed)) {
+      const parsed = parseIntelCommand(trimmed, knownCountries);
+      if (parsed.intent !== 'UNKNOWN') {
+        const latency = Date.now() - parsed.resolvedAt;
+
+        // Execute specific action based on intent
+        if (parsed.country) {
+          if (parsed.intent === 'SORTIES_NEAR' || parsed.intent === 'HOT_SPOTS') {
+            if (onSelectCountry) onSelectCountry(parsed.country);
+          } else if (parsed.intent === 'CASCADE_RISK' || parsed.intent === 'CHOKEPOINTS') {
+            if (onShowRelationNetwork) onShowRelationNetwork(parsed.country);
+          }
+        }
+
+        if (parsed.intent === 'THEME') {
+          let targetTheme: 'dark' | 'light';
+          if (lower.includes('light') || lower.includes('day')) {
+            targetTheme = 'light';
+          } else if (lower.includes('dark') || lower.includes('night')) {
+            targetTheme = 'dark';
+          } else {
+            const currentIsLight =
+              theme === 'light' ||
+              (typeof document !== 'undefined' && document.documentElement.classList.contains('theme-light'));
+            targetTheme = currentIsLight ? 'dark' : 'light';
+          }
+
+          if (onToggleTheme) {
+            onToggleTheme(targetTheme);
+          } else if (typeof document !== 'undefined') {
+            if (targetTheme === 'light') {
+              document.documentElement.classList.add('theme-light');
+              localStorage.setItem('warroom_theme', 'light');
+            } else {
+              document.documentElement.classList.remove('theme-light');
+              localStorage.setItem('warroom_theme', 'dark');
+            }
+          }
+        }
+
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: logId,
+            command: trimmed,
+            output: (
+              <div className="space-y-1 text-[11px] font-mono bg-black/60 p-2 border-l-2 border-cyan-400">
+                <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                  <span className="text-cyan-400 font-bold">
+                    // DETERMINISTIC AI ENGINE [INTENT: {parsed.intent}]
+                  </span>
+                  <span className="text-[9px] text-zinc-500">
+                    RESOLVED IN {latency}ms • CONFIDENCE {(parsed.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="text-slate-300 text-[10px] space-y-0.5 pt-0.5">
+                  {parsed.country && (
+                    <div>TARGET COUNTRY/THEATER: <span className="text-white font-bold">{parsed.country}</span></div>
+                  )}
+                  {parsed.timeWindowH && (
+                    <div>TIME HORIZON: <span className="text-amber-300 font-bold">{parsed.timeWindowH} HOURS</span></div>
+                  )}
+                  <div className="text-zinc-400">
+                    {parsed.intent === 'HOT_SPOTS' && 'Querying NASA FIRMS VIIRS/MODIS thermal radiative flux sensors...'}
+                    {parsed.intent === 'FORECAST' && 'Computing EWMA time-series trend & 48h renewal probability...'}
+                    {parsed.intent === 'CHOKEPOINTS' && 'Scanning bilateral graph for high-betweenness conduit nations...'}
+                    {parsed.intent === 'SORTIES_NEAR' && `Isolating military ADS-B transponders within 150km corridor${parsed.country ? ` of ${parsed.country}` : ''}...`}
+                    {parsed.intent === 'THREAT_INDEX' && 'Normalising multi-variate severity, velocity, and casualty vectors...'}
+                    {parsed.intent === 'CLUSTER_MAP' && 'Computing DBSCAN frontline corridors and spatial drift vectors...'}
+                    {parsed.intent === 'CASCADE_RISK' && 'Evaluating directed contagion risk score along vector conduits...'}
+                    {parsed.intent === 'SENSOR_STATUS' && 'Running spatiotemporal sensor fusion cross-correlation...'}
+                    {parsed.intent === 'FLASHPOINTS' && 'Extracting highest acceleration flashpoints across all active theaters...'}
+                    {parsed.intent === 'THEME' && 'Toggling visual surface and 3D globe daylight/night shader palette...'}
+                  </div>
+                </div>
+              </div>
+            ),
+          },
+        ]);
+        return;
+      }
+    }
+
     // Check if AI query (ends with ?, starts with ?, or natural question word)
     if (isAiQuery(trimmed)) {
       setLogs((prev) => [
@@ -433,26 +599,26 @@ export const CommandLine: React.FC<CommandLineProps> = ({
   };
 
   return (
-    <div className="bg-panel border-t border-border font-mono text-xs z-30 flex flex-col pointer-events-auto relative shrink-0">
+    <div className="glass-panel mx-4 mb-3 rounded-2xl md:rounded-[26px] border border-white/[0.12] font-mono text-xs z-30 flex flex-col pointer-events-auto relative shrink-0 shadow-[0_16px_40px_rgba(0,0,0,0.85)] overflow-hidden">
       {/* Expandable Command Log Output Box - Compact Floating Status Monitor */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 right-0 max-h-28 sm:max-h-36 overflow-y-auto px-3 py-1.5 bg-[#03060a]/95 backdrop-blur-md border-t border-border/80 space-y-1 select-text cursor-text shadow-2xl z-40">
-          <div className="flex items-center justify-between pb-1 border-b border-border/40 text-[10px] text-text-muted select-none">
+        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl max-h-36 sm:max-h-44 overflow-y-auto px-4 py-2.5 glass-panel border border-white/[0.12] space-y-1 select-text cursor-text shadow-[0_24px_50px_rgba(0,0,0,0.9)] z-40">
+          <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06] text-[10px] text-slate-400 select-none">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-green inline-block animate-pulse" />
-              <span className="text-accent-green font-bold tracking-wider">// TERMINAL STATUS MONITOR</span>
-              <span className="text-[9px] text-text-muted hidden sm:inline">&bull; Shortcuts: m (Map), t (Timeline), 1-3 (Days), clc (Clear)</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.6)]" />
+              <span className="text-cyan-300 font-bold tracking-wider">// COMMAND OUTPUT MONITOR</span>
+              <span className="text-[9px] text-slate-500 hidden sm:inline">&bull; Shortcuts: m (Map), t (Timeline), 1-3 (Days), clc (Clear)</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setLogs([])}
-                className="text-text-muted hover:text-red-400 text-[10px] cursor-pointer"
+                className="text-slate-400 hover:text-red-400 text-[10px] cursor-pointer transition-colors"
               >
                 [CLEAR]
               </button>
               <button
                 onClick={() => setIsExpanded(false)}
-                className="text-text-secondary hover:text-text-primary p-0.5 cursor-pointer"
+                className="text-slate-400 hover:text-white p-0.5 cursor-pointer transition-colors"
                 title="Minimize Terminal"
               >
                 <X className="w-3.5 h-3.5" />
@@ -461,14 +627,14 @@ export const CommandLine: React.FC<CommandLineProps> = ({
           </div>
           {logs.map((item) => (
             <div key={item.id} className="space-y-0.5">
-              <div className="flex items-center gap-1.5 text-[10px] text-accent-green">
+              <div className="flex items-center gap-1.5 text-[10px] text-cyan-400">
                 <span className="font-bold">war@warroom:~$</span>
-                <span className="text-text-primary font-semibold">{item.command}</span>
+                <span className="text-slate-200 font-semibold">{item.command}</span>
               </div>
               {item.output && (
                 <div
                   className={`pl-3 text-[10.5px] leading-snug select-text cursor-text ${
-                    item.isError ? 'text-severity-critical' : 'text-text-secondary'
+                    item.isError ? 'text-red-400' : 'text-slate-300'
                   }`}
                 >
                   {item.output}
@@ -483,10 +649,10 @@ export const CommandLine: React.FC<CommandLineProps> = ({
       {/* Main Command Input Line */}
       <div
         onClick={() => inputRef.current?.focus()}
-        className="h-10 px-3 flex items-center gap-2 bg-[#060c16] cursor-text pointer-events-auto relative z-40"
+        className="h-10 px-4 flex items-center gap-2.5 bg-black/40 hover:bg-black/50 transition-colors cursor-text pointer-events-auto relative z-40"
       >
-        <Terminal className="w-3.5 h-3.5 text-accent-green shrink-0" />
-        <span className="text-accent-green font-bold text-xs whitespace-nowrap select-none shrink-0">
+        <Terminal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+        <span className="text-cyan-400 font-bold text-xs whitespace-nowrap select-none shrink-0">
           war@warroom:~$
         </span>
 
@@ -497,19 +663,19 @@ export const CommandLine: React.FC<CommandLineProps> = ({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsExpanded(true)}
-          placeholder="Type country, relation map (e.g. 'Israel map'), continent, or ask AI '?' · Ctrl+K"
-          className="flex-1 bg-transparent text-text-primary text-xs focus:outline-none placeholder:text-text-muted font-mono select-text cursor-text pointer-events-auto z-50 relative"
+          placeholder="Type country, 'Israel map', 'theme [light|dark]', or ask AI '?' · Ctrl+K"
+          className="flex-1 bg-transparent text-slate-100 text-xs focus:outline-none placeholder:text-slate-500 font-mono select-text cursor-text pointer-events-auto z-50 relative"
           autoComplete="off"
           spellCheck="false"
         />
 
-        <div className="flex items-center gap-2 text-[10px] text-text-muted shrink-0">
+        <div className="flex items-center gap-2 text-[10px] text-slate-400 shrink-0">
           {input.trim().endsWith('?') && (
-            <span className="px-1.5 py-0.5 bg-amber-950/80 text-amber-300 border border-amber-500/70 text-[9px] font-bold animate-pulse">
+            <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 text-[9px] font-bold rounded-full animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.3)]">
               AI QUESTION
             </span>
           )}
-          <span className="hidden md:inline text-[9px]">[Ctrl+K /]</span>
+          <span className="hidden md:inline text-[9px] text-slate-500">[Ctrl+K /]</span>
           <button
             onClick={() => {
               if (input.trim()) {
@@ -518,7 +684,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({
               }
             }}
             disabled={!input.trim()}
-            className="p-1 hover:text-accent-cyan text-text-secondary disabled:opacity-30 cursor-pointer"
+            className="p-1 hover:text-cyan-300 text-slate-400 disabled:opacity-30 cursor-pointer transition-colors"
             title="Execute Command"
           >
             <Send className="w-3.5 h-3.5" />

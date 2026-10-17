@@ -25,26 +25,27 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 font-mono select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-6 font-mono select-none cursor-pointer animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-panel border border-border w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl cursor-default"
+        className="glass-panel rounded-[32px] border border-white/12 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-[0_30px_70px_rgba(0,0,0,0.9)] cursor-default overflow-hidden backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Terminal Window Header */}
-        <div className="px-4 py-2.5 bg-panel-subtle border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-            <span className="text-accent-cyan font-bold text-xs ml-2 tracking-wider">
-              EVENT DETAIL TERMINAL :: {event.id}
+        {/* Modal Window Header */}
+        <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <span className="text-white font-bold text-xs ml-2 tracking-wider flex items-center gap-2">
+              <span>EVENT INTEL DOSSIER</span>
+              <span className="text-[10px] text-zinc-500 font-normal">[{event.id}]</span>
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-accent-cyan transition-colors p-1"
+            className="text-zinc-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10 cursor-pointer"
             title="Close Terminal (Esc)"
           >
             <X className="w-4 h-4" />
@@ -52,73 +53,89 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
           {/* Key Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-panel-subtle p-3 border border-border">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 glass-panel-subtle rounded-xl p-3.5 border border-white/5">
             <div>
-              <div className="text-[10px] text-text-muted">EVENT DATE (UTC)</div>
-              <div className="text-text-primary font-bold mt-0.5">{event.eventDate || 'N/A'}</div>
+              <div className="text-[9.5px] text-zinc-400 font-medium">EVENT DATE (UTC)</div>
+              <div className="text-white font-bold mt-0.5">{event.eventDate || 'N/A'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-text-muted">SEVERITY LEVEL</div>
+              <div className="text-[9.5px] text-zinc-400 font-medium">SEVERITY LEVEL</div>
               <div
                 className={`font-bold mt-0.5 ${
                   event.severity === 'CRITICAL'
-                    ? 'text-severity-critical'
+                    ? 'text-rose-400'
                     : event.severity === 'HIGH'
-                    ? 'text-severity-high'
+                    ? 'text-orange-400'
                     : event.severity === 'MODERATE'
-                    ? 'text-severity-moderate'
-                    : 'text-severity-low'
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
                 }`}
               >
                 {event.severity}
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-text-muted">FATALITIES</div>
-              <div className="text-severity-critical font-bold mt-0.5">
+              <div className="text-[9.5px] text-zinc-400 font-medium">FATALITIES</div>
+              <div className="text-rose-400 font-bold mt-0.5">
                 {event.fatalities !== undefined ? `${event.fatalities} REPORTED` : 'N/A'}
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-text-muted">PRIMARY CATEGORY</div>
-              <div className="text-text-primary mt-0.5">{event.eventType || 'N/A'}</div>
+              <div className="text-[9.5px] text-zinc-400 font-medium">PRIMARY CATEGORY</div>
+              <div className="text-zinc-200 mt-0.5">{event.eventType || 'N/A'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-text-muted">SUB-EVENT TYPE</div>
-              <div className="text-text-primary mt-0.5">{event.subEventType || 'N/A'}</div>
+              <div className="text-[9.5px] text-zinc-400 font-medium">SUB-EVENT TYPE</div>
+              <div className="text-zinc-200 mt-0.5">{event.subEventType || 'N/A'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-text-muted">VERIFICATION</div>
-              <div className="text-accent-green font-semibold mt-0.5">
+              <div className="text-[9.5px] text-zinc-400 font-medium">VERIFICATION</div>
+              <div className="text-emerald-400 font-semibold mt-0.5">
                 {event.verificationStatus || 'REPORTED'}
               </div>
             </div>
+            <div>
+              <div className="text-[9.5px] text-zinc-400 font-medium">AI CONFIDENCE (NO-LLM)</div>
+              <div className={`font-bold mt-0.5 font-mono ${
+                (event.confidenceScore ?? 0) >= 0.70 ? 'text-emerald-400' : 'text-amber-400'
+              }`}>
+                {event.confidenceLabel || `UNVERIFIED ${Math.round((event.confidenceScore ?? 0.4) * 100)}%`}
+              </div>
+            </div>
+            {event.sensorHits && (
+              <div>
+                <div className="text-[9.5px] text-zinc-400 font-medium">SENSOR CROSS-HITS</div>
+                <div className="text-cyan-300 font-bold mt-0.5 font-mono text-[11px]">
+                  FIRMS: {event.sensorHits.firmsCount} | ADS-B: {event.sensorHits.aviationCount}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Location & Coordinates */}
-          <div className="bg-panel-subtle p-3 border border-border space-y-1.5">
-            <div className="text-[10px] text-text-muted flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-accent-cyan" />
-              <span>// GEOGRAPHIC IDENTIFIERS</span>
+          <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-1.5">
+            <div className="text-[10px] text-zinc-400 flex items-center gap-1.5 font-semibold">
+              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+              <span>GEOGRAPHIC IDENTIFIERS</span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
               <div>
-                <span className="text-text-muted">LOCATION:</span>{' '}
-                <span className="text-text-primary font-medium">{event.location || 'N/A'}</span>
+                <span className="text-zinc-500">LOCATION:</span>{' '}
+                <span className="text-white font-medium">{event.location || 'N/A'}</span>
               </div>
               <div>
-                <span className="text-text-muted">ADMIN REGION:</span>{' '}
-                <span className="text-text-primary">{event.admin1 || 'N/A'}</span>
+                <span className="text-zinc-500">ADMIN REGION:</span>{' '}
+                <span className="text-zinc-300">{event.admin1 || 'N/A'}</span>
               </div>
               <div>
-                <span className="text-text-muted">COUNTRY / THEATER:</span>{' '}
-                <span className="text-text-primary">{event.country || 'N/A'}</span>
+                <span className="text-zinc-500">COUNTRY / THEATER:</span>{' '}
+                <span className="text-zinc-300">{event.country || 'N/A'}</span>
               </div>
               <div>
-                <span className="text-text-muted">COORDINATES:</span>{' '}
-                <span className="text-accent-cyan">
+                <span className="text-zinc-500">COORDINATES:</span>{' '}
+                <span className="text-cyan-400 font-mono">
                   {event.latitude && event.longitude
                     ? `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`
                     : 'N/A'}
@@ -128,17 +145,17 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
           </div>
 
           {/* Belligerents / Actors */}
-          <div className="bg-panel-subtle p-3 border border-border space-y-2">
-            <div className="text-[10px] text-text-muted">// INVOLVED ACTORS</div>
+          <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-2">
+            <div className="text-[10px] text-zinc-400 font-semibold">// INVOLVED ACTORS</div>
             <div className="space-y-1 text-[11px]">
               <div className="flex items-center gap-2">
-                <span className="text-accent-cyan font-bold">[ACTOR 1]</span>
-                <span className="text-text-primary">{event.actor1 || 'Unidentified'}</span>
+                <span className="text-cyan-400 font-bold px-1.5 py-0.2 rounded bg-cyan-500/10">[ACTOR 1]</span>
+                <span className="text-white">{event.actor1 || 'Unidentified'}</span>
               </div>
               {event.actor2 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-severity-high font-bold">[ACTOR 2]</span>
-                  <span className="text-text-primary">{event.actor2}</span>
+                  <span className="text-orange-400 font-bold px-1.5 py-0.2 rounded bg-orange-500/10">[ACTOR 2]</span>
+                  <span className="text-white">{event.actor2}</span>
                 </div>
               )}
             </div>
@@ -146,29 +163,29 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
 
           {/* Corroborating Dispatches & Merged Posts */}
           {event.mergedEvents && event.mergedEvents.length > 1 && (
-            <div className="bg-panel-subtle p-3 border border-border space-y-2">
-              <div className="flex items-center justify-between text-[10px] text-text-muted">
-                <div className="flex items-center gap-1.5 text-accent-cyan font-bold">
+            <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-2">
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
                   <Layers className="w-3.5 h-3.5" />
-                  <span>// CORROBORATING SOURCES & MERGED POSTS ({event.mergedEvents.length} DISPATCHES)</span>
+                  <span>CORROBORATING SOURCES ({event.mergedEvents.length} DISPATCHES)</span>
                 </div>
-                <span className="text-accent-green font-bold">DEDUPLICATED & MERGED</span>
+                <span className="text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10">DEDUPLICATED & MERGED</span>
               </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 divide-y divide-border/40">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 divide-y divide-white/5">
                 {event.mergedEvents.map((mergedEv, idx) => (
                   <div key={mergedEv.id || idx} className="pt-2 first:pt-0 space-y-1">
                     <div className="flex items-center justify-between text-[10px]">
-                      <span className="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-800/80 text-accent-cyan font-bold rounded-[2px]">
+                      <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold rounded-full">
                         {mergedEv.source || 'Wire Source'}
                       </span>
-                      <span className="text-text-muted">
+                      <span className="text-zinc-500">
                         {mergedEv.publishedAt
                           ? new Date(mergedEv.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : mergedEv.eventDate}
                       </span>
                     </div>
-                    <div className="text-[11px] text-text-primary font-medium leading-snug">
+                    <div className="text-[11px] text-zinc-200 font-medium leading-snug">
                       {mergedEv.notes ? mergedEv.notes.split('.')[0] : mergedEv.eventType}
                     </div>
                     {mergedEv.sourceUrl && (
@@ -177,7 +194,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
                           href={mergedEv.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[10.5px] text-accent-cyan hover:underline font-bold"
+                          className="inline-flex items-center gap-1 text-[10.5px] text-cyan-400 hover:text-cyan-300 hover:underline font-bold"
                         >
                           <span>READ FULL POST / DISPATCH &rarr;</span>
                           <ExternalLink className="w-3 h-3" />
@@ -191,25 +208,25 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
           )}
 
           {/* Structured Source Notes */}
-          <div className="bg-panel-subtle p-3 border border-border space-y-1.5">
-            <div className="text-[10px] text-text-muted">// PRIMARY SOURCE INCIDENT LOG</div>
-            <div className="text-[11px] text-text-primary leading-relaxed bg-black/40 p-2.5 border border-border/60">
+          <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-1.5">
+            <div className="text-[10px] text-zinc-400 font-semibold">// PRIMARY SOURCE INCIDENT LOG</div>
+            <div className="text-[11px] text-zinc-200 leading-relaxed bg-white/[0.02] p-3 rounded-lg border border-white/5">
               {event.notes ? event.notes : 'No raw descriptive notes attached to this record.'}
             </div>
           </div>
 
           {/* Source Attribution & Link */}
-          <div className="bg-panel-subtle p-3 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+          <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
             <div>
-              <span className="text-text-muted">SOURCE ATTRIBUTION:</span>{' '}
-              <span className="text-text-primary font-bold">{event.source || 'Wire Service'}</span>
+              <span className="text-zinc-500">SOURCE:</span>{' '}
+              <span className="text-white font-bold">{event.source || 'Wire Service'}</span>
             </div>
             {event.sourceUrl && (
               <a
                 href={event.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-accent-cyan hover:underline font-bold tracking-wide"
+                className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 hover:underline font-bold tracking-wide"
               >
                 <span>
                   {event.sourceUrl.includes('google.com/search')
@@ -223,11 +240,11 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 bg-panel-subtle border-t border-border flex items-center justify-between text-[10px] text-text-muted">
+        <div className="px-5 py-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-500">
           <span>EVENT HASH: {event.id}</span>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-panel hover:bg-panel-hover border border-border text-text-primary"
+            className="px-3.5 py-1 rounded-full glass-pill text-zinc-300 hover:text-white transition-all cursor-pointer"
           >
             DISMISS [ESC]
           </button>

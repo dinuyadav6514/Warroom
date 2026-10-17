@@ -76,7 +76,7 @@ const COORDS: Record<string, CountryCoord> = {
   haiti:              { lng: -72.29, lat: 18.97, zoom: 7.5 },
   honduras:           { lng: -86.24, lat: 15.20, zoom: 7.0 },
   hungary:            { lng: 19.50, lat: 47.16, zoom: 7.0 },
-  india:              { lng: 78.96, lat: 20.59, zoom: 4.5 },
+  india:              { lng: 78.96, lat: 20.59, zoom: 4.5, aliases: ['bharat', 'republic of india', 'kashmir', 'jammu and kashmir', 'ladakh', 'j&k'] },
   indonesia:          { lng: 113.92, lat: -0.79, zoom: 4.5 },
   iran:               { lng: 53.69, lat: 32.43, zoom: 5.0, aliases: ['islamic republic of iran'] },
   iraq:               { lng: 43.68, lat: 33.22, zoom: 5.8 },

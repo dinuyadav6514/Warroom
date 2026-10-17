@@ -291,9 +291,9 @@ export default function RadarPage() {
   }, [handleSelectAircraft]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#070a0d] text-[#e6edf3] font-mono overflow-hidden select-none">
+    <div className="flex flex-col h-screen bg-black text-[#e6edf3] font-mono overflow-hidden select-none">
       {/* ── TOP HEADER (Days & Pipeline filters removed) ── */}
-      <header className="h-12 bg-panel border-b border-border px-3 md:px-4 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0">
+      <header className="h-12 glass-panel mx-3 mt-2.5 mb-1 rounded-2xl md:rounded-[22px] border border-white/[0.12] px-3 md:px-4 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0 shadow-[0_12px_36px_rgba(0,0,0,0.7)]">
         {/* Logo & Title */}
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
@@ -308,7 +308,7 @@ export default function RadarPage() {
           </div>
 
           {/* Transponder Feed Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 bg-cyan-950/40 border border-cyan-800/60 rounded-[2px] text-[10px] text-cyan-300">
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 bg-cyan-950/40 border border-cyan-800/60 rounded-full text-[10px] text-cyan-300">
             <Navigation className="w-3 h-3 text-cyan-400" />
             <span>1090MHz ADS-B // MODE-S MIL FEED (30S CYCLE)</span>
           </div>
@@ -316,7 +316,7 @@ export default function RadarPage() {
 
         {/* Right Section: World Time, Countdown & Refresh */}
         <div className="flex items-center gap-2 md:gap-3 text-[11px] shrink-0">
-          <div className="flex items-center gap-1.5 text-text-secondary bg-panel-subtle/80 px-2 py-1 border border-border/80 rounded-[2px]">
+          <div className="flex items-center gap-1.5 text-text-secondary glass-panel-subtle px-2.5 py-1 border border-white/[0.10] rounded-full">
             <Globe className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-muted-foreground text-[10px] hidden md:inline">WORLD TIME ::</span>
             <span className="text-text-primary font-bold text-[10.5px] md:text-[11px] tracking-wide">
@@ -324,7 +324,7 @@ export default function RadarPage() {
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1 px-2 py-1 border border-border bg-panel-subtle text-[10.5px] text-zinc-400">
+          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 border border-white/[0.10] glass-panel-subtle rounded-full text-[10.5px] text-zinc-400">
             <Clock className="w-3 h-3 text-cyan-400" />
             <span className="text-[10px] text-zinc-500">SWEEP:</span>
             <span className="text-cyan-400 font-bold">{nextRefreshSec}s</span>
@@ -333,7 +333,7 @@ export default function RadarPage() {
           <button
             onClick={() => loadAviationData(true)}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-950/60 hover:bg-cyan-900/80 active:bg-cyan-700/30 border border-cyan-500/70 hover:border-cyan-400 text-cyan-400 text-[10.5px] md:text-[11px] font-bold tracking-wider rounded-[2px] transition-all cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.18)] disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1 glass-pill border border-cyan-500/50 hover:border-cyan-400 text-cyan-400 text-[10.5px] md:text-[11px] font-bold tracking-wider rounded-full transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.25)] disabled:opacity-50"
             title="Force refresh military ADS-B transponder feeds"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : 'text-cyan-400'}`} />
@@ -344,7 +344,7 @@ export default function RadarPage() {
       </header>
 
       {/* ── RADAR FILTER BAR (No days / pipelines filter) ── */}
-      <div className="bg-[#0b0f14] border-b border-border/80 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0 z-20">
+      <div className="glass-panel mx-3 mb-2 rounded-2xl border border-white/[0.12] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0 z-20 shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
         <div className="flex flex-wrap items-center gap-2">
           {/* Mission Category Chips */}
           <div className="flex items-center gap-1 bg-panel-subtle px-1.5 py-0.5 border border-border">

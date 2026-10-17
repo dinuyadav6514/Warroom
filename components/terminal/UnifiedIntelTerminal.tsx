@@ -18,6 +18,7 @@ import {
 import { isAiQuery } from './terminal-commands';
 import { isCountryFilterCommand, parseCountryInput, matchCountryOrContinent } from '@/lib/data/country-coords';
 import { isRelationCommand, RelationshipNetwork } from '@/lib/data/country-relationships';
+import { parseIntelCommand, isIntelCommand } from '@/lib/intelligence/command-parser';
 
 export interface UnifiedIntelTerminalProps {
   exchange?: ApiExchange | null;
@@ -327,6 +328,63 @@ export const UnifiedIntelTerminal: React.FC<UnifiedIntelTerminalProps> = ({
                 </div>
                 <div className="text-text-muted text-[9px]">
                   Type <span className="text-accent-cyan font-bold">&quot;all&quot;</span> to reset global view.
+                </div>
+              </div>
+            ),
+          },
+        ]);
+        return;
+      }
+    }
+
+    // ── Deterministic Fuzzy Command Parser (< 2ms, No LLMs) ─────────────────
+    if (isIntelCommand(trimmed)) {
+      const parsed = parseIntelCommand(trimmed, knownCountries);
+      if (parsed.intent !== 'UNKNOWN') {
+        const latency = Date.now() - parsed.resolvedAt;
+
+        if (parsed.country) {
+          if (parsed.intent === 'SORTIES_NEAR' || parsed.intent === 'HOT_SPOTS') {
+            if (onSelectCountries) onSelectCountries([parsed.country]);
+          } else if (parsed.intent === 'CASCADE_RISK' || parsed.intent === 'CHOKEPOINTS') {
+            if (onShowRelationNetwork) onShowRelationNetwork(parsed.country);
+          }
+        }
+
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: logId,
+            timestamp,
+            command: trimmed,
+            output: (
+              <div className="space-y-1 text-[11px] font-mono bg-black/60 p-2 border-l-2 border-accent-cyan">
+                <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                  <span className="text-accent-cyan font-bold">
+                    // DETERMINISTIC AI ENGINE [INTENT: {parsed.intent}]
+                  </span>
+                  <span className="text-[9px] text-zinc-500">
+                    RESOLVED IN {latency}ms • CONFIDENCE {(parsed.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="text-slate-300 text-[10px] space-y-0.5 pt-0.5">
+                  {parsed.country && (
+                    <div>TARGET COUNTRY/THEATER: <span className="text-white font-bold">{parsed.country}</span></div>
+                  )}
+                  {parsed.timeWindowH && (
+                    <div>TIME HORIZON: <span className="text-amber-300 font-bold">{parsed.timeWindowH} HOURS</span></div>
+                  )}
+                  <div className="text-zinc-400">
+                    {parsed.intent === 'HOT_SPOTS' && 'Querying NASA FIRMS VIIRS/MODIS thermal radiative flux sensors...'}
+                    {parsed.intent === 'FORECAST' && 'Computing EWMA time-series trend & 48h renewal probability...'}
+                    {parsed.intent === 'CHOKEPOINTS' && 'Scanning bilateral graph for high-betweenness conduit nations...'}
+                    {parsed.intent === 'SORTIES_NEAR' && `Isolating military ADS-B transponders within 150km corridor${parsed.country ? ` of ${parsed.country}` : ''}...`}
+                    {parsed.intent === 'THREAT_INDEX' && 'Normalising multi-variate severity, velocity, and casualty vectors...'}
+                    {parsed.intent === 'CLUSTER_MAP' && 'Computing DBSCAN frontline corridors and spatial drift vectors...'}
+                    {parsed.intent === 'CASCADE_RISK' && 'Evaluating directed contagion risk score along vector conduits...'}
+                    {parsed.intent === 'SENSOR_STATUS' && 'Running spatiotemporal sensor fusion cross-correlation...'}
+                    {parsed.intent === 'FLASHPOINTS' && 'Extracting highest acceleration flashpoints across all active theaters...'}
+                  </div>
                 </div>
               </div>
             ),

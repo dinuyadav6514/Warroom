@@ -57,6 +57,17 @@ export interface ConflictEvent {
   mergedEvents?: ConflictEvent[];
   mergedCount?: number;
   mergedSources?: string[];
+
+  /** In-Engine Deterministic Intelligence AI attributes */
+  confidenceScore?: number;
+  confidenceLabel?: string;
+  sensorHits?: {
+    firmsCount: number;
+    aviationCount: number;
+    maxFrp?: number;
+    sorties?: string[];
+  };
+  frontlineClusterId?: string;
 }
 
 export interface Conflict {

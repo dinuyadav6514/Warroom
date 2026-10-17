@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { FilterState, Severity, ConflictEvent, Conflict, ApiExchange } from '@/types/conflict';
-import { IsometricRadarGlobe } from '@/components/navigation/IsometricRadarGlobe';
 import { LiveTerminalOutput } from '@/components/navigation/LiveTerminalOutput';
 import { SelectedNewsDisplay } from '@/components/navigation/SelectedNewsDisplay';
 import { RelationNetworkTable } from '@/components/navigation/RelationNetworkTable';
@@ -82,30 +81,20 @@ export const LeftNav: React.FC<LeftNavProps> = ({
       )}
 
       <aside
-        className={`w-64 bg-panel border-r border-border h-full flex flex-col font-mono text-xs select-none transition-transform z-40 fixed md:static inset-y-0 left-0 ${
+        className={`w-64 glass-panel border border-white/[0.12] rounded-[28px] overflow-hidden flex flex-col font-mono text-xs select-none transition-transform z-40 fixed md:static inset-y-2 left-2 md:my-1 md:ml-3 md:mb-3 md:h-[calc(100%-16px)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Nav Header */}
-        <div className="p-3 border-b border-border flex items-center justify-between text-text-secondary shrink-0">
-          <span className="text-accent-cyan tracking-widest text-[11px] font-bold">
-            // TERMINAL NAV
+        <div className="p-3 border-b border-white/[0.06] flex items-center justify-between text-slate-300 shrink-0 bg-white/[0.02]">
+          <span className="text-cyan-300 tracking-wider text-[11px] font-sans font-bold uppercase">
+            Radar &amp; Intel Nav
           </span>
-          <span className="text-[10px] text-text-muted">SYS.01</span>
+          <span className="text-[9px] text-slate-500 font-mono">SYS.01</span>
         </div>
 
         {/* Navigation Sections */}
         <div className="flex-1 min-h-0 flex flex-col p-2 gap-2 overflow-y-auto overflow-x-hidden">
-          {/* Rotating Isometric Radar Globe */}
-          <div className="shrink-0 flex justify-center">
-            <IsometricRadarGlobe
-              isRefreshing={isRefreshing}
-              lastSyncAt={lastSyncAt}
-              eventsCount={eventsCount}
-              events={events}
-            />
-          </div>
-
           {/* Dynamic Display: Line Relation Table when country map active, Related News when dot clicked, or Live Terminal by default */}
           <div className="flex-1 min-h-0 flex flex-col">
             {relationNetwork ? (

@@ -23,6 +23,7 @@ import {
   Activity,
   Globe,
   ExternalLink,
+  Brain,
 } from 'lucide-react';
 
 export interface ConflictPanelProps {
@@ -42,9 +43,10 @@ export interface ConflictPanelProps {
   isMobileDrawer?: boolean;
   onSelectView?: (view: any) => void;
   onUpdateFilters?: (updates: any) => void;
+  intelligenceAI?: any;
 }
 
-type WorkstationTab = 'DOSSIER' | 'DEVELOPMENTS';
+type WorkstationTab = 'DOSSIER' | 'DEVELOPMENTS' | 'AI_INTEL';
 
 export const ConflictPanel: React.FC<ConflictPanelProps> = ({
   conflict,
@@ -63,6 +65,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
   isMobileDrawer = false,
   onSelectView,
   onUpdateFilters,
+  intelligenceAI,
 }) => {
   const [activeTab, setActiveTab] = useState<WorkstationTab>('DOSSIER');
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -206,7 +209,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
     return (
       <aside
         onClick={onToggleCollapse}
-        className="w-full h-full bg-[#040810] border-l border-border flex flex-col items-center justify-between py-3 cursor-pointer hover:bg-panel-hover text-text-secondary hover:text-accent-cyan transition-colors select-none group"
+        className="w-full h-full glass-panel border border-white/[0.12] rounded-[28px] flex flex-col items-center justify-between py-3 cursor-pointer hover:bg-white/[0.04] text-text-secondary hover:text-accent-cyan transition-colors select-none group shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
         title="Expand Strategic Conflict Intelligence & Telemetry Workstation"
       >
         <button
@@ -214,7 +217,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
             e.stopPropagation();
             if (onToggleCollapse) onToggleCollapse();
           }}
-          className="p-1 rounded hover:bg-cyan-950/60 text-accent-cyan mb-3 transition-colors"
+          className="p-1 rounded-full hover:bg-cyan-500/20 text-cyan-400 mb-3 transition-colors"
           title="Expand Panel"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
@@ -231,8 +234,8 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
         {/* Bottom indicator */}
         <div className="mt-auto flex flex-col items-center gap-1.5 text-[9px] text-text-muted">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="[writing-mode:vertical-rl] rotate-180 font-mono tracking-wider text-accent-cyan font-bold">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <span className="[writing-mode:vertical-rl] rotate-180 font-mono tracking-wider text-cyan-300 font-bold">
             EXPAND
           </span>
         </div>
@@ -244,16 +247,18 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
   // EXPANDED WORKSTATION MODE
   // -------------------------------------------------------------
   return (
-    <aside className="w-full h-full bg-[#050a12] border-l border-border flex flex-col font-mono text-xs select-text overflow-hidden relative z-30 shadow-2xl">
+    <aside className="w-full h-full glass-panel border border-white/[0.12] rounded-[28px] flex flex-col font-mono text-xs select-text overflow-hidden relative z-30 shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
       {/* 1. MASTER WORKSTATION HEADER */}
-      <div className="h-10 px-3 bg-[#08101a] border-b border-border flex items-center justify-between shrink-0 select-none">
+      <div className="h-11 px-3.5 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between shrink-0 select-none backdrop-blur-md">
         <div className="flex items-center gap-2 min-w-0">
-          <ShieldAlert className="w-3.5 h-3.5 text-accent-cyan shrink-0" />
-          <span className="font-bold text-[11px] tracking-wider text-text-primary truncate">
-            // STRATEGIC INTEL
+          <div className="w-5 h-5 rounded-md bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+            <ShieldAlert className="w-3 h-3 text-cyan-400 shrink-0" />
+          </div>
+          <span className="font-extrabold text-[11px] tracking-wider text-slate-100 font-sans uppercase truncate">
+            Strategic Intel
           </span>
           <span
-            className={`px-1.5 py-0.2 text-[9px] font-bold border rounded-[2px] shrink-0 ${threatLevel.color}`}
+            className={`px-2 py-0.5 text-[8.5px] font-bold border rounded-full shrink-0 font-mono ${threatLevel.color}`}
           >
             {threatLevel.label}
           </span>
@@ -305,7 +310,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
       </div>
 
       {/* 2. THEATER SWITCHER & SECTOR BAR */}
-      <div className="px-3 py-2 bg-[#060c16] border-b border-border/80 flex items-center justify-between shrink-0 relative gap-2">
+      <div className="px-3 py-2 bg-white/[0.02] backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between shrink-0 relative gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[9px] text-text-muted flex items-center gap-1.5">
             <span>THEATER / SECTOR</span>
@@ -324,10 +329,10 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
           {/* Dedicated WORLD AREA Button */}
           <button
             onClick={() => onSelectConflict(null)}
-            className={`flex items-center gap-1 px-2 py-1 text-[10px] font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold border transition-all cursor-pointer rounded-full ${
               !activeConflict
                 ? 'bg-accent-cyan text-black border-accent-cyan shadow-[0_0_10px_rgba(0,240,255,0.4)] font-bold'
-                : 'bg-panel-subtle hover:bg-panel-hover text-text-secondary hover:text-accent-cyan border-border'
+                : 'glass-panel-subtle hover:bg-white/[0.08] text-text-secondary hover:text-accent-cyan border-white/[0.08]'
             }`}
             title={!activeConflict ? 'World Area is currently active' : 'Switch to World Area / Global Overview'}
           >
@@ -339,7 +344,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
           <div ref={selectorRef} className="relative shrink-0">
             <button
               onClick={() => setIsSelectorOpen(!isSelectorOpen)}
-              className="flex items-center gap-1 px-2 py-1 bg-panel-subtle hover:bg-panel-hover border border-border text-accent-cyan text-[10px] font-bold transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 glass-panel-subtle hover:bg-white/[0.08] border border-white/[0.08] text-accent-cyan text-[10px] font-bold rounded-full transition-colors cursor-pointer"
               title="Switch Combat Theater"
             >
               <span>THEATERS</span>
@@ -348,7 +353,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
             {/* Dropdown Menu */}
             {isSelectorOpen && (
-              <div className="absolute right-0 top-full mt-1 w-72 sm:w-80 bg-[#070e1a] border border-border shadow-2xl z-50 p-2 flex flex-col font-mono text-xs">
+              <div className="absolute right-0 top-full mt-1 w-72 sm:w-80 glass-panel bg-black/85 backdrop-blur-2xl border border-white/12 shadow-2xl z-50 p-2.5 rounded-2xl flex flex-col font-mono text-xs">
                 {/* Pinned World Area Option at Top */}
                 <button
                   onClick={() => {
@@ -356,10 +361,10 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     setIsSelectorOpen(false);
                     setSelectorSearch('');
                   }}
-                  className={`w-full text-left p-2 border transition-colors flex items-center justify-between gap-2 mb-2 ${
+                  className={`w-full text-left p-2 border transition-colors flex items-center justify-between gap-2 mb-2 rounded-xl ${
                     !activeConflict
                       ? 'border-accent-cyan bg-cyan-950/60 text-accent-cyan font-bold'
-                      : 'border-border/70 hover:bg-panel-hover text-text-primary'
+                      : 'border-white/10 hover:bg-white/[0.06] text-text-primary'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
@@ -371,20 +376,20 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       </div>
                     </div>
                   </div>
-                  <span className="text-[9px] font-bold text-accent-cyan px-1.5 py-0.5 bg-cyan-950 border border-accent-cyan/60 shrink-0">
+                  <span className="text-[9px] font-bold text-accent-cyan px-1.5 py-0.5 bg-cyan-950 border border-accent-cyan/60 shrink-0 rounded-full">
                     GLOBAL
                   </span>
                 </button>
 
                 {/* Search Input */}
                 <div className="relative mb-2">
-                  <Search className="w-3.5 h-3.5 text-text-muted absolute left-2 top-2" />
+                  <Search className="w-3.5 h-3.5 text-text-muted absolute left-2.5 top-2" />
                   <input
                     type="text"
                     value={selectorSearch}
                     onChange={(e) => setSelectorSearch(e.target.value)}
                     placeholder="Search 100+ conflicts..."
-                    className="w-full bg-[#03060c] border border-border/80 pl-7 pr-2 py-1 text-[11px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-cyan"
+                    className="w-full bg-white/[0.04] border border-white/10 pl-8 pr-2 py-1.5 text-[11px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-cyan rounded-xl"
                     autoFocus
                   />
                 </div>
@@ -399,10 +404,10 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                         setIsSelectorOpen(false);
                         setSelectorSearch('');
                       }}
-                      className={`w-full text-left p-1.5 border transition-colors flex items-center justify-between gap-2 ${
+                      className={`w-full text-left p-2 border transition-colors flex items-center justify-between gap-2 rounded-xl ${
                         activeConflict?.id === c.id
                           ? 'border-accent-cyan bg-cyan-950/40 text-accent-cyan font-bold'
-                          : 'border-border/50 hover:bg-panel-hover text-text-secondary hover:text-text-primary'
+                          : 'border-white/[0.06] hover:bg-white/[0.06] text-text-secondary hover:text-text-primary'
                       }`}
                     >
                       <div className="truncate flex-1">
@@ -428,33 +433,48 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
         </div>
       </div>
 
-      {/* 3. UNIFIED 2-TAB WORKSTATION NAVIGATION STRIP */}
-      <div className="h-8 bg-[#040810] border-b border-border flex items-center shrink-0 text-[10px] select-none">
+      {/* 3. UNIFIED 3-TAB WORKSTATION NAVIGATION STRIP */}
+      <div className="h-8 bg-white/[0.02] backdrop-blur-md border-b border-white/[0.06] flex items-center shrink-0 text-[10px] select-none">
         <button
           onClick={() => setActiveTab('DOSSIER')}
-          className={`flex-1 h-full font-bold border-b-2 transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 h-full font-bold border-b-2 transition-colors flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'DOSSIER'
-              ? 'border-accent-cyan text-accent-cyan bg-panel-hover'
+              ? 'border-accent-cyan text-accent-cyan bg-white/[0.04]'
               : 'border-transparent text-text-secondary hover:text-text-primary'
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
-          <span>[01] THEATER DOSSIER</span>
+          <Layers className="w-3 h-3" />
+          <span>DOSSIER</span>
         </button>
 
         <button
           onClick={() => setActiveTab('DEVELOPMENTS')}
-          className={`flex-1 h-full font-bold border-b-2 transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 h-full font-bold border-b-2 transition-colors flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'DEVELOPMENTS'
-              ? 'border-accent-cyan text-accent-cyan bg-panel-hover'
+              ? 'border-accent-cyan text-accent-cyan bg-white/[0.04]'
               : 'border-transparent text-text-secondary hover:text-text-primary'
           }`}
         >
-          <Activity className="w-3.5 h-3.5" />
-          <span>[02] KINETIC EVENTS</span>
-          <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/60 border border-border/80 text-accent-cyan font-semibold">
+          <Activity className="w-3 h-3" />
+          <span>EVENTS</span>
+          <span className="text-[8.5px] px-1.5 py-0.2 rounded-full bg-white/[0.06] border border-white/10 text-accent-cyan font-semibold">
             {activeConflict ? activeConflict.recentEvents.length : allEvents.length}
           </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('AI_INTEL')}
+          className={`flex-1 h-full font-bold border-b-2 transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+            activeTab === 'AI_INTEL'
+              ? 'border-accent-cyan text-accent-cyan bg-white/[0.04] shadow-[inset_0_-2px_6px_rgba(6,182,212,0.2)]'
+              : 'border-transparent text-text-secondary hover:text-accent-cyan'
+          }`}
+        >
+          <Brain className="w-3 h-3 text-cyan-400 animate-pulse" />
+          <span>AI INTEL</span>
+          {intelligenceAI?.escalationReport?.totalAnomalies > 0 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping inline-block" />
+          )}
         </button>
       </div>
 
@@ -484,7 +504,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                 </div>
 
                 {/* Escalation & Combat Intensity Meters */}
-                <div className="p-2.5 bg-panel-subtle border border-border space-y-2.5">
+                <div className="p-3 glass-panel-subtle rounded-2xl border border-white/[0.08] space-y-2.5">
                   {/* Escalation Index */}
                   <div>
                     <div className="flex items-center justify-between text-[10px] mb-1">
@@ -492,7 +512,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-text-primary">{activeConflict.escalationIndex}/100</span>
                         <span
-                          className={`text-[9px] font-bold px-1 py-0.2 border rounded-[2px] ${
+                          className={`text-[9px] font-bold px-2 py-0.5 border rounded-full ${
                             activeConflict.escalationTrend === 'UP'
                               ? 'text-red-400 border-red-700 bg-red-950/60'
                               : activeConflict.escalationTrend === 'DOWN'
@@ -531,7 +551,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
                 {/* 2x2 Tactical Counters Grid */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <Skull className="w-3 h-3 text-red-400" />
                       <span>FATALITIES REPORTED</span>
@@ -544,7 +564,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <Flame className="w-3 h-3 text-amber-400" />
                       <span>OBSERVED INCIDENTS</span>
@@ -557,7 +577,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <ShieldAlert className="w-3 h-3 text-accent-cyan" />
                       <span>ENGAGEMENT LEVEL</span>
@@ -570,7 +590,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <Clock className="w-3 h-3 text-text-secondary" />
                       <span>LAST STRIKE RECORDED</span>
@@ -586,7 +606,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
                 {/* Verified Escalation Driver Callout */}
                 {activeConflict.escalationReason && (
-                  <div className="bg-panel-subtle/80 p-2.5 border-l-2 border-accent-cyan border-y border-r border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border-l-2 border-accent-cyan border-y border-r border-white/[0.08]">
                     <div className="text-[9px] text-accent-cyan font-bold tracking-wider mb-1">
                       // VERIFIED ESCALATION DRIVER
                     </div>
@@ -607,7 +627,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       activeConflict.actors.map((actor, idx) => (
                         <div
                           key={idx}
-                          className="text-[11px] bg-panel-subtle px-2 py-1 border border-border text-text-primary truncate flex items-center justify-between"
+                          className="text-[11px] bg-white/[0.03] px-2.5 py-1.5 border border-white/[0.06] rounded-xl text-text-primary truncate flex items-center justify-between"
                         >
                           <span className="truncate">{actor}</span>
                           <span className="text-[9px] text-text-muted uppercase shrink-0 font-mono">
@@ -628,7 +648,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       onSelectConflict(activeConflict);
                       onOpenConflictModal(activeConflict);
                     }}
-                    className="w-full py-2 bg-panel-hover hover:bg-accent-cyan/20 border border-accent-cyan/60 text-accent-cyan text-[11px] font-bold tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    className="w-full py-2 rounded-full glass-pill text-cyan-300 hover:text-white border-cyan-500/40 text-[11px] font-bold tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
                     <span>LAUNCH FULL THEATER TERMINAL</span>
@@ -636,7 +656,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
                   <button
                     onClick={() => setActiveTab('DEVELOPMENTS')}
-                    className="w-full py-1.5 bg-panel-subtle hover:bg-panel-hover border border-border text-text-secondary hover:text-accent-cyan text-[10px] font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-1.5 rounded-full glass-pill text-text-secondary hover:text-accent-cyan border-white/10 text-[10px] font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Activity className="w-3 h-3 text-accent-cyan" />
                     <span>VIEW VERIFIED DEVELOPMENTS ({activeConflict.recentEvents.length})</span>
@@ -647,7 +667,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
               /* World Area Global Dossier */
               <div className="space-y-3.5">
                 {/* Executive World Assessment Card */}
-                <div className="p-2.5 border rounded-[2px] text-amber-400 bg-amber-950/80 border-amber-600/80 flex items-center justify-between">
+                <div className="p-2.5 border rounded-2xl text-amber-400 bg-amber-950/40 border-amber-500/40 backdrop-blur-md flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-accent-cyan shrink-0 animate-pulse" />
                     <div>
@@ -663,7 +683,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
 
                 {/* 2x2 Global Tactical Metrics Grid */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <Skull className="w-3 h-3 text-red-400" />
                       <span>GLOBAL FATALITIES</span>
@@ -676,7 +696,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <Flame className="w-3 h-3 text-amber-400" />
                       <span>OBSERVED STRIKES</span>
@@ -689,7 +709,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <ShieldAlert className="w-3 h-3 text-accent-cyan" />
                       <span>MONITORED THEATERS</span>
@@ -702,7 +722,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-panel-subtle p-2.5 border border-border">
+                  <div className="glass-panel-subtle p-2.5 rounded-2xl border border-white/[0.08]">
                     <div className="flex items-center gap-1.5 text-[9px] text-text-muted mb-1">
                       <TrendingUp className="w-3 h-3 text-red-400" />
                       <span>ESCALATING FRONTS</span>
@@ -717,7 +737,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                 </div>
 
                 {/* Global Escalation & Intensity Meters */}
-                <div className="p-2.5 bg-panel-subtle border border-border space-y-2.5">
+                <div className="p-3 glass-panel-subtle rounded-2xl border border-white/[0.08] space-y-2.5">
                   <div>
                     <div className="flex items-center justify-between text-[10px] mb-1">
                       <span className="text-text-muted">AVERAGE GLOBAL ESCALATION</span>
@@ -745,7 +765,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       <button
                         key={c.id}
                         onClick={() => onSelectConflict(c)}
-                        className="w-full text-left p-2 bg-panel-subtle hover:bg-panel-hover border border-border hover:border-accent-cyan/60 transition-all flex items-center justify-between gap-2 group cursor-pointer"
+                        className="w-full text-left p-2.5 glass-panel-subtle hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-400/60 rounded-xl transition-all flex items-center justify-between gap-2 group cursor-pointer"
                       >
                         <div className="truncate flex-1">
                           <div className="text-[11px] font-bold text-text-primary group-hover:text-accent-cyan transition-colors truncate">
@@ -775,7 +795,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     {Object.entries(globalStats.regionCounts).map(([region, count]) => (
                       <span
                         key={region}
-                        className="text-[9px] bg-panel-subtle px-2 py-0.5 border border-border text-text-secondary"
+                        className="text-[9px] glass-pill px-2.5 py-0.5 border border-white/[0.08] text-text-secondary rounded-full"
                       >
                         {region}: <strong className="text-accent-cyan">{count}</strong>
                       </span>
@@ -786,7 +806,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                 {/* Action: View All Global Events */}
                 <button
                   onClick={() => setActiveTab('DEVELOPMENTS')}
-                  className="w-full py-2 bg-panel-subtle hover:bg-panel-hover border border-border hover:border-accent-cyan text-accent-cyan text-[11px] font-bold tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full py-2 glass-pill hover:text-white border-white/10 hover:border-cyan-400 text-accent-cyan text-[11px] font-bold tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm rounded-full"
                 >
                   <Activity className="w-3.5 h-3.5 text-accent-cyan" />
                   <span>INSPECT ALL GLOBAL DEVELOPMENTS ({allEvents.length})</span>
@@ -803,7 +823,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
           <div className="p-3 space-y-2.5">
             {/* Search Filter */}
             <div className="relative">
-              <Search className="w-3 h-3 text-text-muted absolute left-2 top-2" />
+              <Search className="w-3 h-3 text-text-muted absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 value={eventSearch}
@@ -813,11 +833,11 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     ? `Filter incidents in ${activeConflict.name}...`
                     : 'Filter all global incidents (drone, artillery, location)...'
                 }
-                className="w-full bg-[#040810] border border-border pl-7 pr-2 py-1 text-[10px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-cyan"
+                className="w-full bg-white/[0.04] border border-white/10 pl-8 pr-2 py-1.5 text-[10px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-cyan rounded-xl"
               />
             </div>
 
-            <div className="text-[9px] text-text-muted flex items-center justify-between pb-1 border-b border-border/60">
+            <div className="text-[9px] text-text-muted flex items-center justify-between pb-1 border-b border-white/[0.06]">
               <span>
                 {activeConflict
                   ? `// ${activeConflict.name.toUpperCase()} (LAST ${windowDays}D)`
@@ -833,7 +853,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                   <div
                     key={ev.id}
                     onClick={() => onSelectEvent(ev)}
-                    className="p-2.5 bg-panel-subtle hover:bg-panel-hover border border-border hover:border-accent-cyan/60 transition-all cursor-pointer space-y-1.5 group"
+                    className="p-2.5 glass-panel-subtle hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-400/60 rounded-xl transition-all cursor-pointer space-y-1.5 group"
                   >
                     <div className="flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5">
@@ -846,12 +866,12 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                       </div>
                       <div className="flex items-center gap-1">
                         {ev.fatalities ? (
-                          <span className="text-severity-critical font-bold text-[10px] px-1 bg-red-950/60 border border-red-800">
+                          <span className="text-severity-critical font-bold text-[10px] px-1.5 py-0.2 bg-red-950/60 border border-red-800 rounded-full">
                             +{ev.fatalities} KIA
                           </span>
                         ) : null}
                         <span
-                          className={`text-[9px] px-1 font-bold border rounded-[2px] ${
+                          className={`text-[9px] px-2 py-0.2 font-bold border rounded-full ${
                             ev.severity === 'CRITICAL'
                               ? 'text-red-400 border-red-700 bg-red-950/50'
                               : ev.severity === 'HIGH'
@@ -876,7 +896,7 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                     </div>
 
                     {ev.notes && (
-                      <div className="text-[10px] text-text-muted line-clamp-2 italic bg-black/40 p-1.5 border-l border-border/80">
+                      <div className="text-[10px] text-text-muted line-clamp-2 italic bg-white/[0.02] p-2 rounded-lg border-l-2 border-cyan-400/60">
                         &ldquo;{ev.notes}&rdquo;
                       </div>
                     )}
@@ -887,6 +907,130 @@ export const ConflictPanel: React.FC<ConflictPanelProps> = ({
                   No developments found matching &ldquo;{eventSearch}&rdquo;
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* TAB 3: AI INTELLIGENCE & DETERMINISTIC PREDICTOR */}
+        {/* ============================================================ */}
+        {activeTab === 'AI_INTEL' && (
+          <div className="p-3 space-y-3.5">
+            {/* Header info card */}
+            <div className="p-2.5 glass-panel-subtle border border-cyan-500/30 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-cyan-400 shrink-0" />
+                <div>
+                  <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">DETERMINISTIC AI ENGINE</div>
+                  <div className="text-xs font-bold text-white tracking-wider">PREDICTIVE ANALYTICS v2</div>
+                </div>
+              </div>
+              <div className="px-2.5 py-0.5 text-[9px] font-bold bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 rounded-full">
+                THREAT {intelligenceAI?.globalThreatIndex ?? 0}
+              </div>
+            </div>
+
+            {/* Top 48H Forecast Flashpoints */}
+            <div className="space-y-1.5">
+              <div className="text-[9px] text-orange-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>// 48H ESCALATION FORECASTS</span>
+                <span className="text-zinc-600">EWMA + Z-SCORE</span>
+              </div>
+              <div className="space-y-1.5">
+                {(intelligenceAI?.escalationReport?.topFlashpoints || []).map((f: any, i: number) => (
+                  <div
+                    key={f.country}
+                    className="p-2.5 glass-panel-subtle border border-white/[0.08] hover:border-cyan-400/50 rounded-xl transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-[9px] text-cyan-300 flex items-center justify-center font-bold">
+                          {i + 1}
+                        </span>
+                        <span className="text-[11px] font-bold text-white uppercase">{f.country}</span>
+                        {f.isAnomaly && (
+                          <span className="text-[8px] font-bold text-red-400 bg-red-950/60 border border-red-700/50 px-1.5 py-0.2 rounded-full animate-pulse">
+                            Z &ge; 2.0σ
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-amber-300">
+                        {Math.round(f.forecast48hProbability * 100)}% PROB
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1 pt-1 border-t border-white/5 text-[9px]">
+                      <div>
+                        <span className="text-zinc-500 block">THREAT IDX</span>
+                        <span className="font-bold text-white">{f.threatIndex}/100</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block">VELOCITY</span>
+                        <span className="font-bold text-zinc-300">{f.escalationVelocity > 0 ? '+' : ''}{f.escalationVelocity.toFixed(1)}/d</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block">TREND</span>
+                        <span className={`font-bold ${f.trend === 'ESCALATING' ? 'text-red-400' : 'text-emerald-400'}`}>
+                          {f.trend}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Strategic Chokepoints & Cascade Risk */}
+            <div className="space-y-1.5 pt-1">
+              <div className="text-[9px] text-cyan-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>// STRATEGIC CHOKEPOINTS &amp; HUBS</span>
+                <span className="text-zinc-600">BRANDES GRAPH</span>
+              </div>
+              <div className="space-y-1">
+                {(intelligenceAI?.networkAnalysis?.chokepoints || []).slice(0, 3).map((cp: any) => (
+                  <div key={cp.country} className="p-2.5 glass-panel-subtle border border-white/[0.08] rounded-xl flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] font-bold text-white uppercase">{cp.country}</div>
+                      <div className="text-[9px] text-zinc-500">IN: {cp.inDegree} &bull; OUT: {cp.outDegree}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-bold text-cyan-400 font-mono">
+                        BETWEENNESS {Math.round(cp.betweenness * 100)}%
+                      </div>
+                      <div className="text-[9px] text-amber-400">
+                        CASCADE {Math.round(cp.cascadeRisk * 100)}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sensor Corroboration Summary */}
+            <div className="p-3 glass-panel-subtle border border-white/[0.08] rounded-2xl space-y-2">
+              <div className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
+                // SENSOR CROSS-CORRELATION
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                <div className="bg-white/[0.03] p-2 border border-white/[0.06] rounded-xl">
+                  <div className="text-sm font-bold text-emerald-400">
+                    {Math.round((intelligenceAI?.sensorFusionSummary?.corroborationRate ?? 0) * 100)}%
+                  </div>
+                  <div className="text-[8px] text-zinc-500 uppercase mt-0.5">Corroborated</div>
+                </div>
+                <div className="bg-white/[0.03] p-2 border border-white/[0.06] rounded-xl">
+                  <div className="text-sm font-bold text-cyan-400">
+                    {Math.round((intelligenceAI?.sensorFusionSummary?.avgConfidence ?? 0) * 100)}%
+                  </div>
+                  <div className="text-[8px] text-zinc-500 uppercase mt-0.5">Avg Conf.</div>
+                </div>
+                <div className="bg-white/[0.03] p-2 border border-white/[0.06] rounded-xl">
+                  <div className="text-sm font-bold text-orange-400">
+                    {intelligenceAI?.battlefrontClusters?.length ?? 0}
+                  </div>
+                  <div className="text-[8px] text-zinc-500 uppercase mt-0.5">Frontlines</div>
+                </div>
+              </div>
             </div>
           </div>
         )}

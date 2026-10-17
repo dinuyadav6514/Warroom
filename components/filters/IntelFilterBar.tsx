@@ -170,7 +170,7 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
 
   return (
     <div
-      className="relative z-50 bg-[#090d12] border-b border-border px-2 py-0.5 font-mono text-xs select-none flex items-center gap-1.5 overflow-visible"
+      className="relative z-50 glass-panel mx-3 mb-2 rounded-2xl border border-white/[0.12] px-3 py-1 font-mono text-xs select-none flex items-center gap-2 overflow-visible shrink-0 shadow-[0_10px_30px_rgba(0,0,0,0.65)]"
       ref={containerRef}
     >
       {/* Intel Mode buttons (Scrollable independently if screen is narrow) */}
@@ -183,16 +183,16 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
               key={m.id}
               type="button"
               onClick={() => onSelectIntelMode(m.id)}
-              className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] transition-all text-[10px] font-medium tracking-wide whitespace-nowrap cursor-pointer shrink-0 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all text-[10px] font-sans font-semibold tracking-wide whitespace-nowrap cursor-pointer shrink-0 ${
                 isActive
-                  ? m.activeClass
-                  : 'bg-panel-subtle/70 border-border/80 text-text-secondary hover:text-text-primary hover:bg-panel-hover'
+                  ? `${m.activeClass} shadow-[0_0_12px_rgba(0,240,255,0.2)]`
+                  : 'glass-panel-subtle text-slate-400 hover:text-white hover:border-white/20'
               }`}
               title={`Filter by ${m.label}`}
             >
-              <Icon className="w-2.5 h-2.5 shrink-0" />
+              <Icon className="w-3 h-3 shrink-0" />
               <span>{m.label}</span>
-              <span className={`text-[9px] px-1 border rounded-[2px] font-bold ${m.badgeClass}`}>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${m.badgeClass}`}>
                 {m.count}
               </span>
             </button>
@@ -201,18 +201,18 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
+      <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
 
       {/* Right Controls: Story Merging, Region, Severity, Event Type, Pipelines */}
-      <div className="flex items-center gap-1 ml-auto shrink-0 relative overflow-visible z-50">
+      <div className="flex items-center gap-1.5 ml-auto shrink-0 relative overflow-visible z-50">
         {/* Story Merging Deduplication Toggle */}
         <button
           type="button"
           onClick={onToggleStoryMerging}
-          className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-sans font-semibold tracking-wide transition-all cursor-pointer ${
             storyMerging
-              ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan shadow-[0_0_6px_rgba(0,240,255,0.2)]'
-              : 'bg-panel-subtle text-text-muted border-border hover:text-text-primary'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+              : 'glass-panel-subtle text-slate-400 hover:text-white'
           }`}
           title={
             storyMerging
@@ -220,14 +220,14 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
               : 'Raw Mode: every individual news dispatch is plotted separately'
           }
         >
-          <Layers className="w-3 h-3" />
-          <span>STORY MERGING:</span>
-          <span className={storyMerging ? 'text-accent-cyan' : 'text-text-muted'}>
-            {storyMerging ? '[ON]' : '[OFF]'}
+          <Layers className="w-3 h-3 text-cyan-400" />
+          <span>MERGING:</span>
+          <span className={storyMerging ? 'text-cyan-300 font-bold' : 'text-slate-500'}>
+            {storyMerging ? 'ON' : 'OFF'}
           </span>
           {storyMergeStats && storyMerging && storyMergeStats.merged > 0 && (
-            <span className="text-[9px] px-1 bg-cyan-950/80 border border-cyan-800 text-accent-cyan rounded-[2px]">
-              -{storyMergeStats.merged} DUPES
+            <span className="text-[8.5px] px-1 py-0.2 bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 rounded font-mono">
+              -{storyMergeStats.merged}
             </span>
           )}
         </button>
@@ -237,16 +237,16 @@ export const IntelFilterBar: React.FC<IntelFilterBarProps> = ({
           <button
             type="button"
             onClick={() => toggleDropdown('REGION')}
-            className={`flex items-center gap-1 px-2 py-0.5 border rounded-[2px] text-[10px] font-medium tracking-wide transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-sans font-semibold tracking-wide transition-all cursor-pointer ${
               selectedRegion && selectedRegion !== 'ALL'
-                ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan shadow-[0_0_6px_rgba(0,240,255,0.2)]'
-                : 'bg-panel-subtle text-text-secondary hover:text-text-primary border-border hover:bg-panel-hover'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_8px_rgba(0,240,255,0.2)]'
+                : 'glass-panel-subtle text-slate-400 hover:text-white hover:border-white/20'
             }`}
             title="Filter by Regional Theater"
           >
-            <Globe className="w-3 h-3 text-accent-cyan" />
+            <Globe className="w-3 h-3 text-cyan-400" />
             <span>REGION:</span>
-            <span className={selectedRegion && selectedRegion !== 'ALL' ? 'text-accent-cyan font-bold' : 'text-text-primary'}>
+            <span className={selectedRegion && selectedRegion !== 'ALL' ? 'text-cyan-300 font-bold' : 'text-slate-200'}>
               {(selectedRegion || 'ALL').toUpperCase()}
             </span>
             <ChevronDown className={`w-3 h-3 text-text-muted transition-transform ${openDropdown === 'REGION' ? 'rotate-180' : ''}`} />

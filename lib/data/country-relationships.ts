@@ -12,6 +12,11 @@ export interface CountryRelation {
   strategicContext?: string;
   primaryReason?: string;
   relatedEvents: ConflictEvent[];
+  /** AI-computed graph intelligence */
+  cascadeRisk?: number;
+  betweennessScore?: number;
+  threatIndex?: number;
+  isStrategicChokepoint?: boolean;
 }
 
 export interface RelationshipNetwork {
@@ -23,6 +28,11 @@ export interface RelationshipNetwork {
   outgoingCount: number;
   totalEvents: number;
   geoJson: GeoJSON.FeatureCollection;
+  /** AI Centrality analysis */
+  focalCascadeRisk?: number;
+  focalBetweenness?: number;
+  isFocalChokepoint?: boolean;
+  globalThreatRank?: number;
 }
 
 /**
@@ -36,6 +46,11 @@ const ACTOR_KEYWORD_TO_COUNTRY: Record<string, string> = {
   mossad: 'Israel',
   'tel aviv': 'Israel',
   jerusalem: 'Israel',
+
+  indian: 'India',
+  india: 'India',
+  bharat: 'India',
+  'new delhi': 'India',
 
   lebanese: 'Lebanon',
   lebanon: 'Lebanon',
@@ -195,6 +210,7 @@ const BASELINE_STRATEGIC_RELATIONS: Record<
     { country: 'Yemen', direction: 'INCOMING', context: 'Houthi ballistic & cruise missile launches targeting US carrier strike groups' },
     { country: 'Syria', direction: 'OUTGOING', context: 'Counter-ISIS base security & airstrikes against hostile proxy drone launchpads' },
     { country: 'Iraq', direction: 'OUTGOING', context: 'Defensive airstrikes on militia command centers following base rocket attacks' },
+    { country: 'India', direction: 'OUTGOING', context: 'Malabar naval maneuvers and Indo-Pacific defense logistics cooperation' },
   ],
   yemen: [
     { country: 'Israel', direction: 'OUTGOING', context: 'Hypersonic & ballistic missile launches towards Eilat and Tel Aviv' },
@@ -214,9 +230,12 @@ const BASELINE_STRATEGIC_RELATIONS: Record<
     { country: 'China', direction: 'INCOMING', context: 'Maritime militia blockades preventing resupply of BRP Sierra Madre outpost' },
   ],
   india: [
-    { country: 'Pakistan', direction: 'OUTGOING', context: 'Line of Control (LoC) counter-infiltration and artillery border vigilance' },
+    { country: 'Pakistan', direction: 'OUTGOING', context: 'Line of Control (LoC) counter-infiltration patrols and artillery border vigilance' },
     { country: 'Pakistan', direction: 'INCOMING', context: 'Cross-border ceasefire violations, drone arms drops & militant infiltration' },
+    { country: 'China', direction: 'OUTGOING', context: 'Line of Actual Control (LAC) surveillance and defensive mountain corps posture' },
     { country: 'China', direction: 'INCOMING', context: 'Eastern Ladakh & Arunachal Pradesh military friction along disputed frontier' },
+    { country: 'United States', direction: 'OUTGOING', context: 'Quad Indo-Pacific maritime security & joint defense technology cooperation' },
+    { country: 'Myanmar', direction: 'INCOMING', context: 'Cross-border insurgent tracking along northeastern frontier' },
   ],
   pakistan: [
     { country: 'India', direction: 'OUTGOING', context: 'Border skirmishes and surveillance along Punjab & Kashmir sectors' },
@@ -349,6 +368,21 @@ export function buildRelationshipNetwork(
         addRelation(canonicalFocal, b.country, 'OUTGOING', b.context, 0, b.context);
       } else {
         addRelation(b.country, canonicalFocal, 'INCOMING', b.context, 0, b.context);
+      }
+    }
+  }
+
+  // Also check all other baseline entries where another country has a relation with this focal country
+  for (const [otherKey, otherList] of Object.entries(BASELINE_STRATEGIC_RELATIONS)) {
+    if (otherKey === lowerFocal) continue;
+    for (const b of otherList) {
+      if (b.country.toLowerCase() === lowerFocal) {
+        const otherCanonical = otherKey.charAt(0).toUpperCase() + otherKey.slice(1);
+        if (b.direction === 'OUTGOING') {
+          addRelation(otherCanonical, canonicalFocal, 'INCOMING', b.context, 0, b.context);
+        } else {
+          addRelation(canonicalFocal, otherCanonical, 'OUTGOING', b.context, 0, b.context);
+        }
       }
     }
   }
@@ -486,6 +520,32 @@ export function buildRelationshipNetwork(
   }
   const connectedCountries = Array.from(connectedSet);
 
+  // 4. Compute AI Graph Centrality & Cascade Contagion
+  const centralityMap = new Map<string, { betweenness: number; cascadeRisk: number; isChokepoint: boolean }>();
+  try {
+    const { runNetworkCentrality } = require('@/lib/intelligence/network-centrality');
+    const netAnalysis = runNetworkCentrality(relations);
+    for (const node of netAnalysis.nodes) {
+      centralityMap.set(node.country.toLowerCase(), {
+        betweenness: node.betweenness,
+        cascadeRisk: node.cascadeRisk,
+        isChokepoint: node.isChokepoint,
+      });
+    }
+  } catch (e) {
+    // Fail-safe graceful fallback
+  }
+
+  // Enrich each relation with AI centrality scores
+  for (const rel of relations) {
+    const targetInfo = centralityMap.get(rel.toCountry.toLowerCase()) || centralityMap.get(rel.fromCountry.toLowerCase());
+    if (targetInfo) {
+      rel.cascadeRisk = targetInfo.cascadeRisk;
+      rel.betweennessScore = targetInfo.betweenness;
+      rel.isStrategicChokepoint = targetInfo.isChokepoint;
+    }
+  }
+
   // Build GeoJSON FeatureCollection containing curved lines
   const features: GeoJSON.Feature[] = [];
 
@@ -521,6 +581,9 @@ export function buildRelationshipNetwork(
         glowColor,
         eventCount: rel.eventCount,
         fatalities: rel.fatalities,
+        cascadeRisk: rel.cascadeRisk,
+        betweenness: rel.betweennessScore,
+        isChokepoint: rel.isStrategicChokepoint,
         title: `${rel.fromCountry} → ${rel.toCountry} [${rel.direction}]`,
         summary: rel.sampleHeadlines.slice(0, 2).join(' • '),
         strategicContext: rel.strategicContext || '',
@@ -532,6 +595,7 @@ export function buildRelationshipNetwork(
   const incomingCount = relations.filter((r) => r.direction === 'INCOMING').length;
   const outgoingCount = relations.filter((r) => r.direction === 'OUTGOING').length;
   const totalEvents = relations.reduce((sum, r) => sum + r.eventCount, 0);
+  const focalInfo = centralityMap.get(lowerFocal);
 
   return {
     focalCountry: canonicalFocal,
@@ -541,6 +605,9 @@ export function buildRelationshipNetwork(
     incomingCount,
     outgoingCount,
     totalEvents,
+    focalCascadeRisk: focalInfo?.cascadeRisk,
+    focalBetweenness: focalInfo?.betweenness,
+    isFocalChokepoint: focalInfo?.isChokepoint,
     geoJson: {
       type: 'FeatureCollection',
       features,
@@ -570,19 +637,19 @@ export function isRelationCommand(raw: string): RelationCommandResult {
   const suffixMatch = lower.match(/^(.+?)\s+(?:map|rel|relations|relation)$/i);
   if (suffixMatch) {
     let candidate = suffixMatch[1].trim();
-    // Strip optional prefix like "show", "view", "country"
-    candidate = candidate.replace(/^(?:show|view|country)\s+/i, '').trim();
+    // Strip optional prefix like "show", "view", "focus", "target", "country"
+    candidate = candidate.replace(/^(?:show|view|focus|target|country)\s+/i, '').trim();
     if (candidate && !['world', 'all', 'global', 'reset'].includes(candidate)) {
       const resolved = ACTOR_KEYWORD_TO_COUNTRY[candidate.toLowerCase()] || candidate;
       return { isRelation: true, countryName: resolved };
     }
   }
 
-  // 2. Prefix match: "map <country>", "rel <country>", "relations <country>"
-  const prefixMatch = lower.match(/^(?:map|rel|relations|relation)\s+(.+)$/i);
+  // 2. Prefix match: "map <country>", "rel <country>", "relations <country>", "focus <country>", "target <country>"
+  const prefixMatch = lower.match(/^(?:map|rel|relations|relation|focus|target|goto)\s+(.+)$/i);
   if (prefixMatch) {
     let candidate = prefixMatch[1].trim();
-    candidate = candidate.replace(/^(?:of|for|country)\s+/i, '').trim();
+    candidate = candidate.replace(/^(?:to|of|for|country)\s+/i, '').trim();
     if (candidate && !['view', 'world', 'all', 'global', 'reset'].includes(candidate)) {
       const resolved = ACTOR_KEYWORD_TO_COUNTRY[candidate.toLowerCase()] || candidate;
       return { isRelation: true, countryName: resolved };

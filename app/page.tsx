@@ -13,7 +13,7 @@ import {
 import { Header } from '@/components/layout/Header';
 import { LeftNav, NavView } from '@/components/layout/LeftNav';
 import { GlobalStatsStrip } from '@/components/layout/GlobalStatsStrip';
-import { ConflictMap } from '@/components/map/ConflictMap';
+import { GlobeConflictMap } from '@/components/map/GlobeConflictMap';
 import { FullLiveStreamModal } from '@/components/stream/FullLiveStreamModal';
 import { ConflictPanel } from '@/components/intelligence/ConflictPanel';
 import { ConflictModal } from '@/components/intelligence/ConflictModal';
@@ -34,6 +34,8 @@ import { ShieldAlert, Terminal, Menu, X, ChevronRight, AlertCircle, RefreshCw } 
 
 import { getMultiCountryView, parseCountryInput, matchCountryOrContinent } from '@/lib/data/country-coords';
 import { RelationshipNetwork, buildRelationshipNetwork, CountryRelation } from '@/lib/data/country-relationships';
+import { useIntelligenceAI } from '@/hooks/useIntelligenceAI';
+import { AiTacticalHud } from '@/components/intelligence/AiTacticalHud';
 
 export default function WarRoomDashboard() {
   /** Target map center & zoom dispatched from terminal country selection or UI navigation */
@@ -92,12 +94,52 @@ export default function WarRoomDashboard() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
 
+  // AI Tactical HUD visibility toggle (clean, non-intrusive on load; also embedded inside [03] AI INTEL tab)
+  const [showAiHud, setShowAiHud] = useState<boolean>(false);
+
+  // Raw GeoJSON for AI engine sensor fusion (populated when sensor overlays are loaded)
+  const [firmsGeoJsonForAI, setFirmsGeoJsonForAI] = useState<any>(null);
+  const [aviationGeoJsonForAI, setAviationGeoJsonForAI] = useState<any>(null);
+
+  // Dark / Light Theme Mode
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Hydrate theme from localStorage on initial load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('warroom_theme') as 'dark' | 'light' | null;
+      if (saved === 'light' || saved === 'dark') {
+        setTheme(saved);
+        if (saved === 'light') {
+          document.documentElement.classList.add('theme-light');
+        } else {
+          document.documentElement.classList.remove('theme-light');
+        }
+      }
+    }
+  }, []);
+
+  const handleToggleTheme = useCallback((targetTheme?: 'dark' | 'light') => {
+    setTheme((prev) => {
+      const next = targetTheme || (prev === 'dark' ? 'light' : 'dark');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('warroom_theme', next);
+        if (next === 'light') {
+          document.documentElement.classList.add('theme-light');
+        } else {
+          document.documentElement.classList.remove('theme-light');
+        }
+      }
+      return next;
+    });
+  }, []);
+
   // Sync Map Mode from URL query parameters (e.g. returning from /firms or /radar)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const m = params.get('mode')?.toUpperCase();
-      if (m && ['CONFLICTS', 'EVENTS', 'ESCALATION', 'HEATMAP'].includes(m)) {
+      if (m && ['CONFLICTS', 'EVENTS', 'ESCALATION'].includes(m)) {
         setMapMode(m as MapMode);
       }
     }
@@ -116,10 +158,12 @@ export default function WarRoomDashboard() {
       if (firmsRes.status === 'fulfilled') {
         const d = await firmsRes.value.json();
         if (d.success && d.count) setFirmsCount(d.count);
+        if (d.success && d.geojson) setFirmsGeoJsonForAI(d.geojson);
       }
       if (aviationRes.status === 'fulfilled') {
         const d = await aviationRes.value.json();
         if (d.success && d.count) setAviationCount(d.count);
+        if (d.success && d.geojson) setAviationGeoJsonForAI(d.geojson);
       }
     } catch {
       // Quietly ignore
@@ -552,8 +596,47 @@ export default function WarRoomDashboard() {
     setIsFullStreamModalOpen(true);
   }, [currentView]);
 
+  // ── Deterministic Intelligence AI Engine (no LLM) ──────────────────────
+  const intelligenceAI = useIntelligenceAI(
+    events,
+    conflicts,
+    firmsGeoJsonForAI,
+    aviationGeoJsonForAI,
+    relationNetwork
+  );
+
+  // ── AI Enriched Events (Correlated with verified incident scores) ────────
+  const enrichedEvents = useMemo(() => {
+    if (!intelligenceAI.verifiedIncidents || intelligenceAI.verifiedIncidents.length === 0) {
+      return events;
+    }
+    const verifiedMap = new Map<string, any>();
+    for (const vi of intelligenceAI.verifiedIncidents) {
+      if (vi.event?.id) verifiedMap.set(vi.event.id, vi);
+    }
+    return events.map((ev) => {
+      const vi = verifiedMap.get(ev.id);
+      if (!vi) return ev;
+      return {
+        ...ev,
+        confidenceScore: vi.confidenceScore,
+        confidenceLabel: vi.confidenceLabel,
+        sensorHits: {
+          firmsCount: vi.firmsCount,
+          aviationCount: vi.aviationCount,
+          maxFrp: vi.maxFrp,
+          sorties: vi.activeSorties,
+        },
+      };
+    });
+  }, [events, intelligenceAI.verifiedIncidents]);
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-background text-text-primary overflow-hidden font-mono">
+    <div
+      className={`flex flex-col h-screen w-screen ${
+        theme === 'light' ? 'theme-light bg-[#f8fafc]' : 'bg-black'
+      } text-text-primary overflow-hidden font-mono transition-colors duration-200`}
+    >
       {/* Top Header */}
       <Header
         freshness={freshness}
@@ -570,6 +653,8 @@ export default function WarRoomDashboard() {
         conflictsCount={conflicts.length}
         showStatsPanel={showStatsPanel}
         onToggleStatsPanel={() => setShowStatsPanel((prev) => !prev)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Live Refresh In-Flight Indicator */}
@@ -645,7 +730,41 @@ export default function WarRoomDashboard() {
 
       {/* Active Workstation Layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Navigation Pane */}
+        {/* Full-Bleed 3D Globe Conflict Map Canvas Underlay (Spans entire workstation behind floating frosted glass panels) */}
+        {currentView === 'WORLD' && (
+          <div className="absolute inset-0 z-0">
+            <GlobeConflictMap
+              events={enrichedEvents}
+              conflicts={conflicts}
+              selectedConflict={selectedConflict}
+              selectedEvent={selectedEvent}
+              onSelectConflict={handleSelectConflict}
+              onSelectEvent={handleSelectEvent}
+              onOpenEventModal={(e) => {
+                setSelectedEvent(e);
+                setIsEventModalOpen(true);
+              }}
+              mapMode={mapMode}
+              onChangeMapMode={setMapMode}
+              targetLocation={mapTargetLocation}
+              relationNetwork={relationNetwork}
+              onClearRelationNetwork={() => setRelationNetwork(null)}
+              onSelectRelation={handleSelectRelation}
+              showFirms={false}
+              firmsCount={firmsCount}
+              showAviation={false}
+              aviationCount={aviationCount}
+              battlefrontClusters={intelligenceAI.battlefrontClusters}
+              verifiedIncidents={intelligenceAI.verifiedIncidents}
+              threatIndex={intelligenceAI.globalThreatIndex}
+              theme={theme}
+              leftInset={268}
+              rightInset={isPanelCollapsed ? 52 : 396}
+            />
+          </div>
+        )}
+
+        {/* Left Navigation Pane (Floating Frosted Glass Layer) */}
         <LeftNav
           currentView={currentView}
           onSelectView={setCurrentView}
@@ -657,8 +776,8 @@ export default function WarRoomDashboard() {
           availableSources={availableSources}
           isRefreshing={isRefreshing}
           lastSyncAt={freshness?.lastSyncAt}
-          eventsCount={events.length}
-          events={allEvents10D}
+          eventsCount={enrichedEvents.length}
+          events={enrichedEvents}
           apiExchange={apiExchange}
           selectedEvent={selectedEvent}
           selectedConflict={selectedConflict}
@@ -681,119 +800,148 @@ export default function WarRoomDashboard() {
         />
 
         {/* Primary Operational Center Workspace */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#070a0d] relative overflow-hidden">
+        <main
+          className={`flex-1 flex flex-col min-w-0 ${
+            currentView === 'WORLD'
+              ? 'bg-transparent pointer-events-none'
+              : theme === 'light'
+              ? 'bg-[#f8fafc]'
+              : 'bg-black'
+          } relative z-20 overflow-hidden transition-colors duration-200`}
+        >
           {/* Collapsible Headline KPI Metric Strip */}
           {showStatsPanel && (
-            <GlobalStatsStrip
-              stats={globalStats}
-              windowDays={filters.days}
-              onClose={() => setShowStatsPanel(false)}
-            />
+            <div className="pointer-events-auto">
+              <GlobalStatsStrip
+                stats={globalStats}
+                windowDays={filters.days}
+                onClose={() => setShowStatsPanel(false)}
+              />
+            </div>
           )}
 
           {/* Center Dynamic Workspace Views */}
           <div className="flex-1 relative overflow-hidden">
             {currentView === 'WORLD' && (
-              <div className="w-full h-full relative">
-                <ConflictMap
-                  events={events}
-                  conflicts={conflicts}
-                  selectedConflict={selectedConflict}
-                  selectedEvent={selectedEvent}
-                  onSelectConflict={handleSelectConflict}
-                  onSelectEvent={handleSelectEvent}
-                  onOpenEventModal={(e) => {
-                    setSelectedEvent(e);
-                    setIsEventModalOpen(true);
-                  }}
-                  mapMode={mapMode}
-                  onChangeMapMode={setMapMode}
-                  targetLocation={mapTargetLocation}
-                  relationNetwork={relationNetwork}
-                  onSelectRelation={handleSelectRelation}
-                  showFirms={false}
-                  firmsCount={firmsCount}
-                  showAviation={false}
-                  aviationCount={aviationCount}
-                />
+              <div className="w-full h-full relative pointer-events-none">
+                {/* ── Minimal AI Tactical HUD Toggle Pill (Top-Right under zoom controls, sleek and unobtrusive) ── */}
+                <div className="absolute top-12 right-3 z-30 pointer-events-auto">
+                  {!showAiHud && (
+                    <button
+                      onClick={() => setShowAiHud(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 glass-panel hover:border-cyan-400 text-cyan-300 text-[10px] font-mono font-bold tracking-wider transition-all shadow-[0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-md rounded-full border border-white/12"
+                      title="Toggle AI Tactical Analytics HUD overlay"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse inline-block shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+                      <span>AI HUD</span>
+                      <span className="text-[9px] text-slate-400 font-normal">[{intelligenceAI.globalThreatIndex}]</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* ── Floated AI Tactical HUD Panel (When activated, positioned neatly on top-right floating canvas without obscuring globe center) ── */}
+                {showAiHud && (
+                  <div className="absolute top-12 right-3 z-40 w-72 xl:w-80 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                    <AiTacticalHud
+                      escalationReport={intelligenceAI.escalationReport}
+                      sensorFusionSummary={intelligenceAI.sensorFusionSummary}
+                      battlefrontClusters={intelligenceAI.battlefrontClusters}
+                      networkAnalysis={intelligenceAI.networkAnalysis}
+                      globalThreatIndex={intelligenceAI.globalThreatIndex}
+                      onClose={() => setShowAiHud(false)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
             {currentView === 'CONFLICTS' && (
-              <ConflictsView
-                conflicts={conflicts}
-                onSelectConflict={handleSelectConflict}
-                onOpenConflictModal={handleOpenConflictModal}
-                windowDays={filters.days}
-              />
+              <div className="pointer-events-auto w-full h-full">
+                <ConflictsView
+                  conflicts={conflicts}
+                  onSelectConflict={handleSelectConflict}
+                  onOpenConflictModal={handleOpenConflictModal}
+                  windowDays={filters.days}
+                />
+              </div>
             )}
 
             {currentView === 'ESCALATION' && (
-              <EscalationView
-                conflicts={conflicts}
-                onSelectConflict={handleSelectConflict}
-                onOpenConflictModal={handleOpenConflictModal}
-                windowDays={filters.days}
-              />
+              <div className="pointer-events-auto w-full h-full">
+                <EscalationView
+                  conflicts={conflicts}
+                  onSelectConflict={handleSelectConflict}
+                  onOpenConflictModal={handleOpenConflictModal}
+                  windowDays={filters.days}
+                />
+              </div>
             )}
 
             {currentView === 'TIMELINE' && (
-              <TimelineView
-                events={events}
-                onSelectEvent={(e) => {
-                  setSelectedEvent(e);
-                  setIsEventModalOpen(true);
-                }}
-                windowDays={filters.days}
-              />
+              <div className="pointer-events-auto w-full h-full">
+                <TimelineView
+                  events={enrichedEvents}
+                  onSelectEvent={(e) => {
+                    setSelectedEvent(e);
+                    setIsEventModalOpen(true);
+                  }}
+                  windowDays={filters.days}
+                />
+              </div>
             )}
 
             {currentView === 'ACTORS' && (
-              <ActorsView
-                conflicts={conflicts}
-                events={events}
-                onSelectEvent={(e) => {
-                  setSelectedEvent(e);
-                  setIsEventModalOpen(true);
-                }}
-                onSelectConflict={handleSelectConflict}
-                onOpenConflictModal={handleOpenConflictModal}
-                windowDays={filters.days}
-              />
+              <div className="pointer-events-auto w-full h-full">
+                <ActorsView
+                  conflicts={conflicts}
+                  events={enrichedEvents}
+                  onSelectEvent={(e) => {
+                    setSelectedEvent(e);
+                    setIsEventModalOpen(true);
+                  }}
+                  onSelectConflict={handleSelectConflict}
+                  onOpenConflictModal={handleOpenConflictModal}
+                  windowDays={filters.days}
+                />
+              </div>
             )}
           </div>
 
           {/* Bottom Terminal Command Line (Anchored directly inside map/workspace area, never spanning below LeftNav or RightNav) */}
-          <CommandLine
-            onSelectView={setCurrentView}
-            onUpdateFilters={handleUpdateFilters}
-            onRefresh={handleForceRefresh}
-            onOpenSources={() => setIsSourcesModalOpen(true)}
-            onExecuteSearch={handleExecuteSearch}
-            onSelectEventById={handleSelectEventById}
-            onSelectCountry={handleSelectCountry}
-            onSelectCountries={handleSelectCountries}
-            onShowRelationNetwork={handleShowRelationNetwork}
-            onSelectRegion={handleSelectRegion}
-            allConflicts={conflicts}
-            allEvents={events}
-            activeConflict={selectedConflict}
-            onSelectConflict={handleSelectConflict}
-          />
+          <div className="pointer-events-auto">
+            <CommandLine
+              onSelectView={setCurrentView}
+              onUpdateFilters={handleUpdateFilters}
+              onRefresh={handleForceRefresh}
+              onOpenSources={() => setIsSourcesModalOpen(true)}
+              onExecuteSearch={handleExecuteSearch}
+              onSelectEventById={handleSelectEventById}
+              onSelectCountry={handleSelectCountry}
+              onSelectCountries={handleSelectCountries}
+              onShowRelationNetwork={handleShowRelationNetwork}
+              onSelectRegion={handleSelectRegion}
+              allConflicts={conflicts}
+              allEvents={enrichedEvents}
+              activeConflict={selectedConflict}
+              onSelectConflict={handleSelectConflict}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+            />
+          </div>
         </main>
 
         {/* Right-Side Strategic Conflict Intelligence & Telemetry Workstation (Desktop) */}
         <div
           className={`${
             isPanelCollapsed
-              ? 'w-9'
+              ? 'w-10'
               : 'w-80 xl:w-96 2xl:w-[420px]'
-          } hidden lg:flex flex-col h-full bg-panel border-l border-border transition-all duration-300 shrink-0 overflow-hidden relative z-30`}
+          } hidden lg:flex flex-col h-[calc(100%-16px)] my-1 mr-3 mb-3 rounded-[28px] overflow-hidden transition-all duration-300 shrink-0 relative z-30 pointer-events-auto`}
         >
           <ConflictPanel
             conflict={selectedConflict}
             allConflicts={conflicts}
-            allEvents={events}
+            allEvents={enrichedEvents}
             onSelectConflict={handleSelectConflict}
             onOpenConflictModal={handleOpenConflictModal}
             onSelectEvent={(e) => {
@@ -808,6 +956,7 @@ export default function WarRoomDashboard() {
             onToggleCollapse={() => setIsPanelCollapsed((prev) => !prev)}
             onSelectView={setCurrentView}
             onUpdateFilters={handleUpdateFilters}
+            intelligenceAI={intelligenceAI}
           />
         </div>
       </div>
@@ -819,11 +968,11 @@ export default function WarRoomDashboard() {
             className="fixed inset-0 bg-black/80 backdrop-blur-xs z-40 lg:hidden transition-opacity"
             onClick={() => setMobilePanelOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[440px] max-w-full bg-[#050a12] border-l border-border shadow-2xl flex flex-col lg:hidden animate-in slide-in-from-right duration-200">
+          <div className="fixed inset-y-2 right-2 z-50 w-full sm:w-[440px] max-w-[calc(100%-16px)] rounded-[28px] overflow-hidden glass-panel border border-white/12 shadow-[0_24px_60px_rgba(0,0,0,0.95)] flex flex-col lg:hidden animate-in slide-in-from-right duration-200">
             <ConflictPanel
               conflict={selectedConflict}
               allConflicts={conflicts}
-              allEvents={events}
+              allEvents={enrichedEvents}
               onSelectConflict={handleSelectConflict}
               onOpenConflictModal={handleOpenConflictModal}
               onSelectEvent={(e) => {
@@ -838,6 +987,7 @@ export default function WarRoomDashboard() {
               onCloseMobile={() => setMobilePanelOpen(false)}
               onSelectView={setCurrentView}
               onUpdateFilters={handleUpdateFilters}
+              intelligenceAI={intelligenceAI}
             />
           </div>
         </>

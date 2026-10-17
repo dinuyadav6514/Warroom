@@ -31,40 +31,42 @@ export const ActivitySparkline: React.FC<ActivitySparklineProps> = ({ events, wi
   const maxCount = Math.max(...daysList.map((d) => d.count), 1);
 
   return (
-    <div className="bg-panel-subtle border border-border p-2.5 font-mono select-none">
-      <div className="flex items-center justify-between text-[10px] text-text-muted pb-1.5 border-b border-border/60">
-        <span>// RECENT ACTIVITY HISTOGRAM</span>
-        <span className="text-accent-cyan">EVENTS / DAY (LAST {windowDays}D)</span>
+    <div className="glass-panel-subtle rounded-2xl border border-white/[0.10] p-3.5 font-mono select-none">
+      <div className="flex items-center justify-between text-[10px] text-zinc-400 pb-2 border-b border-white/5">
+        <span className="font-semibold text-white">ACTIVITY HISTOGRAM</span>
+        <span className="text-cyan-300 font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[9px]">
+          EVENTS / DAY ({windowDays}D)
+        </span>
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-1 h-14 px-1">
+      <div className="mt-3.5 flex items-end justify-between gap-1.5 h-16 px-1">
         {daysList.map((day) => {
-          const heightPercent = Math.max(8, Math.round((day.count / maxCount) * 100));
+          const heightPercent = Math.max(6, Math.round((day.count / maxCount) * 100));
           const isHigh = day.count >= maxCount * 0.7 && day.count > 0;
 
           return (
-            <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-1 group">
+            <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-1.5 group">
               {/* Tooltip on hover */}
-              <div className="text-[9px] text-text-muted group-hover:text-accent-cyan transition-colors">
+              <div className="text-[9px] text-zinc-500 group-hover:text-cyan-300 transition-colors font-medium">
                 {day.count > 0 ? day.count : '·'}
               </div>
 
               {/* Bar */}
-              <div className="w-full bg-border/40 rounded-none overflow-hidden h-10 flex items-end">
+              <div className="w-full bg-white/[0.03] rounded-t-sm overflow-hidden h-11 flex items-end border-b border-white/10">
                 <div
                   style={{ height: `${heightPercent}%` }}
-                  className={`w-full transition-all duration-300 ${
+                  className={`w-full rounded-t-sm transition-all duration-300 ${
                     isHigh
-                      ? 'bg-severity-high group-hover:bg-severity-critical'
+                      ? 'bg-gradient-to-t from-rose-500/80 to-orange-400 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
                       : day.count > 0
-                      ? 'bg-accent-cyan/80 group-hover:bg-accent-cyan'
+                      ? 'bg-gradient-to-t from-cyan-600/70 to-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
                       : 'bg-transparent'
                   }`}
                 />
               </div>
 
               {/* Day label */}
-              <div className="text-[9px] text-text-secondary group-hover:text-text-primary">
+              <div className="text-[9px] text-zinc-500 group-hover:text-white transition-colors">
                 {day.label}
               </div>
             </div>

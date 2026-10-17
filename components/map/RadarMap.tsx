@@ -1006,12 +1006,7 @@ export const RadarMap: React.FC<RadarMapProps> = ({
               'icon-rotation-alignment': 'map',
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
-              'icon-size': [
-                'interpolate', ['linear'], ['zoom'],
-                2, 0.28,
-                5, 0.38,
-                9, 0.50,
-              ],
+              'icon-size': 0.34, // Fixed non-resizable size (< 1.25x increase for crisp visibility)
             },
           });
 
@@ -1044,12 +1039,7 @@ export const RadarMap: React.FC<RadarMapProps> = ({
             type: 'circle',
             source: 'warroom-military-aircraft',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 10,
-                5, 14,
-                10, 20,
-              ],
+              'circle-radius': 14,
               'circle-opacity': 0,
               'circle-stroke-width': 0,
             },

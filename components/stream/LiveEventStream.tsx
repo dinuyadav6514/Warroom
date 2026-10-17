@@ -79,12 +79,12 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
   }
 
   return (
-    <div className="bg-panel border border-border h-full flex flex-col font-mono text-xs select-none">
-      <div className="p-2.5 border-b border-border flex items-center justify-between bg-panel-subtle">
+    <div className="glass-panel border border-white/[0.12] h-full flex flex-col font-mono text-xs select-none backdrop-blur-2xl rounded-[28px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)]">
+      <div className="p-3.5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
         <div className="flex items-center gap-2">
-          <Radio className="w-3.5 h-3.5 text-accent-green animate-pulse" />
-          <span className="text-[11px] font-bold text-accent-cyan tracking-wider">
-            // LIVE CONFLICT STREAM
+          <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+          <span className="text-[11px] font-bold text-white tracking-wider">
+            LIVE CONFLICT STREAM
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -92,18 +92,21 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="p-1 hover:text-accent-cyan text-text-muted hover:bg-panel-hover transition-colors disabled:opacity-50 cursor-pointer"
+              className="p-1 hover:text-white text-zinc-400 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 cursor-pointer"
               title="Query live news feeds for latest events"
             >
-              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-accent-cyan' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
             </button>
           )}
-          <span className="text-[10px] text-text-muted font-mono">{events.length} RECENT</span>
+
+          <span className="text-[10px] text-zinc-400 font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+            {events.length} RECENT
+          </span>
 
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="p-1 hover:text-accent-cyan text-text-muted hover:bg-panel-hover transition-colors cursor-pointer ml-1"
+              className="p-1 hover:text-white text-zinc-400 hover:bg-white/10 rounded-full transition-colors cursor-pointer ml-1"
               title="Collapse Live Stream Panel"
             >
               <ChevronRight className="hidden md:inline w-3.5 h-3.5" />
@@ -113,9 +116,9 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 divide-y divide-border/40">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
         {sorted.length === 0 ? (
-          <div className="p-4 text-center text-text-muted text-[11px]">
+          <div className="p-6 text-center text-zinc-500 text-[11px]">
             NO ACTIVE EVENTS DETECTED IN WINDOW
           </div>
         ) : (
@@ -123,64 +126,75 @@ export const LiveEventStream: React.FC<LiveEventStreamProps> = ({
             const isSelected = selectedEventId === ev.id;
             const sevColor =
               ev.severity === 'CRITICAL'
-                ? 'bg-severity-critical/20 text-severity-critical border-severity-critical/50'
+                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 : ev.severity === 'HIGH'
-                ? 'bg-severity-high/20 text-severity-high border-severity-high/50'
+                ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
                 : ev.severity === 'MODERATE'
-                ? 'bg-severity-moderate/20 text-severity-moderate border-severity-moderate/50'
-                : 'bg-severity-low/20 text-severity-low border-severity-low/50';
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
 
             const headline = ev.notes ? ev.notes.split('.')[0] : ev.eventType;
             const category = ev.primaryCategory || ev.eventType;
             const categoryBadge =
               category === 'Warfare & Combat'
-                ? 'bg-red-950/40 text-severity-critical border-red-800/40'
+                ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
                 : category === 'Defense & Strategy'
-                ? 'bg-amber-950/40 text-amber-400 border-amber-800/40'
+                ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
                 : category === 'Geopolitics & Policy'
-                ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
+                ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
                 : category === 'Economy & Global'
-                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
-                : 'bg-panel-subtle text-text-muted border-border';
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                : 'bg-white/5 text-zinc-400 border-white/10';
 
             return (
               <button
                 key={ev.id}
                 onClick={() => onSelectEvent(ev)}
-                className={`w-full pt-2 pb-1.5 px-1.5 text-left transition-colors cursor-pointer group rounded-[2px] ${
-                  isSelected ? 'bg-panel-hover border-l-2 border-accent-cyan' : 'hover:bg-panel-subtle'
+                className={`w-full p-2.5 text-left transition-all cursor-pointer group rounded-xl border ${
+                  isSelected
+                    ? 'glass-panel border-cyan-400/60 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                    : 'glass-panel-subtle border-white/5 hover:border-white/20'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-text-muted">[{formatTimeOrDate(ev)}]</span>
-                    <span className={`text-[9px] px-1.5 py-0.2 border font-bold ${sevColor}`}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-zinc-500">[{formatTimeOrDate(ev)}]</span>
+                    <span className={`text-[9px] px-2 py-0.2 rounded-full border font-bold ${sevColor}`}>
                       {ev.severity}
                     </span>
-                    <span className={`text-[8.5px] px-1 py-0.2 border font-semibold ${categoryBadge}`}>
+                    <span className={`text-[8.5px] px-1.5 py-0.2 rounded-full border font-semibold ${categoryBadge}`}>
                       {category.split(' ')[0]}
                     </span>
+                    {ev.confidenceLabel && (
+                      <span className={`text-[8px] px-1.5 py-0.2 font-mono font-bold rounded-full border ${
+                        (ev.confidenceScore ?? 0) >= 0.70
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          : 'bg-white/5 text-zinc-400 border-white/10'
+                      }`}>
+                        {(ev.confidenceScore ?? 0) >= 0.70 ? '✓' : '•'} {Math.round((ev.confidenceScore ?? 0.4) * 100)}%
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[10px] text-text-muted group-hover:text-accent-cyan">
+                  <span className="text-[10px] text-zinc-400 group-hover:text-cyan-300 transition-colors font-medium">
                     {ev.country}
                   </span>
                 </div>
 
-                <div className="text-[11px] font-medium text-text-primary line-clamp-2 leading-snug">
+                <div className="text-[11.5px] font-medium text-white line-clamp-2 leading-snug">
                   {headline}
                 </div>
 
-                <div className="text-[10px] text-text-secondary truncate mt-1 flex items-center justify-between">
+                <div className="text-[10px] text-zinc-400 truncate mt-1.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span>{ev.location}</span>
                     {ev.mergedCount && ev.mergedCount > 1 && (
-                      <span className="text-[9px] font-bold px-1 py-0.2 bg-cyan-950/80 border border-cyan-800 text-accent-cyan rounded-[2px]">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-full">
                         +{ev.mergedCount - 1} SOURCES
                       </span>
                     )}
                   </div>
                   {ev.fatalities !== undefined && ev.fatalities > 0 && (
-                    <span className="text-severity-critical font-bold">+{ev.fatalities} KIA</span>
+                    <span className="text-rose-400 font-bold">+{ev.fatalities} KIA</span>
                   )}
                 </div>
               </button>

@@ -112,9 +112,9 @@ export default function FirmsPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#070a0d] text-[#e6edf3] font-mono overflow-hidden select-none">
+    <div className="flex flex-col h-screen bg-black text-[#e6edf3] font-mono overflow-hidden select-none">
       {/* ── TOP HEADER (Days & Pipeline filters removed) ── */}
-      <header className="h-12 bg-panel border-b border-border px-3 md:px-4 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0">
+      <header className="h-12 glass-panel mx-3 mt-2.5 mb-1 rounded-2xl md:rounded-[22px] border border-white/[0.12] px-3 md:px-4 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0 shadow-[0_12px_36px_rgba(0,0,0,0.7)]">
         {/* Logo & Title */}
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
@@ -129,7 +129,7 @@ export default function FirmsPage() {
           </div>
 
           {/* Satellite Sensor Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 bg-amber-950/40 border border-amber-800/60 rounded-[2px] text-[10px] text-amber-300">
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 bg-amber-950/40 border border-amber-800/60 rounded-full text-[10px] text-amber-300">
             <Satellite className="w-3 h-3 text-amber-400" />
             <span>VIIRS 375m // NOAA-20 & SUOMI-NPP (24H NRT)</span>
           </div>
@@ -137,7 +137,7 @@ export default function FirmsPage() {
 
         {/* Right Section: World Time & Refresh */}
         <div className="flex items-center gap-2 md:gap-3 text-[11px] shrink-0">
-          <div className="flex items-center gap-1.5 text-text-secondary bg-panel-subtle/80 px-2 py-1 border border-border/80 rounded-[2px]">
+          <div className="flex items-center gap-1.5 text-text-secondary glass-panel-subtle px-2.5 py-1 border border-white/[0.10] rounded-full">
             <Globe className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-muted-foreground text-[10px] hidden md:inline">WORLD TIME ::</span>
             <span className="text-text-primary font-bold text-[10.5px] md:text-[11px] tracking-wide">
@@ -148,7 +148,7 @@ export default function FirmsPage() {
           <button
             onClick={() => loadFirmsData(true)}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-950/60 hover:bg-amber-900/80 active:bg-amber-700/30 border border-amber-600/70 hover:border-amber-500 text-amber-400 text-[10.5px] md:text-[11px] font-bold tracking-wider rounded-[2px] transition-all cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.18)] disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1 glass-pill border border-amber-500/50 hover:border-amber-400 text-amber-400 text-[10.5px] md:text-[11px] font-bold tracking-wider rounded-full transition-all cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.25)] disabled:opacity-50"
             title="Force refresh NASA FIRMS satellite data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
@@ -159,7 +159,7 @@ export default function FirmsPage() {
       </header>
 
       {/* ── FIRMS FILTER BAR (No days / pipelines filter) ── */}
-      <div className="bg-[#0b0f14] border-b border-border/80 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0 z-20">
+      <div className="glass-panel mx-3 mb-2 rounded-2xl border border-white/[0.12] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0 z-20 shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
         <div className="flex flex-wrap items-center gap-2">
           {/* Theater Filter */}
           <div className="flex items-center gap-1 bg-panel-subtle px-2 py-0.5 border border-border">

@@ -21,22 +21,22 @@ export const EscalationView: React.FC<EscalationViewProps> = ({
   const sorted = [...conflicts].sort((a, b) => b.escalationIndex - a.escalationIndex);
 
   return (
-    <div className="h-full flex flex-col bg-panel font-mono text-xs select-none">
+    <div className="glass-panel h-full flex flex-col font-mono text-xs select-none backdrop-blur-2xl border border-white/[0.12] rounded-[28px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] m-3">
       {/* Header */}
-      <div className="p-3 border-b border-border bg-panel-subtle flex items-center justify-between">
+      <div className="p-4 border-b border-white/10 bg-white/[0.02] flex items-center justify-between">
         <div>
-          <div className="text-accent-cyan font-bold text-sm tracking-wider flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-severity-critical" />
+          <div className="text-white font-bold text-sm tracking-wider flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-rose-400" />
             <span>THEATER ESCALATION MONITOR // MEASURED VELOCITY</span>
           </div>
-          <div className="text-[10px] text-text-muted mt-0.5">
+          <div className="text-[10px] text-zinc-400 mt-0.5">
             COMPARING OBSERVED 24-HOUR INCIDENT FREQUENCY TO PRECEDING BASELINE DAYS &bull; STRICTLY NON-PREDICTIVE
           </div>
         </div>
       </div>
 
       {/* List of Theaters */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
         {sorted.map((conflict) => {
           const isUp = conflict.escalationTrend === 'UP';
           const isDown = conflict.escalationTrend === 'DOWN';
@@ -48,17 +48,17 @@ export const EscalationView: React.FC<EscalationViewProps> = ({
                 onSelectConflict(conflict);
                 onOpenConflictModal();
               }}
-              className="p-3 bg-panel-subtle hover:bg-panel-hover border border-border hover:border-accent-cyan/60 cursor-pointer transition-all space-y-2 group"
+              className="p-4 rounded-xl glass-panel-subtle border border-white/5 hover:border-white/20 cursor-pointer transition-all space-y-3 group shadow-md"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/60">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                <div className="flex items-center gap-3">
                   <span
-                    className={`p-1 border ${
+                    className={`p-1.5 rounded-lg border ${
                       isUp
-                        ? 'bg-red-950/50 text-severity-critical border-red-800/60'
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                         : isDown
-                        ? 'bg-blue-950/50 text-severity-low border-blue-800/60'
-                        : 'bg-panel text-text-muted border-border'
+                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                        : 'bg-white/5 text-zinc-400 border-white/10'
                     }`}
                   >
                     {isUp ? (
@@ -70,10 +70,10 @@ export const EscalationView: React.FC<EscalationViewProps> = ({
                     )}
                   </span>
                   <div>
-                    <span className="font-bold text-sm text-text-primary group-hover:text-accent-cyan transition-colors">
+                    <span className="font-bold text-sm text-white group-hover:text-cyan-300 transition-colors">
                       {conflict.name}
                     </span>
-                    <span className="text-[10px] text-text-muted ml-2">
+                    <span className="text-[10px] text-zinc-400 ml-2">
                       {conflict.country} &bull; {conflict.region}
                     </span>
                   </div>
@@ -82,20 +82,20 @@ export const EscalationView: React.FC<EscalationViewProps> = ({
                 {/* Index Pill */}
                 <div className="flex items-center gap-3 self-end sm:self-auto">
                   <div className="text-right">
-                    <div className="text-[9px] text-text-muted">ESCALATION INDEX</div>
-                    <div className="text-base font-bold text-text-primary">
+                    <div className="text-[9px] text-zinc-400">ESCALATION INDEX</div>
+                    <div className="text-base font-bold text-white">
                       {conflict.escalationIndex}
-                      <span className="text-xs text-text-muted">/100</span>
+                      <span className="text-xs text-zinc-500">/100</span>
                     </div>
                   </div>
 
                   <div
-                    className={`px-2 py-1 text-[11px] font-bold border ${
+                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
                       conflict.escalationIndex >= 70
-                        ? 'bg-red-950/50 text-severity-critical border-red-800/80'
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                         : conflict.escalationIndex >= 45
-                        ? 'bg-orange-950/50 text-severity-high border-orange-800/80'
-                        : 'bg-yellow-950/50 text-severity-moderate border-yellow-800/80'
+                        ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
+                        : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                     }`}
                   >
                     {conflict.status}
@@ -104,17 +104,19 @@ export const EscalationView: React.FC<EscalationViewProps> = ({
               </div>
 
               {/* Factual Velocity Reason */}
-              <div className="text-[11px] text-text-secondary leading-relaxed bg-black/30 p-2 border-l-2 border-accent-cyan">
+              <div className="text-[11.5px] text-zinc-300 leading-relaxed bg-white/[0.02] p-3 rounded-lg border-l-2 border-cyan-400">
                 {conflict.escalationReason}
               </div>
 
               {/* Stats Footer */}
-              <div className="flex items-center justify-between text-[10px] text-text-muted pt-1">
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1">
                 <div className="flex items-center gap-3">
-                  <span>TOTAL EVENTS ({windowDays}D): <strong className="text-text-primary">{conflict.eventCount7d}</strong></span>
-                  <span>FATALITIES: <strong className="text-severity-critical">{conflict.fatalities7d}</strong></span>
+                  <span>TOTAL EVENTS ({windowDays}D): <strong className="text-white">{conflict.eventCount7d}</strong></span>
+                  <span>FATALITIES: <strong className="text-rose-400">{conflict.fatalities7d}</strong></span>
                 </div>
-                <span className="text-accent-cyan group-hover:underline">VIEW THEATER AUDIT &rarr;</span>
+                <span className="text-cyan-400 group-hover:underline font-semibold flex items-center gap-1">
+                  VIEW THEATER AUDIT &rarr;
+                </span>
               </div>
             </div>
           );

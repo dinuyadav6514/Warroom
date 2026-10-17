@@ -163,10 +163,10 @@ export const FirmsMap: React.FC<FirmsMapProps> = ({
             source: 'warroom-firms-hotspots',
             paint: {
               'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, ['interpolate', ['linear'], ['get', 'frp'], 5, 2.5, 50, 7, 150, 14],
-                5, ['interpolate', ['linear'], ['get', 'frp'], 5, 5, 50, 14, 150, 28],
-                10, ['interpolate', ['linear'], ['get', 'frp'], 5, 10, 50, 24, 150, 48],
+                'interpolate', ['linear'], ['get', 'frp'],
+                5, 4.0,
+                50, 10,
+                150, 20,
               ],
               'circle-color': [
                 'interpolate', ['linear'], ['get', 'frp'],
@@ -186,12 +186,7 @@ export const FirmsMap: React.FC<FirmsMapProps> = ({
             type: 'circle',
             source: 'warroom-firms-hotspots',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 1.5,
-                5, 2.5,
-                10, 4.0,
-              ],
+              'circle-radius': 2.0, // Fixed non-resizable size (< 1.25x increase)
               'circle-color': '#ffffff',
               'circle-stroke-width': 1.2,
               'circle-stroke-color': '#f97316',
@@ -205,12 +200,7 @@ export const FirmsMap: React.FC<FirmsMapProps> = ({
             type: 'circle',
             source: 'warroom-firms-hotspots',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 8,
-                5, 12,
-                10, 18,
-              ],
+              'circle-radius': 12,
               'circle-opacity': 0,
               'circle-stroke-width': 0,
             },

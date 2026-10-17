@@ -191,24 +191,24 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 font-mono select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 font-mono select-none cursor-pointer animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-[#090d12] border border-border w-full max-w-3xl max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.9)] cursor-default overflow-hidden rounded-[2px]"
+        className="glass-panel border border-white/12 w-full max-w-3xl max-h-[90vh] flex flex-col shadow-[0_30px_70px_rgba(0,0,0,0.9)] cursor-default overflow-hidden rounded-[32px] backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-4 py-3 bg-panel-subtle border-b border-border flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-accent-cyan animate-pulse" />
-            <span className="text-accent-cyan font-bold text-xs sm:text-sm tracking-wider">
-              INTELLIGENCE PIPELINES &amp; API CONNECTORS TERMINAL
+        <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span className="text-white font-bold text-xs sm:text-sm tracking-wider">
+              INTELLIGENCE PIPELINES &amp; API CONNECTORS
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-accent-cyan transition-colors p-1"
+            className="text-zinc-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10 cursor-pointer"
             title="Close Setup Terminal"
           >
             <X className="w-4 h-4" />
@@ -216,34 +216,34 @@ export const SetupModal: React.FC<SetupModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center border-b border-border/80 bg-black/50 px-3 pt-2 gap-2 shrink-0">
+        <div className="flex items-center border-b border-white/5 bg-white/[0.01] px-4 pt-2.5 gap-2 shrink-0">
           <button
             onClick={() => setActiveTab('PIPELINES')}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer ${
               activeTab === 'PIPELINES'
-                ? 'border-accent-cyan text-accent-cyan bg-cyan-950/30'
-                : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.02]'
+                ? 'text-cyan-300 bg-white/[0.06] border-b-2 border-cyan-400'
+                : 'text-zinc-400 hover:text-white hover:bg-white/[0.02]'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
             <span>GLOBAL NEWS &amp; CONFLICT PIPELINES</span>
-            <span className="text-[10px] px-1.5 py-0.2 bg-emerald-950 border border-emerald-600 text-accent-green font-bold rounded-[2px]">
-              {activeCount}/12 ACTIVE &amp; STREAMING
+            <span className="text-[10px] px-2 py-0.2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold rounded-full">
+              {activeCount}/12 ACTIVE
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('AI_ANALYST')}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer ${
               activeTab === 'AI_ANALYST'
-                ? 'border-accent-cyan text-accent-cyan bg-cyan-950/30'
-                : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.02]'
+                ? 'text-cyan-300 bg-white/[0.06] border-b-2 border-cyan-400'
+                : 'text-zinc-400 hover:text-white hover:bg-white/[0.02]'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>AI DEFENSE ANALYST (GEMINI)</span>
             {isConfigured && (
-              <span className="text-[10px] px-1.5 py-0.2 bg-emerald-950 border border-emerald-600 text-accent-green rounded-[2px]">
+              <span className="text-[10px] px-2 py-0.2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold rounded-full">
                 ACTIVE
               </span>
             )}
@@ -538,11 +538,11 @@ export const SetupModal: React.FC<SetupModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 bg-panel-subtle/80 border-t border-border flex items-center justify-between text-[10.5px] text-text-muted shrink-0">
-          <span>WarRoom Intelligence Operating System // v0.1.0</span>
+        <div className="px-5 py-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between text-[10.5px] text-zinc-500 shrink-0">
+          <span>WarRoom Intelligence Platform // v2.0 Glassmorphic Core</span>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-panel border border-border hover:border-accent-cyan text-text-secondary hover:text-text-primary rounded-[2px] transition-colors cursor-pointer"
+            className="px-4 py-1 rounded-full glass-pill text-zinc-200 hover:text-white transition-all cursor-pointer"
           >
             CLOSE TERMINAL [ESC]
           </button>

@@ -22,24 +22,25 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 font-sans select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-6 font-mono select-none cursor-pointer animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-panel border border-border rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden cursor-default"
+        className="glass-panel border border-white/12 rounded-[32px] w-full max-w-2xl max-h-[85vh] flex flex-col shadow-[0_30px_70px_rgba(0,0,0,0.9)] overflow-hidden cursor-default backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 py-3 bg-panel-subtle/80 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-accent-cyan" />
-            <span className="text-text-primary font-semibold text-xs tracking-wide">
+        <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+            <BookOpen className="w-4 h-4 text-cyan-400" />
+            <span className="text-white font-bold text-xs tracking-wider uppercase">
               Data Sources &amp; Attribution
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-accent-cyan transition-colors p-1"
+            className="text-zinc-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -244,11 +245,11 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 bg-panel-subtle border-t border-border flex items-center justify-between text-[10px] text-text-muted">
+        <div className="px-5 py-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-500">
           <span>WARROOM v0.1 // GLOBAL CONFLICT INTELLIGENCE</span>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-panel hover:bg-panel-hover border border-border text-text-primary"
+            className="px-4 py-1 rounded-full glass-pill text-zinc-200 hover:text-white transition-all cursor-pointer"
           >
             CLOSE [ESC]
           </button>

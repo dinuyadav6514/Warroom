@@ -10,17 +10,18 @@ interface GlobalStatsStripProps {
 
 export const GlobalStatsStrip: React.FC<GlobalStatsStripProps> = ({ stats, windowDays, onClose }) => {
   return (
-    <div className="bg-[#0b1016] border-b border-border/90 font-mono select-none shadow-md">
-      <div className="flex items-center justify-between px-3 py-1 bg-panel-subtle/90 border-b border-border/60 text-[10.5px]">
-        <div className="flex items-center gap-2 text-text-secondary">
-          <BarChart3 className="w-3.5 h-3.5 text-accent-cyan" />
-          <span className="text-accent-cyan font-bold tracking-wide">// GLOBAL STRATEGIC OVERVIEW METRICS</span>
-          <span className="text-[10px] text-text-muted hidden sm:inline">[{windowDays}-DAY OPERATIONAL WINDOW]</span>
+    <div className="glass-panel mx-4 my-2 rounded-2xl border border-white/[0.12] font-mono select-none shadow-[0_16px_40px_rgba(0,0,0,0.85)] relative z-20 backdrop-blur-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 text-[11px]">
+        <div className="flex items-center gap-2 text-zinc-300">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+          <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-white font-bold tracking-wider">GLOBAL STRATEGIC OVERVIEW</span>
+          <span className="text-[10px] text-zinc-500 hidden sm:inline">[{windowDays}-DAY OPERATIONAL WINDOW]</span>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded hover:bg-panel border border-transparent hover:border-border transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-white px-2 py-0.5 rounded-full hover:bg-white/10 border border-white/5 transition-all cursor-pointer"
             title="Hide Global Stats Panel"
           >
             <span>HIDE</span>
@@ -29,75 +30,75 @@ export const GlobalStatsStrip: React.FC<GlobalStatsStripProps> = ({ stats, windo
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-2 md:p-2.5">
-      {/* Active Conflict Areas */}
-      <div className="flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
-        <div className="p-1.5 bg-red-950/40 border border-red-800/40 text-severity-critical">
-          <Flame className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted tracking-wider">ACTIVE CONFLICT AREAS</div>
-          <div className="text-base font-bold text-text-primary tracking-tight">
-            {stats ? stats.activeConflictAreas : '—'}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 p-3">
+        {/* Active Conflict Areas */}
+        <div className="glass-panel-subtle rounded-xl p-3 flex items-center gap-3 border border-red-500/20 hover:border-red-500/40 transition-all shadow-md group">
+          <div className="p-2 rounded-lg bg-red-500/10 text-red-400 group-hover:scale-105 transition-transform">
+            <Flame className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[9.5px] text-zinc-400 tracking-wider uppercase font-medium">Conflict Areas</div>
+            <div className="text-lg font-bold text-white tracking-tight mt-0.5">
+              {stats ? stats.activeConflictAreas : '—'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* High-Activity Regions */}
-      <div className="flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
-        <div className="p-1.5 bg-cyan-950/40 border border-cyan-800/40 text-accent-cyan">
-          <Globe className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted tracking-wider">HIGH-ACTIVITY REGIONS</div>
-          <div className="text-base font-bold text-text-primary tracking-tight">
-            {stats ? stats.highActivityRegions : '—'}
+        {/* High-Activity Regions */}
+        <div className="glass-panel-subtle rounded-xl p-3 flex items-center gap-3 border border-cyan-500/20 hover:border-cyan-500/40 transition-all shadow-md group">
+          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-300 group-hover:scale-105 transition-transform">
+            <Globe className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[9.5px] text-zinc-400 tracking-wider uppercase font-medium">Active Regions</div>
+            <div className="text-lg font-bold text-white tracking-tight mt-0.5">
+              {stats ? stats.highActivityRegions : '—'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Recent Incidents */}
-      <div className="flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
-        <div className="p-1.5 bg-amber-950/40 border border-amber-800/40 text-severity-moderate">
-          <AlertTriangle className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted tracking-wider">
-            RECENT INCIDENTS ({windowDays}D)
+        {/* Recent Incidents */}
+        <div className="glass-panel-subtle rounded-xl p-3 flex items-center gap-3 border border-amber-500/20 hover:border-amber-500/40 transition-all shadow-md group">
+          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-300 group-hover:scale-105 transition-transform">
+            <AlertTriangle className="w-4 h-4" />
           </div>
-          <div className="text-base font-bold text-text-primary tracking-tight">
-            {stats ? stats.recentIncidents : '—'}
+          <div>
+            <div className="text-[9.5px] text-zinc-400 tracking-wider uppercase font-medium">
+              Incidents ({windowDays}D)
+            </div>
+            <div className="text-lg font-bold text-white tracking-tight mt-0.5">
+              {stats ? stats.recentIncidents : '—'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Fatalities Reported */}
-      <div className="flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
-        <div className="p-1.5 bg-orange-950/40 border border-orange-800/40 text-severity-high">
-          <Skull className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted tracking-wider">FATALITIES REPORTED</div>
-          <div className="text-base font-bold text-text-primary tracking-tight">
-            {stats ? stats.fatalitiesReported : '—'}
+        {/* Fatalities Reported */}
+        <div className="glass-panel-subtle rounded-xl p-3 flex items-center gap-3 border border-rose-500/20 hover:border-rose-500/40 transition-all shadow-md group">
+          <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 group-hover:scale-105 transition-transform">
+            <Skull className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[9.5px] text-zinc-400 tracking-wider uppercase font-medium">Fatalities</div>
+            <div className="text-lg font-bold text-rose-300 tracking-tight mt-0.5">
+              {stats ? stats.fatalitiesReported : '—'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Escalating Areas */}
-      <div className="col-span-2 sm:col-span-1 flex items-center gap-3 p-2 bg-panel-subtle border border-border/80">
-        <div className="p-1.5 bg-red-950/40 border border-red-800/40 text-severity-critical">
-          <TrendingUp className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted tracking-wider">ESCALATING THEATERS</div>
-          <div className="text-base font-bold text-severity-critical tracking-tight flex items-center gap-1.5">
-            {stats ? stats.escalatingAreas : '—'}
-            <span className="text-[10px] font-normal text-text-muted">↑ ACCELERATING</span>
+        {/* Escalating Areas */}
+        <div className="col-span-2 sm:col-span-1 glass-panel-subtle rounded-xl p-3 flex items-center gap-3 border border-orange-500/20 hover:border-orange-500/40 transition-all shadow-md group">
+          <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 group-hover:scale-105 transition-transform">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[9.5px] text-zinc-400 tracking-wider uppercase font-medium">Accelerating</div>
+            <div className="text-lg font-bold text-orange-300 tracking-tight flex items-center gap-1.5 mt-0.5">
+              {stats ? stats.escalatingAreas : '—'}
+              <span className="text-[10px] font-semibold text-orange-400/80 px-1.5 py-0.2 rounded-full bg-orange-500/10">↑ UP</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 };

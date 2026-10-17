@@ -671,43 +671,90 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
 
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // 100% Free, zero-API-key dark basemap (no CARTO watermark or key requirement)
+  // Black-and-white 3D globe vector basemap — free OpenFreeMap tiles, no API key required.
+  // Land = dark charcoal (#111), Ocean/water = pure black (#000), borders = visible gray.
+  // 'projection' key in style root enables MapLibre v4 native globe mode.
   const darkBasemapStyle = {
     version: 8,
+    projection: { type: 'globe' },
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-      'esri-dark-base': {
-        type: 'raster',
-        tiles: [
-          'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-        ],
-        tileSize: 256,
-        attribution: '&copy; Esri, OpenStreetMap contributors',
-      },
-      'esri-dark-ref': {
-        type: 'raster',
-        tiles: [
-          'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-        ],
-        tileSize: 256,
+      'ofm-planet': {
+        type: 'vector',
+        url: 'https://tiles.openfreemap.org/planet',
+        attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
       },
     },
     layers: [
+      // Land background — dark charcoal (distinguishable from pure-black ocean)
       {
-        id: 'esri-dark-base-layer',
-        type: 'raster',
-        source: 'esri-dark-base',
-        minzoom: 0,
-        maxzoom: 19,
+        id: 'background',
+        type: 'background',
+        paint: {
+          'background-color': '#111111',
+        },
       },
+      // Water bodies (oceans, seas, lakes) — pure black
       {
-        id: 'esri-dark-ref-layer',
-        type: 'raster',
-        source: 'esri-dark-ref',
-        minzoom: 0,
-        maxzoom: 19,
+        id: 'water',
+        type: 'fill',
+        source: 'ofm-planet',
+        'source-layer': 'water',
+        paint: {
+          'fill-color': '#000000',
+        },
+      },
+      // Landcover (vegetation, ice, etc.) — same charcoal so land looks uniform
+      {
+        id: 'landcover',
+        type: 'fill',
+        source: 'ofm-planet',
+        'source-layer': 'landcover',
+        paint: {
+          'fill-color': '#111111',
+          'fill-opacity': 1,
+        },
+      },
+      // Country borders — visible gray for globe silhouette
+      {
+        id: 'boundary-country',
+        type: 'line',
+        source: 'ofm-planet',
+        'source-layer': 'boundary',
+        filter: ['all', ['==', ['get', 'admin_level'], 2], ['!=', ['get', 'maritime'], 1]],
+        paint: {
+          'line-color': '#333333',
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            0, 0.5,
+            4, 0.9,
+            8, 1.4,
+          ],
+          'line-opacity': 0.9,
+        },
+      },
+      // Sub-national (state/province) boundaries — fainter dashed
+      {
+        id: 'boundary-state',
+        type: 'line',
+        source: 'ofm-planet',
+        'source-layer': 'boundary',
+        filter: ['==', ['get', 'admin_level'], 4],
+        minzoom: 3,
+        paint: {
+          'line-color': '#222222',
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            3, 0.3,
+            8, 0.7,
+          ],
+          'line-opacity': 0.6,
+          'line-dasharray': [3, 3],
+        },
       },
     ],
   };
+
 
   // Close map popups on Escape
   useEffect(() => {
@@ -744,7 +791,14 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
           minZoom: 1.5,
           maxZoom: 14,
           attributionControl: false,
-        });
+        } as any);
+
+        // Enable native 3D globe projection (MapLibre GL JS v4+)
+        try {
+          (map as any).setProjection({ type: 'globe' });
+        } catch (e) {
+          // Gracefully fall back to Mercator if globe is unsupported
+        }
 
         clickPopupRef.current = new maplibre.Popup({
           closeButton: true,
@@ -767,6 +821,19 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             map.getCanvas().style.cursor = TACTICAL_CURSOR_SVG;
           } catch (e) {
             // Ignore if canvas not yet attached
+          }
+
+          // Atmospheric globe halo — subtle dark space-edge glow
+          try {
+            (map as any).setFog({
+              color: 'rgba(0, 0, 0, 1)',          // Space black atmosphere
+              'high-color': 'rgba(10, 10, 10, 1)', // Near-space dark
+              'horizon-blend': 0.04,               // Very thin horizon line
+              'space-color': '#000000',            // Pure black void
+              'star-intensity': 0,                 // No stars — keep it tactical
+            });
+          } catch (e) {
+            // setFog may not be available in all MapLibre versions — silently skip
           }
 
           // Register authentic military tactical icons into MapLibre
@@ -1044,13 +1111,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             source: 'warroom-conflict-events',
             layout: {
               'icon-image': ['get', 'markerIcon'],
-              'icon-size': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 0.36,
-                4, 0.48,
-                7, 0.68,
-                11, 0.92,
-              ],
+              'icon-size': 0.44, // Fixed non-resizable size (< 1.25x increase for crisp visibility)
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
               'icon-pitch-alignment': 'map',
@@ -1064,13 +1125,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             source: 'warroom-general-news',
             layout: {
               'icon-image': ['get', 'markerIcon'],
-              'icon-size': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 0.28,
-                4, 0.38,
-                7, 0.54,
-                11, 0.76,
-              ],
+              'icon-size': 0.34, // Fixed non-resizable size (< 1.25x increase for crisp visibility)
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
               'icon-pitch-alignment': 'map',
@@ -1083,12 +1138,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             type: 'circle',
             source: 'warroom-conflict-events',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 14,
-                5, 16,
-                10, 20,
-              ],
+              'circle-radius': 16,
               'circle-opacity': 0,
               'circle-stroke-width': 0,
             },
@@ -1099,12 +1149,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             type: 'circle',
             source: 'warroom-general-news',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 12,
-                5, 14,
-                10, 18,
-              ],
+              'circle-radius': 14,
               'circle-opacity': 0,
               'circle-stroke-width': 0,
             },
@@ -1172,10 +1217,10 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             source: 'warroom-firms-hotspots',
             paint: {
               'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, ['interpolate', ['linear'], ['get', 'frp'], 5, 2.5, 50, 7, 150, 14],
-                5, ['interpolate', ['linear'], ['get', 'frp'], 5, 5, 50, 14, 150, 28],
-                10, ['interpolate', ['linear'], ['get', 'frp'], 5, 10, 50, 24, 150, 48],
+                'interpolate', ['linear'], ['get', 'frp'],
+                5, 4.0,
+                50, 10,
+                150, 20,
               ],
               'circle-color': [
                 'interpolate', ['linear'], ['get', 'frp'],
@@ -1196,12 +1241,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             type: 'circle',
             source: 'warroom-firms-hotspots',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 1.5,
-                5, 2.5,
-                10, 4.0,
-              ],
+              'circle-radius': 2.0, // Fixed non-resizable size (< 1.25x increase)
               'circle-color': '#ffffff',
               'circle-stroke-width': 1.2,
               'circle-stroke-color': '#f97316',
@@ -1216,12 +1256,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             type: 'circle',
             source: 'warroom-firms-hotspots',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                1, 8,
-                5, 12,
-                10, 18,
-              ],
+              'circle-radius': 12,
               'circle-opacity': 0,
               'circle-stroke-width': 0,
             },
@@ -1235,12 +1270,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
             type: 'circle',
             source: 'warroom-military-aircraft',
             paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                2, 10,
-                6, 16,
-                10, 22,
-              ],
+              'circle-radius': 14,
               'circle-color': ['get', 'color'],
               'circle-blur': 0.75,
               'circle-opacity': 0.45,
@@ -1259,12 +1289,7 @@ export const ConflictMap: React.FC<ConflictMapProps> = ({
               'icon-rotation-alignment': 'map',
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
-              'icon-size': [
-                'interpolate', ['linear'], ['zoom'],
-                2, 0.20,
-                5, 0.28,
-                9, 0.40,
-              ],
+              'icon-size': 0.26, // Fixed non-resizable size (< 1.25x increase)
               visibility: 'none',
             },
           });

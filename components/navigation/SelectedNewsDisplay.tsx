@@ -47,41 +47,41 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
     return (
       <div className="w-full flex-1 flex flex-col bg-transparent select-none font-mono min-h-[380px]">
-        {/* Minimal Transparent Return Link (No heavy header) */}
-        <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
+        {/* Minimal Transparent Return Link */}
+        <div className="flex items-center justify-between pb-2 pt-0.5 text-[10px] shrink-0 border-b border-white/5 mb-2">
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-[10.5px] font-bold text-cyan-300 hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>RETURN TO STREAM</span>
           </button>
           <button
             onClick={onClose}
-            className="p-1 text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer"
+            className="p-1 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
             title="Close theater and return to stream"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Theater Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 text-xs">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-text-muted tracking-wider">// THEATER INTEL</span>
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${statusColor}`}>
+            <span className="text-[10px] text-zinc-400 font-semibold tracking-wider">// THEATER INTEL</span>
+            <span className={`text-[9.5px] font-bold px-2 py-0.5 border rounded-full ${statusColor}`}>
               {conflict.status}
             </span>
           </div>
 
-          <div>
+          <div className="glass-panel-subtle rounded-2xl p-3 border border-white/[0.10] space-y-1">
             <TypewriterText
               as="h3"
               text={conflict.name}
-              className="text-sm font-bold text-text-primary leading-snug cursor-pointer"
+              className="text-sm font-bold text-white leading-snug cursor-pointer"
               speed={14}
             />
-            <div className="flex items-center gap-1 text-[10.5px] text-accent-cyan mt-1">
+            <div className="flex items-center gap-1 text-[10.5px] text-cyan-300 mt-1">
               <MapPin className="w-3 h-3 shrink-0" />
               <TypewriterText
                 text={`${conflict.country || 'Global'}${conflict.region ? ` (${conflict.region})` : ''}`}
@@ -91,35 +91,35 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 p-2 bg-white/[0.03] border border-white/10 rounded-[2px] text-[10px]">
+          <div className="grid grid-cols-2 gap-2 p-2.5 glass-panel-subtle rounded-2xl border border-white/[0.10] text-[10px]">
             <div>
-              <span className="text-text-muted">7D CASUALTIES:</span>
-              <div className="text-severity-critical font-bold text-[11px]">{conflict.fatalities7d || 0}</div>
+              <span className="text-zinc-500">7D CASUALTIES:</span>
+              <div className="text-rose-400 font-bold text-[11px] mt-0.5">{conflict.fatalities7d || 0}</div>
             </div>
             <div>
-              <span className="text-text-muted">7D INCIDENTS:</span>
-              <div className="text-accent-cyan font-bold text-[11px]">{conflict.eventCount7d || conflict.recentEvents?.length || 0}</div>
+              <span className="text-zinc-500">7D INCIDENTS:</span>
+              <div className="text-cyan-300 font-bold text-[11px] mt-0.5">{conflict.eventCount7d || conflict.recentEvents?.length || 0}</div>
             </div>
           </div>
 
           {/* Recent incidents in this theater */}
           {conflict.recentEvents && conflict.recentEvents.length > 0 && (
-            <div className="space-y-1.5 pt-1">
-              <div className="text-[9.5px] font-bold text-text-muted tracking-wider">
+            <div className="space-y-2 pt-1">
+              <div className="text-[9.5px] font-bold text-zinc-400 tracking-wider">
                 // INCIDENTS IN THEATER ({conflict.recentEvents.length})
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {conflict.recentEvents.slice(0, 4).map((ev) => (
                   <button
                     key={ev.id}
                     onClick={() => onSelectEvent?.(ev)}
-                    className="w-full p-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-accent-cyan/60 rounded text-left transition-colors cursor-pointer group"
+                    className="w-full p-2.5 rounded-lg glass-panel-subtle hover:border-white/20 border border-white/5 text-left transition-all cursor-pointer group"
                   >
-                    <div className="flex items-center justify-between text-[9px] text-text-muted mb-0.5">
-                      <span className="text-accent-cyan truncate">{ev.location}</span>
+                    <div className="flex items-center justify-between text-[9px] text-zinc-400 mb-0.5">
+                      <span className="text-cyan-300 font-medium truncate">{ev.location}</span>
                       <span>{ev.eventDate}</span>
                     </div>
-                    <div className="text-[10px] text-text-primary line-clamp-2 group-hover:text-accent-cyan leading-tight">
+                    <div className="text-[10px] text-zinc-200 line-clamp-2 group-hover:text-white leading-tight">
                       {ev.notes || ev.eventType}
                     </div>
                   </button>
@@ -130,7 +130,7 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full mt-2 py-1.5 border border-white/10 hover:border-accent-cyan/60 bg-white/[0.03] hover:bg-white/[0.08] text-text-secondary hover:text-text-primary text-[10px] font-bold rounded-[2px] transition-colors cursor-pointer"
+            className="w-full mt-2 py-1.5 rounded-full glass-pill text-zinc-300 hover:text-white text-[10.5px] font-semibold transition-all cursor-pointer"
           >
             ← RETURN TO LIVE STREAM
           </button>
@@ -163,11 +163,11 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
   return (
     <div className="w-full flex-1 flex flex-col bg-transparent select-none font-mono min-h-[380px]">
-      {/* Minimal Transparent Return Link (No heavy header) */}
-      <div className="flex items-center justify-between pb-1 pt-0.5 text-[10px] shrink-0 border-b border-white/10 mb-1">
+      {/* Minimal Transparent Return Link */}
+      <div className="flex items-center justify-between pb-2 pt-0.5 text-[10px] shrink-0 border-b border-white/5 mb-2">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan hover:text-cyan-300 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-[10.5px] font-bold text-cyan-300 hover:text-white transition-colors cursor-pointer"
           title="Return to live conflict stream"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -176,47 +176,47 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
         <button
           onClick={onClose}
-          className="p-1 text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer"
+          className="p-1 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
           title="Deselect and return to stream"
         >
-          <X className="w-3 h-3" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Main News Content Container */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 text-xs">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 text-xs">
         {/* Badges strip */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span
-            className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${
-              isNews ? 'bg-blue-950/60 text-blue-400 border-blue-700/80' : severityBadgeClass
+            className={`text-[9.5px] font-bold px-2 py-0.5 border rounded-full ${
+              isNews ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : severityBadgeClass
             }`}
           >
             {isNews ? 'NEWS DISPATCH' : severity}
           </span>
 
           {event!.primaryCategory && (
-            <span className="text-[9px] px-1.5 py-0.5 border border-border/60 bg-black/50 text-text-secondary rounded-[2px]">
+            <span className="text-[9px] px-2 py-0.5 border border-white/10 bg-white/5 text-zinc-300 rounded-full font-medium">
               {event!.primaryCategory.toUpperCase()}
             </span>
           )}
 
           {event!.verificationStatus && (
-            <span className="text-[8.5px] px-1 py-0.5 border border-cyan-900/60 bg-cyan-950/30 text-accent-cyan rounded-[2px] ml-auto">
+            <span className="text-[9px] px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 rounded-full font-bold ml-auto">
               [{event!.verificationStatus}]
             </span>
           )}
         </div>
 
         {/* Headline / Summary */}
-        <div>
+        <div className="glass-panel-subtle rounded-xl p-3 border border-white/5 space-y-1">
           <TypewriterText
             as="h2"
             text={event!.notes || `${event!.eventType} in ${event!.location}, ${event!.country}`}
-            className="text-[12px] font-bold text-text-primary leading-snug cursor-pointer"
+            className="text-[12.5px] font-bold text-white leading-snug cursor-pointer"
             speed={12}
           />
-          <div className="flex items-center gap-1 text-[10px] text-accent-cyan mt-1">
+          <div className="flex items-center gap-1.5 text-[10.5px] text-cyan-300 mt-1">
             <MapPin className="w-3 h-3 shrink-0" />
             <TypewriterText
               text={`${event!.location}, ${event!.country}`}
@@ -228,23 +228,23 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         </div>
 
         {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-1.5 p-2 bg-white/[0.03] border border-white/10 rounded-[2px] text-[9.5px]">
+        <div className="grid grid-cols-2 gap-2 p-2.5 glass-panel-subtle rounded-xl border border-white/5 text-[10px]">
           <div>
-            <span className="text-text-muted">EVENT TYPE:</span>
-            <div className="text-text-primary font-semibold truncate">
+            <span className="text-zinc-500">EVENT TYPE:</span>
+            <div className="text-white font-semibold truncate mt-0.5">
               <TypewriterText text={event!.eventType} cursor={false} delay={300} />
             </div>
           </div>
           <div>
-            <span className="text-text-muted">DATE / TIME:</span>
-            <div className="text-text-secondary font-mono">
+            <span className="text-zinc-500">DATE / TIME:</span>
+            <div className="text-zinc-300 font-mono mt-0.5">
               <TypewriterText text={event!.eventDate || event!.publishedAt || 'RECENT'} cursor={false} delay={400} />
             </div>
           </div>
           {!isNews && (
             <div>
-              <span className="text-text-muted">CASUALTIES:</span>
-              <div className={`font-bold ${event!.fatalities && event!.fatalities > 0 ? 'text-severity-critical' : 'text-text-secondary'}`}>
+              <span className="text-zinc-500">CASUALTIES:</span>
+              <div className={`font-bold mt-0.5 ${event!.fatalities && event!.fatalities > 0 ? 'text-rose-400' : 'text-zinc-400'}`}>
                 <TypewriterText
                   text={event!.fatalities && event!.fatalities > 0 ? `${event!.fatalities} reported` : 'None reported'}
                   cursor={false}
@@ -255,8 +255,8 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
           )}
           {event!.region && (
             <div>
-              <span className="text-text-muted">THEATER:</span>
-              <div className="text-text-secondary truncate">
+              <span className="text-zinc-500">THEATER:</span>
+              <div className="text-zinc-300 truncate mt-0.5">
                 <TypewriterText text={event!.region} cursor={false} delay={600} />
               </div>
             </div>
@@ -264,10 +264,10 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         </div>
 
         {/* Source & Direct Link Button */}
-        <div className="p-2 bg-white/[0.03] border border-white/10 rounded-[2px] space-y-1.5">
-          <div className="flex items-center justify-between text-[9.5px]">
-            <span className="text-text-muted">ORIGINAL SOURCE:</span>
-            <span className="text-accent-cyan font-bold truncate max-w-[130px]">
+        <div className="p-2.5 glass-panel-subtle rounded-xl border border-white/5 space-y-2">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-zinc-500">ORIGINAL SOURCE:</span>
+            <span className="text-cyan-300 font-bold truncate max-w-[140px]">
               <TypewriterText text={event!.source || 'Verified International Wire'} cursor={false} delay={350} />
             </span>
           </div>
@@ -277,26 +277,26 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
               href={event!.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-1.5 py-1 px-2 bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan text-accent-cyan text-[10px] font-bold rounded-[2px] transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full glass-pill text-cyan-300 hover:text-white text-[10.5px] font-bold transition-all"
             >
               <span>READ ORIGINAL POST</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
         </div>
 
         {/* Smart Merging Corroboration */}
         {(event!.mergedCount && event!.mergedCount > 1) || (event!.mergedSources && event!.mergedSources.length > 0) ? (
-          <div className="p-2 bg-cyan-950/20 border border-cyan-800/40 rounded-[2px] space-y-1">
-            <div className="flex items-center gap-1 text-[9.5px] text-accent-cyan font-bold">
-              <Layers className="w-3 h-3" />
+          <div className="p-2.5 glass-panel-subtle border border-cyan-500/20 rounded-xl space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] text-cyan-300 font-bold">
+              <Layers className="w-3.5 h-3.5" />
               <span>CORROBORATING SOURCES ({event!.mergedSources?.length || event!.mergedCount}):</span>
             </div>
-            <div className="flex flex-wrap gap-1 pt-0.5">
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
               {(event!.mergedSources || []).map((s, idx) => (
                 <span
                   key={idx}
-                  className="text-[8.5px] px-1 py-0.2 bg-black/60 border border-border/70 text-text-secondary rounded"
+                  className="text-[9px] px-2 py-0.5 bg-white/5 border border-white/10 text-zinc-300 rounded-full"
                 >
                   {s}
                 </span>
@@ -307,22 +307,22 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
 
         {/* Related Dispatches in Theater */}
         {relatedRegionalEvents.length > 0 && (
-          <div className="space-y-1.5 pt-1">
-            <div className="text-[9.5px] font-bold text-text-muted tracking-wider">
+          <div className="space-y-2 pt-1">
+            <div className="text-[9.5px] font-bold text-zinc-400 tracking-wider">
               // MORE IN {event!.country?.toUpperCase()} ({relatedRegionalEvents.length})
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {relatedRegionalEvents.map((rel) => (
                 <button
                   key={rel.id}
                   onClick={() => onSelectEvent?.(rel)}
-                  className="w-full p-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-accent-cyan/50 rounded text-left transition-colors cursor-pointer group"
+                  className="w-full p-2.5 rounded-lg glass-panel-subtle hover:border-white/20 border border-white/5 text-left transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center justify-between text-[8.5px] text-text-muted mb-0.5">
-                    <span className="text-accent-cyan truncate max-w-[120px]">{rel.location}</span>
+                  <div className="flex items-center justify-between text-[9px] text-zinc-400 mb-0.5">
+                    <span className="text-cyan-300 font-medium truncate max-w-[130px]">{rel.location}</span>
                     <span>{rel.eventDate}</span>
                   </div>
-                  <div className="text-[9.5px] text-text-secondary group-hover:text-text-primary line-clamp-2 leading-tight">
+                  <div className="text-[10px] text-zinc-200 group-hover:text-white line-clamp-2 leading-tight">
                     {rel.notes || rel.eventType}
                   </div>
                 </button>
@@ -332,20 +332,20 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
         )}
 
         {/* Action Controls */}
-        <div className="pt-1 space-y-1.5">
+        <div className="pt-1.5 space-y-2">
           {onOpenEventModal && (
             <button
               onClick={() => onOpenEventModal(event!)}
-              className="w-full py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-accent-cyan/60 text-text-primary text-[10px] font-bold rounded-[2px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-2 rounded-full glass-panel border border-cyan-400/40 hover:border-cyan-400 text-white text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
             >
               <span>INSPECT FULL INTEL DOSSIER</span>
-              <ChevronRight className="w-3 h-3 text-accent-cyan" />
+              <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
             </button>
           )}
 
           <button
             onClick={onClose}
-            className="w-full py-1 border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.06] text-text-muted hover:text-text-secondary text-[9.5px] rounded-[2px] transition-colors cursor-pointer"
+            className="w-full py-1.5 rounded-full glass-pill text-zinc-400 hover:text-white text-[10px] transition-all cursor-pointer font-medium"
           >
             ← RETURN TO LIVE STREAM
           </button>

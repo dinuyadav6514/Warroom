@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ApiExchange, ConflictEvent } from '@/types/conflict';
 import { TypewriterText } from '@/components/ui/TypewriterText';
 import {
@@ -13,14 +13,6 @@ import {
   Radio,
   ExternalLink,
 } from 'lucide-react';
-
-interface StreamHistoryEntry {
-  id: string;
-  time: string;
-  severity: string;
-  country: string;
-  text: string;
-}
 
 interface LiveTerminalOutputProps {
   apiExchange?: ApiExchange | null;
@@ -134,10 +126,6 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isPaused, setIsPaused] = useState(false);
-  const [history, setHistory] = useState<StreamHistoryEntry[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const getUtcTime = () => new Date().toTimeString().substring(0, 8);
 
   // Active conflict news pool
   const streamEvents = useMemo(() => {
@@ -166,29 +154,6 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
     return () => clearInterval(timer);
   }, [isPaused, streamEvents.length]);
 
-  // Log dispatch into stream history whenever currentEvent changes
-  useEffect(() => {
-    if (!currentEvent) return;
-    const time = getUtcTime();
-    setHistory((prev) => [
-      ...prev.slice(-25),
-      {
-        id: `${Date.now()}-${currentEvent.id}`,
-        time,
-        severity: currentEvent.severity || 'MODERATE',
-        country: currentEvent.country || 'GLOBAL',
-        text: currentEvent.notes || `${currentEvent.eventType} in ${currentEvent.location}`,
-      },
-    ]);
-  }, [currentEvent]);
-
-  // Auto-scroll terminal history to bottom
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [history]);
-
   const handleNext = () => {
     setCurrentIndex((idx) => (idx + 1) % streamEvents.length);
     setTimeLeft(30);
@@ -216,41 +181,41 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
       {onOpenFullStream && (
         <button
           onClick={onOpenFullStream}
-          className="w-full h-[26px] mb-1.5 shrink-0 text-[9.5px] tracking-wider font-bold text-accent-cyan hover:text-white bg-accent-cyan/10 hover:bg-accent-cyan/25 border border-accent-cyan/40 hover:border-accent-cyan rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm group"
+          className="w-full h-[28px] mb-1.5 shrink-0 text-[9.5px] tracking-wider font-bold text-cyan-300 hover:text-white glass-pill rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm group"
           title="Open Full Live Conflict Stream Terminal"
         >
-          <Radio className="w-3 h-3 text-accent-green animate-pulse group-hover:scale-110 transition-transform" />
+          <Radio className="w-3 h-3 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform" />
           <span>OPEN FULL LIVE CONFLICT STREAM</span>
-          <ExternalLink className="w-3 h-3 text-accent-cyan/70 group-hover:text-white transition-colors" />
+          <ExternalLink className="w-3 h-3 text-cyan-400/70 group-hover:text-white transition-colors" />
         </button>
       )}
 
       {/* 30-Second Progress Sweep & Controls (Clean, minimal, zero clutter) */}
       <div className="flex items-center gap-2 h-[16px] shrink-0 mb-1.5">
-        <div className="flex-1 bg-white/10 h-[2px] rounded-full overflow-hidden">
+        <div className="flex-1 bg-white/5 h-[2px] rounded-full overflow-hidden">
           <div
-            className="bg-accent-cyan h-full transition-all duration-1000 ease-linear"
+            className="bg-cyan-400 h-full transition-all duration-1000 ease-linear shadow-[0_0_8px_rgba(56,189,248,0.8)]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="flex items-center gap-0.5 shrink-0 text-text-muted">
+        <div className="flex items-center gap-0.5 shrink-0 text-slate-400">
           <button
             onClick={handlePrev}
-            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            className="p-1 hover:text-cyan-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
             title="Previous dispatch"
           >
             <ChevronLeft className="w-3 h-3" />
           </button>
           <button
             onClick={() => setIsPaused((p) => !p)}
-            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            className="p-1 hover:text-cyan-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
             title={isPaused ? 'Resume auto-cycle' : 'Pause auto-cycle'}
           >
             {isPaused ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
           </button>
           <button
             onClick={handleNext}
-            className="p-0.5 hover:text-accent-cyan hover:bg-white/5 rounded transition-colors cursor-pointer"
+            className="p-1 hover:text-cyan-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
             title="Next dispatch"
           >
             <ChevronRight className="w-3 h-3" />
@@ -259,23 +224,23 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
       </div>
 
       {/* Featured Live Conflict Dispatch Card */}
-      <div className="min-h-[290px] shrink-0 bg-white/[0.03] border border-white/10 rounded-[2px] p-3 flex flex-col justify-between">
+      <div className="min-h-[290px] shrink-0 glass-panel-subtle rounded-2xl p-3.5 flex flex-col justify-between border border-white/[0.12] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
         {/* Badges Row - Fixed 22px */}
-        <div className="flex items-center justify-between gap-1 flex-wrap h-[22px] shrink-0">
-          <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-[2px] ${severityColor}`}>
+        <div className="flex items-center justify-between gap-1.5 flex-wrap h-[22px] shrink-0">
+          <span className={`text-[9px] font-bold px-2 py-0.5 border rounded-full ${severityColor}`}>
             {currentEvent?.severity || 'MODERATE'}
           </span>
           {currentEvent?.primaryCategory && (
-            <span className="text-[9px] px-1.5 py-0.5 border border-white/10 text-text-secondary rounded-[2px] truncate max-w-[110px]">
+            <span className="text-[9px] px-2 py-0.5 border border-white/[0.08] bg-white/[0.03] text-slate-300 rounded-full truncate max-w-[120px] font-sans">
               {currentEvent.primaryCategory.toUpperCase()}
             </span>
           )}
-          {currentEvent?.verificationStatus && (
-            <span className="text-[8.5px] px-1 py-0.5 border border-accent-cyan/30 text-accent-cyan rounded-[2px]">
-              [{currentEvent.verificationStatus}]
+          {currentEvent?.confidenceLabel && (
+            <span className="text-[8.5px] px-1.5 py-0.5 border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 rounded-full font-bold">
+              {currentEvent.confidenceLabel}
             </span>
           )}
-          <span className="text-[8.5px] text-text-muted ml-auto font-mono">
+          <span className="text-[8.5px] text-slate-500 ml-auto font-mono">
             {currentEvent?.eventDate || 'LIVE'}
           </span>
         </div>
@@ -318,7 +283,7 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
         {onSelectEvent ? (
           <button
             onClick={() => onSelectEvent(currentEvent)}
-            className="w-full h-[30px] shrink-0 text-[10.5px] bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/50 hover:border-accent-cyan text-accent-cyan font-bold rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="w-full h-[30px] shrink-0 text-[10.5px] glass-pill rounded-full border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <Crosshair className="w-3.5 h-3.5" />
             <span>LOCATE & ZOOM ON MAP</span>
@@ -326,46 +291,6 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
         ) : (
           <div className="h-[30px] shrink-0" />
         )}
-      </div>
-
-      {/* Live Stream Terminal History Feed - With fixed scrollable height */}
-      <div className="flex flex-col pt-1 shrink-0">
-        <div className="text-[9px] font-bold text-text-muted tracking-wider pb-1 shrink-0 flex items-center justify-between h-[18px]">
-          <span>// STREAM FEED LOG</span>
-          <span className="text-[8px] text-accent-cyan">30S POLLING</span>
-        </div>
-
-        <div
-          ref={scrollRef}
-          className="h-48 min-h-[140px] overflow-y-auto space-y-1 text-[9.5px] leading-tight select-text pr-1 bg-black/30 p-2 rounded border border-white/5"
-        >
-          {history.map((item) => (
-            <div key={item.id} className="flex items-start gap-1 font-mono text-text-secondary/90">
-              <span className="text-text-muted/60 text-[8.5px] shrink-0 font-light">[{item.time}]</span>
-              <span
-                className={`text-[8px] px-1 py-0.2 rounded shrink-0 font-bold leading-none ${
-                  item.severity === 'CRITICAL'
-                    ? 'text-severity-critical bg-red-950/40 border border-red-900/50'
-                    : item.severity === 'HIGH'
-                    ? 'text-amber-400 bg-amber-950/40 border border-amber-900/50'
-                    : 'text-text-muted bg-white/5 border border-white/10'
-                }`}
-              >
-                {item.severity === 'CRITICAL' ? 'CRIT' : item.severity === 'HIGH' ? 'HIGH' : 'DATA'}
-              </span>
-              <span className="truncate flex-1">
-                <span className="text-accent-cyan">[{item.country}]</span> {item.text}
-              </span>
-            </div>
-          ))}
-
-          {/* Active Blinking Monospace Prompt */}
-          <div className="pt-1 flex items-center gap-1 text-[9.5px] text-accent-cyan/80 select-none h-[18px] shrink-0">
-            <span className="font-bold">&gt;</span>
-            <span className="text-text-muted text-[8.5px]">stream active [30s cycle]</span>
-            <span className="w-1.5 h-3 bg-accent-cyan animate-pulse inline-block ml-0.5" />
-          </div>
-        </div>
       </div>
     </div>
   );
