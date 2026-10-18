@@ -7,11 +7,8 @@ import {
   FileText,
   MapPin,
   Calendar,
-  ShieldAlert,
   Sparkles,
   Radio,
-  ExternalLink,
-  Activity,
 } from 'lucide-react';
 import { summarizeEventWithInbuiltAi, cleanHtmlAndMarkup } from '@/lib/intelligence/event-summarizer';
 
@@ -38,10 +35,10 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
   if (conflict && !event) {
     return (
       <div
-        className={`w-full h-full flex flex-col justify-between p-3 select-none font-mono text-[11px] border-0 outline-none transition-colors ${
+        className={`w-full h-full flex flex-col justify-between p-3 select-none font-mono text-[11px] border-0 border-l transition-all ${
           isLight
-            ? 'bg-slate-100/90 text-slate-800'
-            : 'bg-black/90 text-white backdrop-blur-md'
+            ? 'glass-panel bg-white/70 border-slate-300/80 text-slate-800 backdrop-blur-2xl shadow-xl'
+            : 'glass-panel bg-black/45 border-white/10 text-white backdrop-blur-2xl shadow-2xl'
         }`}
       >
         <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
@@ -85,8 +82,10 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
           </div>
 
           <div
-            className={`p-2 rounded-lg text-[10px] leading-relaxed ${
-              isLight ? 'bg-white text-slate-700' : 'bg-white/5 text-slate-300'
+            className={`p-2.5 rounded-xl text-[10px] leading-relaxed border ${
+              isLight
+                ? 'bg-white/80 border-slate-200 text-slate-700'
+                : 'glass-panel-subtle bg-white/[0.04] border-white/10 text-slate-300'
             }`}
           >
             {conflict.escalationReason ||
@@ -97,7 +96,7 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
         <div className="pt-2 shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-[10.5px] tracking-wider uppercase flex items-center justify-center gap-1.5 transition-all shadow-[0_0_12px_rgba(6,182,212,0.3)] cursor-pointer"
+            className="w-full py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-extrabold text-[10.5px] tracking-wider uppercase flex items-center justify-center gap-1.5 transition-all shadow-[0_0_12px_rgba(6,182,212,0.3)] cursor-pointer"
           >
             <span>DISMISS THEATER</span>
           </button>
@@ -125,10 +124,10 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
 
   return (
     <div
-      className={`w-full h-full flex flex-col justify-between p-2.5 sm:p-3 select-none font-mono text-[11px] border-0 outline-none animate-in fade-in slide-in-from-right duration-200 transition-colors ${
+      className={`w-full h-full flex flex-col justify-between p-2.5 sm:p-3 select-none font-mono text-[11px] border-0 border-l transition-all animate-in fade-in slide-in-from-right duration-200 ${
         isLight
-          ? 'bg-slate-100/95 text-slate-900 shadow-xl'
-          : 'bg-black/90 text-white backdrop-blur-md shadow-2xl'
+          ? 'glass-panel bg-white/70 border-slate-300/80 text-slate-900 backdrop-blur-2xl shadow-xl'
+          : 'glass-panel bg-black/45 border-white/10 text-white backdrop-blur-2xl shadow-2xl'
       }`}
     >
       {/* Scrollable Upper News Information Body */}
@@ -145,7 +144,7 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
               <span
                 className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold uppercase truncate max-w-[120px] ${
                   isLight
-                    ? 'bg-slate-200 text-slate-700'
+                    ? 'bg-slate-200/90 text-slate-700'
                     : 'bg-white/10 text-cyan-300'
                 }`}
               >
@@ -191,17 +190,17 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
 
         {/* Inbuilt AI Situation Brief */}
         <div
-          className={`p-2 rounded-xl text-[10px] leading-relaxed space-y-1 ${
+          className={`p-2.5 rounded-xl text-[10px] leading-relaxed space-y-1 border ${
             isLight
-              ? 'bg-white text-slate-700 border border-slate-200'
-              : 'bg-white/5 text-slate-300 border border-white/5'
+              ? 'bg-white/80 text-slate-700 border-slate-200'
+              : 'glass-panel-subtle bg-white/[0.04] text-slate-300 border-white/10'
           }`}
         >
           <div className="flex items-center gap-1 text-[9px] font-bold text-cyan-400">
             <Sparkles className="w-2.5 h-2.5" />
             <span>INBUILT AI TACTICAL SITREP</span>
           </div>
-          <p className="line-clamp-4">{sitrep.situationBrief}</p>
+          <p className="line-clamp-4 leading-relaxed">{sitrep.situationBrief}</p>
         </div>
 
         {/* Sensor Corroboration Badge */}
@@ -218,7 +217,7 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
         <button
           type="button"
           onClick={() => onOpenEventModal(event)}
-          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-extrabold text-[10.5px] tracking-wider uppercase flex items-center justify-center gap-1.5 transition-all shadow-[0_0_16px_rgba(6,182,212,0.35)] cursor-pointer"
+          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-extrabold text-[10.5px] tracking-wider uppercase flex items-center justify-center gap-1.5 transition-all shadow-[0_0_16px_rgba(6,182,212,0.35)] cursor-pointer active:scale-95"
         >
           <FileText className="w-3.5 h-3.5" />
           <span>READ FULL NEWS</span>

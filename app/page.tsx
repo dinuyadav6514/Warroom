@@ -756,6 +756,10 @@ export default function WarRoomDashboard() {
             onSelectConflict={handleSelectConflict}
             onExecuteSearch={handleExecuteSearch}
             onClearFilter={() => handleUpdateFilters({ country: '', searchQuery: '', region: '' })}
+            onUpdateFilters={handleUpdateFilters}
+            onToggleTheme={handleToggleTheme}
+            onChangeTab={setMobileTab}
+            onShowRelationNetwork={handleShowRelationNetwork}
             allConflicts={conflicts}
             activeCountry={filters.country}
             theme={theme}

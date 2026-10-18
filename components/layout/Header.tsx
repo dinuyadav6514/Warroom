@@ -79,15 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-12 glass-panel mx-3 mt-2.5 mb-1 rounded-2xl md:rounded-[22px] border border-white/[0.12] px-3 md:px-5 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0 shadow-[0_12px_36px_rgba(0,0,0,0.7)]">
       {/* LEFT SECTION: Logo -> Refresh -> Day Selector */}
       <div className="flex items-center gap-2 md:gap-3.5 min-w-0">
-        {onToggleMobileNav && (
-          <button
-            onClick={onToggleMobileNav}
-            className="md:hidden p-1.5 glass-pill text-text-secondary hover:text-accent-cyan rounded-md transition-all"
-            title="Open Workstation Views"
-          >
-            <Menu className="w-4 h-4" />
-          </button>
-        )}
+
 
         {/* 1. Logo with Modern Radial Glow */}
         <div className="flex items-center gap-2 shrink-0">
@@ -103,11 +95,11 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        {/* 2. Quick Refresh Pill */}
+        {/* 2. Quick Refresh Pill (Desktop) */}
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-2.5 py-1 glass-pill text-slate-300 hover:text-white text-[10.5px] rounded-md transition-all cursor-pointer shrink-0 disabled:opacity-50"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 glass-pill text-slate-300 hover:text-white text-[10.5px] rounded-md transition-all cursor-pointer shrink-0 disabled:opacity-50"
           title="Refresh intelligence pipeline data immediately"
         >
           <RefreshCw className={`w-3 h-3 text-cyan-400 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -123,9 +115,9 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        {/* 3. Day Selector Pill Group */}
-        <div className="flex items-center gap-1 glass-panel-subtle px-2 py-0.5 rounded-md border border-white/[0.06] shrink-0">
-          <span className="text-slate-400 text-[10px] font-sans font-medium hidden sm:inline">HORIZON</span>
+        {/* 3. Day Selector Pill Group (Desktop) */}
+        <div className="hidden lg:flex items-center gap-1 glass-panel-subtle px-2 py-0.5 rounded-md border border-white/[0.06] shrink-0">
+          <span className="text-slate-400 text-[10px] font-sans font-medium">HORIZON</span>
           <div className="flex items-center gap-0.5 text-[10px]">
             <button
               onClick={() => onSelectDays(3)}
@@ -164,41 +156,41 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* RIGHT SECTION: current World time -> Refresh -> Next refresh timer */}
-      <div className="flex items-center gap-2 md:gap-3 text-[11px] shrink-0">
-        {/* 4. Current World Time */}
-        <div className="flex items-center gap-1.5 glass-panel-subtle px-2.5 py-1 rounded-md border border-white/[0.06]">
+      {/* RIGHT SECTION */}
+      <div className="flex items-center gap-1.5 md:gap-3 text-[11px] shrink-0">
+        {/* 4. Current World Time (Desktop) */}
+        <div className="hidden lg:flex items-center gap-1.5 glass-panel-subtle px-2.5 py-1 rounded-md border border-white/[0.06]">
           <Globe className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-slate-400 text-[10px] font-sans font-medium hidden md:inline">UTC CLOCK</span>
+          <span className="text-slate-400 text-[10px] font-sans font-medium">UTC CLOCK</span>
           <span className="text-white font-bold text-[10.5px] md:text-[11px] tracking-wide font-mono">
             {utcClock}
           </span>
         </div>
 
-        {/* 5. Refresh (Primary Action Button) */}
+        {/* 5. Refresh Button */}
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-400/40 hover:border-cyan-400 text-cyan-300 hover:text-white text-[10.5px] md:text-[11px] font-bold tracking-wider transition-all cursor-pointer shadow-[0_0_14px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-          title="Force immediate live multi-pipeline sync (bypasses cache)"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-400/40 hover:border-cyan-400 text-cyan-300 hover:text-white text-[10.5px] font-bold tracking-wider transition-all cursor-pointer shadow-[0_0_14px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          title="Force immediate live multi-pipeline sync"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-300' : 'text-cyan-400'}`} />
           <span className="hidden sm:inline">{isRefreshing ? 'SYNCING...' : 'LIVE REFRESH'}</span>
-          <span className="sm:hidden">{isRefreshing ? 'SYNC...' : 'SYNC'}</span>
+          <span className="sm:hidden">{isRefreshing ? '...' : 'SYNC'}</span>
         </button>
 
-        {/* 6. Next Refresh Timer (with countdown & auto-refresh toggle) */}
+        {/* 6. Next Refresh Timer (Desktop) */}
         <button
           onClick={onToggleAutoRefresh}
           title={`Click to ${autoRefresh ? 'pause' : 'resume'} 15-second auto-refresh`}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-mono transition-all cursor-pointer shrink-0 ${
+          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-mono transition-all cursor-pointer shrink-0 ${
             autoRefresh
               ? 'glass-pill border-emerald-500/40 text-emerald-300 hover:border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
               : 'glass-panel-subtle text-slate-400 hover:text-white'
           }`}
         >
           <Clock className={`w-3 h-3 ${autoRefresh ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
-          <span className="hidden md:inline text-slate-400 text-[10px] font-sans">CYCLE</span>
+          <span className="text-slate-400 text-[10px] font-sans">CYCLE</span>
           {isRefreshing ? (
             <span className="text-cyan-300 animate-pulse font-bold text-[10px]">SYNCING</span>
           ) : autoRefresh ? (
@@ -220,12 +212,12 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        {/* 7. Global Overview Stats Strip Toggle Button */}
+        {/* 7. Global Overview Stats Strip Toggle Button (Desktop) */}
         {onToggleStatsPanel && (
           <button
             onClick={onToggleStatsPanel}
             title={showStatsPanel ? 'Hide Global Overview Stats Strip' : 'Show Global Overview Stats Strip'}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] transition-all cursor-pointer shrink-0 ${
+            className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] transition-all cursor-pointer shrink-0 ${
               showStatsPanel
                 ? 'bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
                 : 'glass-pill text-slate-400 hover:text-white'
@@ -245,7 +237,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-
         {/* Pipeline & API Keys Configuration Button */}
         <button
           onClick={onOpenSetup}
@@ -259,20 +250,20 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        {/* Sources Attribution Modal Trigger */}
+        {/* Sources Attribution Modal Trigger (Desktop) */}
         <button
           onClick={onOpenSources}
-          className="p-1 text-text-secondary hover:text-accent-cyan transition-colors"
+          className="hidden md:block p-1 text-text-secondary hover:text-accent-cyan transition-colors"
           title="Data sources, attribution, and methodology"
         >
           <HelpCircle className="w-4 h-4" />
         </button>
 
-        {/* Dynamic Dark / Light Mode Visual Switcher */}
+        {/* Dynamic Dark / Light Mode Visual Switcher - Prominent on both Mobile and Desktop */}
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            className="p-1 rounded text-text-secondary hover:text-accent-cyan hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg border border-white/10 glass-pill hover:border-cyan-400/50 text-text-secondary hover:text-white transition-all cursor-pointer shrink-0"
             title={`Toggle Theme [Current: ${theme.toUpperCase()}] · Type 'theme' in terminal`}
           >
             {theme === 'light' ? (
