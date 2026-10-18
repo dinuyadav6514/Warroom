@@ -5,7 +5,7 @@
  * contagion risk scores for conflict spillover analysis.
  */
 
-import { CountryRelation } from '@/lib/data/country-relationships';
+import type { CountryRelation } from '@/lib/data/country-relationships';
 
 export interface NodeCentrality {
   country: string;

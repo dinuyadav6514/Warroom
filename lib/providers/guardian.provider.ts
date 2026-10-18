@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface GuardianResult {
   id: string;
@@ -56,7 +56,7 @@ export class GuardianProvider implements ConflictDataProvider {
           const events: ConflictEvent[] = [];
           res.data.response.results.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `GUARDIAN-${a.id.replace(/[^a-zA-Z0-9-]/g, '_') || idx}-${Date.now()}`,
+              id: `GUARDIAN-${a.id.replace(/[^a-zA-Z0-9-]/g, '_') || simpleHash(a.webTitle)}`,
               title: a.webTitle,
               description: a.fields?.trailText,
               url: a.webUrl,
@@ -144,7 +144,7 @@ export class GuardianProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `GUARDIAN-SAMPLE-${idx}-${Date.now()}`,
+        id: `GUARDIAN-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

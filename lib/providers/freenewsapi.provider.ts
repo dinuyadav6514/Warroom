@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface FreeNewsArticle {
   uuid?: string;
@@ -54,7 +54,7 @@ export class FreeNewsApiProvider implements ConflictDataProvider {
 
           articles.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `FNA-${a.uuid || idx}-${Date.now()}`,
+              id: `FNA-${a.uuid || simpleHash(a.title)}`,
               title: a.title,
               description: a.description,
               url: a.url,
@@ -143,7 +143,7 @@ export class FreeNewsApiProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `FNA-SAMPLE-${idx}-${Date.now()}`,
+        id: `FNA-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

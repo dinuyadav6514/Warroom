@@ -12,7 +12,10 @@ import {
   Crosshair,
   Radio,
   ExternalLink,
+  Sparkles,
+  Activity,
 } from 'lucide-react';
+import { summarizeEventWithInbuiltAi } from '@/lib/intelligence/event-summarizer';
 
 interface LiveTerminalOutputProps {
   apiExchange?: ApiExchange | null;
@@ -137,6 +140,10 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
 
   const currentEvent = streamEvents[currentIndex % streamEvents.length] || streamEvents[0];
 
+  const aiSummary = useMemo(() => {
+    return summarizeEventWithInbuiltAi(currentEvent);
+  }, [currentEvent]);
+
   // 30-second live cycle timer
   useEffect(() => {
     if (isPaused) return;
@@ -224,40 +231,67 @@ export const LiveTerminalOutput: React.FC<LiveTerminalOutputProps> = ({
       </div>
 
       {/* Featured Live Conflict Dispatch Card */}
-      <div className="min-h-[290px] shrink-0 glass-panel-subtle rounded-2xl p-3.5 flex flex-col justify-between border border-white/[0.12] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
-        {/* Badges Row - Fixed 22px */}
-        <div className="flex items-center justify-between gap-1.5 flex-wrap h-[22px] shrink-0">
-          <span className={`text-[9px] font-bold px-2 py-0.5 border rounded-full ${severityColor}`}>
-            {currentEvent?.severity || 'MODERATE'}
-          </span>
-          {currentEvent?.primaryCategory && (
-            <span className="text-[9px] px-2 py-0.5 border border-white/[0.08] bg-white/[0.03] text-slate-300 rounded-full truncate max-w-[120px] font-sans">
-              {currentEvent.primaryCategory.toUpperCase()}
+      <div className="min-h-[360px] shrink-0 glass-panel-subtle rounded-2xl p-3 flex flex-col justify-between border border-white/[0.12] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
+        {/* Badges Container — Clean multi-row layout without fixed height overlap */}
+        <div className="flex flex-col gap-1.5 shrink-0 mb-1.5">
+          <div className="flex items-center justify-between gap-1 text-[9px]">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className={`font-bold px-2 py-0.5 border rounded-full shrink-0 ${severityColor}`}>
+                {currentEvent?.severity || 'MODERATE'}
+              </span>
+              {currentEvent?.primaryCategory && (
+                <span className="px-2 py-0.5 border border-white/[0.08] bg-white/[0.03] text-slate-300 rounded-full truncate font-sans text-[8.5px]">
+                  {currentEvent.primaryCategory.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="text-[8.5px] text-slate-500 font-mono shrink-0 ml-1">
+              {currentEvent?.eventDate || 'LIVE'}
             </span>
+          </div>
+          {currentEvent?.confidenceLabel && !currentEvent.confidenceLabel.includes('UNVERIFIED') && (
+            <div className="flex items-center gap-1">
+              <span className="text-[8.5px] px-2 py-0.5 border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 rounded-full font-bold">
+                {currentEvent.confidenceLabel}
+              </span>
+            </div>
           )}
-          {currentEvent?.confidenceLabel && (
-            <span className="text-[8.5px] px-1.5 py-0.5 border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 rounded-full font-bold">
-              {currentEvent.confidenceLabel}
-            </span>
-          )}
-          <span className="text-[8.5px] text-slate-500 ml-auto font-mono">
-            {currentEvent?.eventDate || 'LIVE'}
-          </span>
         </div>
 
-        {/* Live Headline Container */}
+        {/* Live Headline & Inbuilt AI Structured SITREP Container */}
         <div
           onClick={() => onSelectEvent?.(currentEvent)}
-          className="min-h-[145px] max-h-[180px] shrink-0 overflow-hidden cursor-pointer group flex items-start py-0.5"
+          className="flex-1 min-h-[140px] max-h-[220px] overflow-hidden cursor-pointer group flex flex-col justify-start gap-1.5 py-0.5"
           title="Click to zoom to this conflict on map"
         >
+          {/* Main Clean Synthesized Headline (Zero HTML tags) */}
           <TypewriterText
             key={`headline-${currentEvent.id}-${currentIndex}`}
             as="div"
-            text={currentEvent.notes || `${currentEvent.eventType} in ${currentEvent.location}`}
-            className="text-[12px] font-bold text-text-primary group-hover:text-accent-cyan leading-relaxed line-clamp-8 transition-colors"
-            speed={12}
+            text={aiSummary.cleanHeadline}
+            className="text-[11.5px] font-bold text-text-primary group-hover:text-accent-cyan leading-snug line-clamp-2 transition-colors"
+            speed={10}
           />
+
+          {/* Structured Inbuilt AI Situation Summary Box (150+ Words Comprehensive Analysis) */}
+          <div className="rounded-xl p-2.5 bg-white/[0.04] dark:bg-black/35 border border-white/[0.08] flex flex-col gap-1.5 text-[10px]">
+            <div className="max-h-[125px] overflow-y-auto pr-1 text-text-secondary text-[9.5px] font-sans leading-relaxed space-y-1.5">
+              {aiSummary.situationBrief.split('\n\n').map((para, pIdx) => (
+                <p key={pIdx} className="leading-relaxed">
+                  {para}
+                </p>
+              ))}
+            </div>
+            {aiSummary.impactAssessment && (
+              <div className="flex items-center justify-between gap-1 text-[8.5px] text-text-muted pt-1 border-t border-white/[0.05] font-mono">
+                <div className="flex items-center gap-1 truncate">
+                  <Activity className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                  <span className="truncate">{aiSummary.impactAssessment}</span>
+                </div>
+                <span className="text-cyan-400 font-bold shrink-0">{currentEvent?.source || 'INTEL WIRE'}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Geolocation & Coordinates - Fixed 24px */}

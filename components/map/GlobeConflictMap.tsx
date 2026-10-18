@@ -317,42 +317,52 @@ interface GlobeConflictMapProps {
   rightInset?: number;
 }
 
-export const GlobeConflictMap: React.FC<GlobeConflictMapProps> = ({
-  events,
-  conflicts,
-  selectedConflict,
-  selectedEvent,
-  onSelectConflict,
-  onSelectEvent,
-  onOpenEventModal,
-  onSelectRelation,
-  mapMode,
-  onChangeMapMode,
-  onRefresh,
-  isRefreshing = false,
-  targetLocation,
-  relationNetwork,
-  onClearRelationNetwork,
-  showFirms = false,
-  onToggleFirms,
-  firmsGeoJson,
-  firmsCount,
-  isFirmsLoading = false,
-  showAviation = false,
-  onToggleAviation,
-  aviationGeoJson,
-  aviationCount,
-  isAviationLoading = false,
-  battlefrontClusters = [],
-  verifiedIncidents = [],
-  threatIndex = 0,
-  theme = 'dark',
-  leftInset = 0,
-  rightInset = 0,
-}) => {
-  const globeRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDotHovered, setIsDotHovered] = useState(false);
+export interface GlobeConflictMapRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetView: () => void;
+}
+
+export const GlobeConflictMap = React.forwardRef<GlobeConflictMapRef, GlobeConflictMapProps>(
+  (
+    {
+      events,
+      conflicts,
+      selectedConflict,
+      selectedEvent,
+      onSelectConflict,
+      onSelectEvent,
+      onOpenEventModal,
+      onSelectRelation,
+      mapMode,
+      onChangeMapMode,
+      onRefresh,
+      isRefreshing = false,
+      targetLocation,
+      relationNetwork,
+      onClearRelationNetwork,
+      showFirms = false,
+      onToggleFirms,
+      firmsGeoJson,
+      firmsCount,
+      isFirmsLoading = false,
+      showAviation = false,
+      onToggleAviation,
+      aviationGeoJson,
+      aviationCount,
+      isAviationLoading = false,
+      battlefrontClusters = [],
+      verifiedIncidents = [],
+      threatIndex = 0,
+      theme = 'dark',
+      leftInset = 0,
+      rightInset = 0,
+    },
+    ref
+  ) => {
+    const globeRef = useRef<any>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isDotHovered, setIsDotHovered] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   const [countries, setCountries] = useState<any>({ features: [] });
   const [cameraAltitude, setCameraAltitude] = useState(2.5);
@@ -368,8 +378,7 @@ export const GlobeConflictMap: React.FC<GlobeConflictMapProps> = ({
     try {
       const renderer = globeRef.current.renderer?.();
       if (renderer) {
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
-        renderer.setSize(containerSize.width, containerSize.height, false);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       }
     } catch (e) {
       // Ignore if renderer not attached
@@ -421,7 +430,7 @@ export const GlobeConflictMap: React.FC<GlobeConflictMapProps> = ({
     } catch (e) {
       // Ignore
     }
-  }, [containerSize.width, containerSize.height, theme]);
+  }, [theme]);
 
   /* ── Reactive theme update for globe sphere ocean & scene lights ── */
   useEffect(() => {
@@ -498,8 +507,14 @@ export const GlobeConflictMap: React.FC<GlobeConflictMapProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver((entries) => {
+      if (!entries || !entries[0]) return;
       const { width, height } = entries[0].contentRect;
-      setContainerSize({ width: Math.floor(width), height: Math.floor(height) });
+      const w = Math.floor(width);
+      const h = Math.floor(height);
+      setContainerSize((prev) => {
+        if (Math.abs(prev.width - w) < 3 && Math.abs(prev.height - h) < 3) return prev;
+        return { width: w, height: h };
+      });
     });
     ro.observe(containerRef.current);
     return () => ro.disconnect();
@@ -1192,12 +1207,157 @@ function decollidePoints<T extends { lat: number; lng: number }>(points: T[]): T
     globeRef.current.pointOfView({ ...pov, altitude: newAlt }, 280);
   }, []);
 
+  /* ── Imperative ref handle for external zoom and viewpoint control ── */
+  React.useImperativeHandle(ref, () => ({
+    zoomIn,
+    zoomOut,
+    resetView: () => {
+      if (globeRef.current) {
+        globeRef.current.pointOfView({ lat: 20, lng: 25, altitude: 2.5 }, 900);
+      }
+    },
+  }));
+
   /* ── Ring colour interpolator ────────────────────────────────────── */
   const ringColorFn = useCallback(
     (d: any) =>
       (t: number) =>
         `rgba(${d.rgb},${Math.max(0, 1 - t)})`,
     []
+  );
+
+  /* ── Stable memoized polygon callbacks to prevent frame drops ──── */
+  const polygonCapColorFn = useCallback(() => (theme === 'light' ? '#cbd5e1' : 'rgba(18, 24, 34, 0.98)'), [theme]);
+  const polygonSideColorFn = useCallback(() => (theme === 'light' ? '#94a3b8' : 'rgba(12, 16, 24, 0.98)'), [theme]);
+  const polygonStrokeColorFn = useCallback(() => (theme === 'light' ? '#64748b' : '#384b64'), [theme]);
+  const polygonLabelFn = useCallback(
+    ({ properties: d }: any) =>
+      d?.ADMIN || d?.NAME || d?.name
+        ? `<div style="background:${theme === 'light' ? '#ffffff' : '#090d12'}; border:1px solid ${theme === 'light' ? '#64748b' : '#0284c7'}; padding:3px 8px; font-family:monospace; font-size:11px; color:${theme === 'light' ? '#000000' : '#38bdf8'}; border-radius:4px; box-shadow:${theme === 'light' ? '0 4px 14px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.8)'}; font-weight:bold;">${
+            d.ADMIN || d.NAME || d.name
+          }</div>`
+        : '',
+    [theme]
+  );
+
+  /* ── Stable memoized customLayerLabel callback ───────────────────── */
+  const customLayerLabelFn = useCallback(
+    (d: any) => {
+      const isLight = theme === 'light';
+      const cardBg = isLight ? '#ffffff' : '#090d12';
+      const titleColor = isLight ? '#000000' : '#ffffff';
+      const subColor = isLight ? '#262626' : '#94a3b8';
+      const shadow = isLight ? '0 6px 20px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.85)';
+
+      if (d.isCluster && d.cluster) {
+        const cl = d.cluster;
+        return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 10px; font-family:monospace; font-size:11px; max-width:280px; border-radius:4px; box-shadow:${shadow};">
+          <div style="color:${d.color}; font-weight:bold; font-size:11px; margin-bottom:3px;">
+            ⚡ [DANGER ZONE / BATTLEFRONT] ${cl.label.toUpperCase()}
+          </div>
+          <div style="color:${titleColor}; font-size:10px;">
+            SECTOR: <strong style="color:${titleColor};">${cl.dominantCountry}</strong> • THREAT: <span style="color:${d.color}; font-weight:bold;">${cl.threatLevel}</span>
+          </div>
+          <div style="color:${subColor}; font-size:10px; margin-top:2px;">
+            KINETIC INCIDENTS: ${cl.eventCount} | THERMAL: ${cl.firmsCount} (MAX FRP: ${cl.maxFrp} MW)
+          </div>
+          ${cl.driftKmPerDay > 0 ? `
+          <div style="color:${isLight ? '#0284c7' : '#38bdf8'}; font-size:10px; margin-top:2px; font-weight:bold;">
+            DRIFT VECTOR: ${cl.headingDeg}° @ ${cl.driftKmPerDay} KM/DAY
+          </div>` : ''}
+        </div>`;
+      }
+      if (d.isTheater && d.conflict) {
+        const c: Conflict = d.conflict;
+        return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 10px; font-family:monospace; font-size:11px; max-width:280px; border-radius:4px; box-shadow:${shadow};">
+          <div style="color:${d.color}; font-weight:bold; font-size:11px; margin-bottom:3px;">
+            [THEATER] ${c.name.toUpperCase()}
+          </div>
+          <div style="color:${titleColor}; font-size:10px;">
+            STATUS: <span style="color:${d.color}; font-weight:bold;">${c.status}</span> • INTENSITY: ${c.intensity}%
+          </div>
+          <div style="color:${subColor}; font-size:10px; margin-top:2px;">
+            ${c.eventCount7d || c.recentEvents?.length || 0} INCIDENTS IN LAST 7 DAYS
+          </div>
+        </div>`;
+      }
+      const ev: ConflictEvent = d.event;
+      if (!ev) {
+        if (d.firmsProp) {
+          return `<div style="background:${cardBg}; border:1.5px solid ${isLight ? '#991b1b' : '#ff3b00'}; padding:4px 8px; font-family:monospace; font-size:10px; color:${titleColor}; border-radius:4px; box-shadow:${shadow};">
+            <div style="color:${isLight ? '#991b1b' : '#ff3b00'}; font-weight:bold;">THERMAL HOTSPOT</div>
+            <div>FRP: ${d.firmsProp.frp || 'N/A'} MW</div>
+          </div>`;
+        }
+        if (d.aviationProp) {
+          return `<div style="background:${cardBg}; border:1.5px solid ${isLight ? '#0f172a' : '#00e5ff'}; padding:4px 8px; font-family:monospace; font-size:10px; color:${titleColor}; border-radius:4px; box-shadow:${shadow};">
+            <div style="color:${isLight ? '#0f172a' : '#00e5ff'}; font-weight:bold;">${d.aviationProp.callsign || 'MIL-AIR'} (${d.aviationProp.typeCode || 'AIRCRAFT'})</div>
+          </div>`;
+        }
+        return '';
+      }
+
+      // Format AI verification badge only when corroborated by sensors
+      const confLabel = d.verifiedInfo?.confidenceLabel && !d.verifiedInfo.confidenceLabel.includes('UNVERIFIED')
+        ? (d.verifiedInfo.confidenceScore >= 0.70
+            ? `<span style="background:${isLight ? 'rgba(20,83,45,0.1)' : 'rgba(16,185,129,0.2)'}; color:${isLight ? '#14532d' : '#10b981'}; border:1px solid ${isLight ? 'rgba(20,83,45,0.4)' : 'rgba(16,185,129,0.5)'}; padding:1px 4px; font-weight:bold; font-size:9px; border-radius:2px;">[${d.verifiedInfo.confidenceLabel}]</span>`
+            : `<span style="background:${isLight ? 'rgba(127,29,29,0.1)' : 'rgba(239,68,68,0.2)'}; color:${isLight ? '#7f1d1d' : '#f87171'}; border:1px solid ${isLight ? 'rgba(127,29,29,0.4)' : 'rgba(239,68,68,0.5)'}; padding:1px 4px; font-weight:bold; font-size:9px; border-radius:2px;">[${d.verifiedInfo.confidenceLabel}]</span>`)
+        : '';
+
+      return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 9px; font-family:monospace; font-size:11px; max-width:260px; border-radius:4px; box-shadow:${shadow};">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:3px;">
+          <span style="color:${d.color}; font-weight:bold; font-size:10px;">[${ev.severity}]</span>
+          ${confLabel}
+        </div>
+        <div style="color:${titleColor}; font-weight:bold; font-size:11px; margin-bottom:2px;">
+          ${ev.location ? `${ev.location}, ` : ''}${ev.country}
+        </div>
+        <div style="color:${subColor}; font-size:10px;">
+          ${ev.eventType}
+        </div>
+        ${typeof ev.fatalities === 'number' && ev.fatalities > 0 ? `<div style="color:${isLight ? '#7f1d1d' : '#ff2247'}; font-size:10px; margin-top:2px; font-weight:bold;">${ev.fatalities} CASUALTIES</div>` : ''}
+        ${d.verifiedInfo?.activeSorties?.length ? `<div style="color:${isLight ? '#0369a1' : '#38bdf8'}; font-size:9px; margin-top:2px;">SORTIES: ${d.verifiedInfo.activeSorties.slice(0, 2).join(', ')}</div>` : ''}
+      </div>`;
+    },
+    [theme]
+  );
+
+  /* ── Stable memoized arcLabel callback ───────────────────────────── */
+  const arcLabelFn = useCallback(
+    (d: any) => {
+      if (!d?.relation) return '';
+      const isLight = theme === 'light';
+      const rel: CountryRelation = d.relation;
+      const isOutgoing = rel.direction === 'OUTGOING';
+      const color = isLight
+        ? (isOutgoing ? '#0f172a' : '#7f1d1d')
+        : (isOutgoing ? '#00e5ff' : '#ff2247');
+      const dirLabel = isOutgoing ? 'OUTGOING VECTOR' : 'INCOMING VECTOR';
+      const reason = rel.strategicContext || rel.primaryReason || '';
+      const incidents = rel.eventCount || rel.relatedEvents?.length || 0;
+      const fatalities = rel.fatalities || 0;
+      const cardBg = isLight ? '#ffffff' : '#090d12';
+      const titleColor = isLight ? '#000000' : '#ffffff';
+      const subColor = isLight ? '#262626' : '#94a3b8';
+      const shadow = isLight ? '0 6px 20px rgba(0,0,0,0.12)' : '0 6px 20px rgba(0,0,0,0.95)';
+
+      return `<div style="background:${cardBg}; border:1.5px solid ${color}; padding:8px 12px; font-family:monospace; font-size:11px; max-width:290px; border-radius:4px; box-shadow:${shadow}; pointer-events:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:${color}; font-weight:bold; font-size:10px; letter-spacing:0.5px;">[${dirLabel}]</span>
+          <span style="color:${subColor}; font-size:9px; font-weight:bold;">TACTICAL INTEL</span>
+        </div>
+        <div style="color:${titleColor}; font-weight:bold; font-size:12px; margin-bottom:4px; letter-spacing:0.3px;">
+          ${rel.fromCountry} <span style="color:${color};">➔</span> ${rel.toCountry}
+        </div>
+        ${reason ? `<div style="color:${subColor}; font-size:10px; line-height:1.4; margin-bottom:6px; border-left:2px solid ${color}; padding-left:6px;">${reason}</div>` : ''}
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; padding-top:4px; border-top:1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'};">
+          <span style="color:${subColor};">INCIDENTS: <strong style="color:${titleColor};">${incidents}</strong></span>
+          ${fatalities > 0 ? `<span style="color:${isLight ? '#7f1d1d' : '#ff2247'}; font-weight:bold;">${fatalities} CASUALTIES</span>` : `<span style="color:${isLight ? '#14532d' : '#22c55e'};">MONITORED</span>`}
+        </div>
+        <div style="color:${color}; font-size:9px; margin-top:5px; text-align:right; font-weight:bold; opacity:0.85;">CLICK LINE TO OPEN INTEL DOSSIER »</div>
+      </div>`;
+    },
+    [theme]
   );
 
   return (
@@ -1225,99 +1385,17 @@ function decollidePoints<T extends { lat: number; lng: number }>(points: T[]): T
 
         /* ── Country polygons — Grey land in light mode, deep tactical charcoal in dark mode ── */
         polygonsData={countries.features}
-        polygonCapColor={() => theme === 'light' ? '#cbd5e1' : 'rgba(18, 24, 34, 0.98)'}
-        polygonSideColor={() => theme === 'light' ? '#94a3b8' : 'rgba(12, 16, 24, 0.98)'}
-        polygonStrokeColor={() => theme === 'light' ? '#64748b' : '#384b64'}
+        polygonCapColor={polygonCapColorFn}
+        polygonSideColor={polygonSideColorFn}
+        polygonStrokeColor={polygonStrokeColorFn}
         polygonAltitude={0.008}
-        polygonLabel={({ properties: d }: any) =>
-          d?.ADMIN || d?.NAME || d?.name
-            ? `<div style="background:${theme === 'light' ? '#ffffff' : '#090d12'}; border:1px solid ${theme === 'light' ? '#64748b' : '#0284c7'}; padding:3px 8px; font-family:monospace; font-size:11px; color:${theme === 'light' ? '#000000' : '#38bdf8'}; border-radius:4px; box-shadow:${theme === 'light' ? '0 4px 14px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.8)'}; font-weight:bold;">${
-                d.ADMIN || d.NAME || d.name
-              }</div>`
-            : ''
-        }
+        polygonLabel={polygonLabelFn}
 
         /* ── Flat 2D WebGL Surface Dots with Subtle Glow (Always Visible & Consistent) ── */
         customLayerData={allPoints}
         customThreeObject={customThreeObject}
         customThreeObjectUpdate={customThreeObjectUpdate}
-        customLayerLabel={(d: any) => {
-          const isLight = theme === 'light';
-          const cardBg = isLight ? '#ffffff' : '#090d12';
-          const titleColor = isLight ? '#000000' : '#ffffff';
-          const subColor = isLight ? '#262626' : '#94a3b8';
-          const shadow = isLight ? '0 6px 20px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.85)';
-
-          if (d.isCluster && d.cluster) {
-            const cl = d.cluster;
-            return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 10px; font-family:monospace; font-size:11px; max-width:280px; border-radius:4px; box-shadow:${shadow};">
-              <div style="color:${d.color}; font-weight:bold; font-size:11px; margin-bottom:3px;">
-                ⚡ [DANGER ZONE / BATTLEFRONT] ${cl.label.toUpperCase()}
-              </div>
-              <div style="color:${titleColor}; font-size:10px;">
-                SECTOR: <strong style="color:${titleColor};">${cl.dominantCountry}</strong> • THREAT: <span style="color:${d.color}; font-weight:bold;">${cl.threatLevel}</span>
-              </div>
-              <div style="color:${subColor}; font-size:10px; margin-top:2px;">
-                KINETIC INCIDENTS: ${cl.eventCount} | THERMAL: ${cl.firmsCount} (MAX FRP: ${cl.maxFrp} MW)
-              </div>
-              ${cl.driftKmPerDay > 0 ? `
-              <div style="color:${isLight ? '#0284c7' : '#38bdf8'}; font-size:10px; margin-top:2px; font-weight:bold;">
-                DRIFT VECTOR: ${cl.headingDeg}° @ ${cl.driftKmPerDay} KM/DAY
-              </div>` : ''}
-            </div>`;
-          }
-          if (d.isTheater && d.conflict) {
-            const c: Conflict = d.conflict;
-            return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 10px; font-family:monospace; font-size:11px; max-width:280px; border-radius:4px; box-shadow:${shadow};">
-              <div style="color:${d.color}; font-weight:bold; font-size:11px; margin-bottom:3px;">
-                [THEATER] ${c.name.toUpperCase()}
-              </div>
-              <div style="color:${titleColor}; font-size:10px;">
-                STATUS: <span style="color:${d.color}; font-weight:bold;">${c.status}</span> • INTENSITY: ${c.intensity}%
-              </div>
-              <div style="color:${subColor}; font-size:10px; margin-top:2px;">
-                ${c.eventCount7d || c.recentEvents?.length || 0} INCIDENTS IN LAST 7 DAYS
-              </div>
-            </div>`;
-          }
-          const ev: ConflictEvent = d.event;
-          if (!ev) {
-            if (d.firmsProp) {
-              return `<div style="background:${cardBg}; border:1.5px solid ${isLight ? '#991b1b' : '#ff3b00'}; padding:4px 8px; font-family:monospace; font-size:10px; color:${titleColor}; border-radius:4px; box-shadow:${shadow};">
-                <div style="color:${isLight ? '#991b1b' : '#ff3b00'}; font-weight:bold;">THERMAL HOTSPOT</div>
-                <div>FRP: ${d.firmsProp.frp || 'N/A'} MW</div>
-              </div>`;
-            }
-            if (d.aviationProp) {
-              return `<div style="background:${cardBg}; border:1.5px solid ${isLight ? '#0f172a' : '#00e5ff'}; padding:4px 8px; font-family:monospace; font-size:10px; color:${titleColor}; border-radius:4px; box-shadow:${shadow};">
-                <div style="color:${isLight ? '#0f172a' : '#00e5ff'}; font-weight:bold;">${d.aviationProp.callsign || 'MIL-AIR'} (${d.aviationProp.typeCode || 'AIRCRAFT'})</div>
-              </div>`;
-            }
-            return '';
-          }
-
-          // Format AI verification badge
-          const confLabel = d.verifiedInfo?.confidenceLabel
-            ? (d.verifiedInfo.confidenceScore >= 0.70
-                ? `<span style="background:${isLight ? 'rgba(20,83,45,0.1)' : 'rgba(16,185,129,0.2)'}; color:${isLight ? '#14532d' : '#10b981'}; border:1px solid ${isLight ? 'rgba(20,83,45,0.4)' : 'rgba(16,185,129,0.5)'}; padding:1px 4px; font-weight:bold; font-size:9px; border-radius:2px;">[${d.verifiedInfo.confidenceLabel}]</span>`
-                : `<span style="background:${isLight ? 'rgba(127,29,29,0.1)' : 'rgba(239,68,68,0.2)'}; color:${isLight ? '#7f1d1d' : '#f87171'}; border:1px solid ${isLight ? 'rgba(127,29,29,0.4)' : 'rgba(239,68,68,0.5)'}; padding:1px 4px; font-weight:bold; font-size:9px; border-radius:2px;">[${d.verifiedInfo.confidenceLabel}]</span>`)
-            : `<span style="background:${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(148,163,184,0.15)'}; color:${isLight ? '#333333' : '#94a3b8'}; border:1px solid ${isLight ? 'rgba(0,0,0,0.15)' : 'rgba(148,163,184,0.3)'}; padding:1px 4px; font-weight:bold; font-size:9px; border-radius:2px;">[UNVERIFIED 40%]</span>`;
-
-          return `<div style="background:${cardBg}; border:1.5px solid ${d.color}; padding:6px 9px; font-family:monospace; font-size:11px; max-width:260px; border-radius:4px; box-shadow:${shadow};">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:3px;">
-              <span style="color:${d.color}; font-weight:bold; font-size:10px;">[${ev.severity}]</span>
-              ${confLabel}
-            </div>
-            <div style="color:${titleColor}; font-weight:bold; font-size:11px; margin-bottom:2px;">
-              ${ev.location ? `${ev.location}, ` : ''}${ev.country}
-            </div>
-            <div style="color:${subColor}; font-size:10px;">
-              ${ev.eventType}
-            </div>
-            ${typeof ev.fatalities === 'number' && ev.fatalities > 0 ? `<div style="color:${isLight ? '#7f1d1d' : '#ff2247'}; font-size:10px; margin-top:2px; font-weight:bold;">${ev.fatalities} CASUALTIES</div>` : ''}
-            ${d.verifiedInfo?.activeSorties?.length ? `<div style="color:${isLight ? '#0369a1' : '#38bdf8'}; font-size:9px; margin-top:2px;">SORTIES: ${d.verifiedInfo.activeSorties.slice(0, 2).join(', ')}</div>` : ''}
-          </div>`;
-        }}
+        customLayerLabel={customLayerLabelFn}
         onCustomLayerClick={(d: any) => handlePointClick(d)}
         onCustomLayerHover={(d: any) => {
           setIsDotHovered(!!d);
@@ -1350,39 +1428,7 @@ function decollidePoints<T extends { lat: number; lng: number }>(points: T[]): T
         arcDashGap={0}
         arcDashInitialGap={0}
         arcDashAnimateTime={0}
-        arcLabel={(d: any) => {
-          if (!d?.relation) return '';
-          const isLight = theme === 'light';
-          const rel: CountryRelation = d.relation;
-          const isOutgoing = rel.direction === 'OUTGOING';
-          const color = isLight
-            ? (isOutgoing ? '#0f172a' : '#7f1d1d')
-            : (isOutgoing ? '#00e5ff' : '#ff2247');
-          const dirLabel = isOutgoing ? 'OUTGOING VECTOR' : 'INCOMING VECTOR';
-          const reason = rel.strategicContext || rel.primaryReason || '';
-          const incidents = rel.eventCount || rel.relatedEvents?.length || 0;
-          const fatalities = rel.fatalities || 0;
-          const cardBg = isLight ? '#ffffff' : '#090d12';
-          const titleColor = isLight ? '#000000' : '#ffffff';
-          const subColor = isLight ? '#262626' : '#94a3b8';
-          const shadow = isLight ? '0 6px 20px rgba(0,0,0,0.12)' : '0 6px 20px rgba(0,0,0,0.95)';
-
-          return `<div style="background:${cardBg}; border:1.5px solid ${color}; padding:8px 12px; font-family:monospace; font-size:11px; max-width:290px; border-radius:4px; box-shadow:${shadow}; pointer-events:none;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-              <span style="color:${color}; font-weight:bold; font-size:10px; letter-spacing:0.5px;">[${dirLabel}]</span>
-              <span style="color:${subColor}; font-size:9px; font-weight:bold;">TACTICAL INTEL</span>
-            </div>
-            <div style="color:${titleColor}; font-weight:bold; font-size:12px; margin-bottom:4px; letter-spacing:0.3px;">
-              ${rel.fromCountry} <span style="color:${color};">➔</span> ${rel.toCountry}
-            </div>
-            ${reason ? `<div style="color:${subColor}; font-size:10px; line-height:1.4; margin-bottom:6px; border-left:2px solid ${color}; padding-left:6px;">${reason}</div>` : ''}
-            <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; padding-top:4px; border-top:1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'};">
-              <span style="color:${subColor};">INCIDENTS: <strong style="color:${titleColor};">${incidents}</strong></span>
-              ${fatalities > 0 ? `<span style="color:${isLight ? '#7f1d1d' : '#ff2247'}; font-weight:bold;">${fatalities} CASUALTIES</span>` : `<span style="color:${isLight ? '#14532d' : '#22c55e'};">MONITORED</span>`}
-            </div>
-            <div style="color:${color}; font-size:9px; margin-top:5px; text-align:right; font-weight:bold; opacity:0.85;">CLICK LINE TO OPEN INTEL DOSSIER »</div>
-          </div>`;
-        }}
+        arcLabel={arcLabelFn}
         onArcClick={handleArcClick}
         onArcHover={(arc: any) => {
           setIsDotHovered(!!arc);
@@ -1427,42 +1473,8 @@ function decollidePoints<T extends { lat: number; lng: number }>(points: T[]): T
         </div>
       )}
 
-      {/* Zoom controls */}
-      <div
-        style={{ right: rightInset > 0 ? `${rightInset + 12}px` : undefined }}
-        className={`absolute top-3 ${rightInset > 0 ? '' : 'right-3'} z-20 flex items-center gap-1 glass-panel border border-white/12 p-1 font-mono shadow-[0_8px_24px_rgba(0,0,0,0.6)] rounded-full transition-all duration-300 pointer-events-auto`}
-      >
-        <button
-          onClick={zoomIn}
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer rounded-full"
-          title="Zoom In (+)"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={zoomOut}
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer rounded-full"
-          title="Zoom Out (-)"
-        >
-          <Minus className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* Map mode selector & FIRMS / aviation toggles */}
-      <MapLegend
-        style={{ left: leftInset > 0 ? `${leftInset + 16}px` : undefined }}
-        activePage="MAIN"
-        mapMode={mapMode}
-        onChangeMode={onChangeMapMode}
-        showFirms={showFirms}
-        onToggleFirms={onToggleFirms}
-        firmsCount={firmsCount}
-        isFirmsLoading={isFirmsLoading}
-        showAviation={showAviation}
-        onToggleAviation={onToggleAviation}
-        aviationCount={aviationCount}
-        isAviationLoading={isAviationLoading}
-      />
     </div>
   );
-};
+});
+
+GlobeConflictMap.displayName = 'GlobeConflictMap';

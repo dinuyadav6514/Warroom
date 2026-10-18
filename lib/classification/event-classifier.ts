@@ -1,4 +1,4 @@
-import { IntelCategory } from '@/types/conflict';
+import type { IntelCategory } from '@/types/conflict';
 
 export interface CategoryDefinition {
   name: IntelCategory;

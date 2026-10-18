@@ -16,7 +16,7 @@
 
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, simpleHash } from './provider-utils';
+import { buildConflictEvent, simpleHash, cleanHtmlAndMarkup } from './provider-utils';
 
 interface GoogleNewsFeedDefinition {
   theater: string;
@@ -240,14 +240,7 @@ export class GoogleNewsScraperProvider implements ConflictDataProvider {
 
       if (!titleM || !titleM[1]) continue;
 
-      let rawTitle = titleM[1]
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&#039;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/<[^>]*>/g, '')
-        .trim();
+      let rawTitle = cleanHtmlAndMarkup(titleM[1]);
 
       // Google News formats titles as: "Headline Text - Publisher Name"
       let publisher = 'Google News Wire';
@@ -262,21 +255,10 @@ export class GoogleNewsScraperProvider implements ConflictDataProvider {
       const link = linkM ? linkM[1].trim() : `https://news.google.com/search?q=${encodeURIComponent(rawTitle.slice(0, 40))}`;
       const pubDate = dateM ? new Date(dateM[1].trim()).toISOString() : new Date().toISOString();
 
-      let descText: string | undefined = undefined;
-      if (descM && descM[1]) {
-        descText = descM[1]
-          .replace(/<[^>]*>/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&#039;/g, "'")
-          .replace(/&quot;/g, '"')
-          .replace(/\s+/g, ' ')
-          .trim();
-      }
+      const descText = descM && descM[1] ? cleanHtmlAndMarkup(descM[1]) : undefined;
 
       const ev = buildConflictEvent({
-        id: `GNEWS-SCRAPER-${simpleHash(rawTitle)}-${Date.now()}`,
+        id: `GNEWS-SCRAPER-${simpleHash(rawTitle)}`,
         title: rawTitle,
         description: descText && descText.length > 20 ? descText : `${rawTitle}. Monitored via Google News Scraper [Theater: ${theaterName}].`,
         url: link,
@@ -327,7 +309,7 @@ export class GoogleNewsScraperProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `GNEWS-SCRAPER-FB-${idx}-${Date.now()}`,
+        id: `GNEWS-SCRAPER-FB-${simpleHash(s.title)}`,
         title: s.title,
         description: `${s.title}. Scraped real-time via Google News Multi-Theater Intelligence Pipeline.`,
         url: 'https://news.google.com/',

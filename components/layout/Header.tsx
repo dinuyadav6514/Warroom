@@ -245,22 +245,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Mobile Intel Drawer Trigger */}
-        {onToggleMobilePanel && (
-          <button
-            onClick={onToggleMobilePanel}
-            className="lg:hidden flex items-center gap-1 px-2 py-1 bg-cyan-950/60 hover:bg-cyan-900 border border-accent-cyan/60 text-accent-cyan text-[11px] font-bold transition-colors cursor-pointer"
-            title="Open Conflict Intelligence & Telemetry Workstation"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-accent-cyan" />
-            <span className="hidden sm:inline">INTEL</span>
-            {conflictsCount !== undefined && (
-              <span className="text-[9px] px-1 bg-cyan-900/80 border border-accent-cyan/40">
-                {conflictsCount}
-              </span>
-            )}
-          </button>
-        )}
 
         {/* Pipeline & API Keys Configuration Button */}
         <button

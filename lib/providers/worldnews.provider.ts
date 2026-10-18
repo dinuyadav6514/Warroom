@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface WorldNewsArticle {
   id?: number;
@@ -54,7 +54,7 @@ export class WorldNewsApiProvider implements ConflictDataProvider {
           const events: ConflictEvent[] = [];
           res.data.news.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `WORLDNEWS-${a.id || idx}-${Date.now()}`,
+              id: `WORLDNEWS-${a.id || simpleHash(a.title)}`,
               title: a.title,
               description: a.text ? a.text.slice(0, 300) : undefined,
               url: a.url,
@@ -143,7 +143,7 @@ export class WorldNewsApiProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `WORLDNEWS-SAMPLE-${idx}-${Date.now()}`,
+        id: `WORLDNEWS-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

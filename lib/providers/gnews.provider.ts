@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface GNewsArticle {
   title: string;
@@ -48,7 +48,7 @@ export class GNewsProvider implements ConflictDataProvider {
           const events: ConflictEvent[] = [];
           res.data.articles.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `GNEWS-${idx}-${Date.now()}`,
+              id: `GNEWS-${simpleHash(a.title)}`,
               title: a.title,
               description: a.description,
               url: a.url,
@@ -137,7 +137,7 @@ export class GNewsProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `GNEWS-SAMPLE-${idx}-${Date.now()}`,
+        id: `GNEWS-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

@@ -5,7 +5,7 @@
  * Uses Gemini API grounded in active 10-day conflict dataset, with deterministic fallback.
  */
 
-import { Conflict, ConflictEvent, GlobalOverviewStats } from '@/types/conflict';
+import type { Conflict, ConflictEvent, GlobalOverviewStats } from '@/types/conflict';
 
 export interface AnalystQueryResponse {
   answer: string;
@@ -103,7 +103,7 @@ PRIMARY CITATIONS:
 - [List 2-4 primary sources and locations referenced]`;
 
   if (geminiKey && geminiKey.trim() !== '') {
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     for (const model of modelsToTry) {
       try {
         const response = await fetch(
@@ -179,43 +179,46 @@ Format as an official defense intelligence brief:
 3. TACTICAL ESCALATION INDICATORS (Key emerging patterns)`;
 
   if (geminiKey && geminiKey.trim() !== '') {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: `${ANALYST_SYSTEM_PROMPT}\n\n${promptText}` }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 1200 },
-          }),
-        }
-      );
+    const sitrepModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    for (const model of sitrepModels) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: `${ANALYST_SYSTEM_PROMPT}\n\n${promptText}` }] }],
+              generationConfig: { temperature: 0.1, maxOutputTokens: 1200 },
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          return {
-            title: `GLOBAL STRATEGIC INTELLIGENCE SITREP // ${new Date().toISOString().slice(0, 10)}`,
-            summary: `Global Kinetic Threat Level: ${threatLevel} | ${events.length} Live Incidents | ${conflicts.length} Active Zones`,
-            threatLevel,
-            executiveSummary: text,
-            flashpoints: topTheaters.map((t) => ({
-              theater: t.name,
-              country: t.country || 'Global',
-              incidents: t.recentEvents.length,
-              fatalities: t.fatalities7d,
-              assessment: `Escalation index ${t.escalationIndex}/100 (${t.escalationTrend}). ${t.escalationReason || 'Active engagements logged.'}`,
-            })),
-            tacticalDevelopments: criticalEvents.slice(0, 5).map((e) => `[${e.country}] ${e.eventType}: ${e.notes?.slice(0, 140)}`),
-            source: 'GEMINI_AI',
-            timestamp: new Date().toISOString(),
-          };
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            return {
+              title: `GLOBAL STRATEGIC INTELLIGENCE SITREP // ${new Date().toISOString().slice(0, 10)}`,
+              summary: `Global Kinetic Threat Level: ${threatLevel} | ${events.length} Live Incidents | ${conflicts.length} Active Zones`,
+              threatLevel,
+              executiveSummary: text,
+              flashpoints: topTheaters.map((t) => ({
+                theater: t.name,
+                country: t.country || 'Global',
+                incidents: t.recentEvents.length,
+                fatalities: t.fatalities7d,
+                assessment: `Escalation index ${t.escalationIndex}/100 (${t.escalationTrend}). ${t.escalationReason || 'Active engagements logged.'}`,
+              })),
+              tacticalDevelopments: criticalEvents.slice(0, 5).map((e) => `[${e.country}] ${e.eventType}: ${e.notes?.slice(0, 140)}`),
+              source: 'GEMINI_AI',
+              timestamp: new Date().toISOString(),
+            };
+          }
         }
+      } catch (e) {
+        console.warn(`[SitRep] Model ${model} failed, trying fallback:`, e);
       }
-    } catch (e) {
-      console.warn('[SitRep] Gemini call failed, using tactical synthesis fallback:', e);
     }
   }
 

@@ -15,7 +15,9 @@ import {
   FileText,
   Layers,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
+import { summarizeEventWithInbuiltAi } from '@/lib/intelligence/event-summarizer';
 
 interface SelectedNewsDisplayProps {
   event: ConflictEvent | null;
@@ -161,6 +163,8 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
     )
     .slice(0, 3);
 
+  const aiSummary = event ? summarizeEventWithInbuiltAi(event) : null;
+
   return (
     <div className="w-full flex-1 flex flex-col bg-transparent select-none font-mono min-h-[380px]">
       {/* Minimal Transparent Return Link */}
@@ -201,22 +205,41 @@ export const SelectedNewsDisplay: React.FC<SelectedNewsDisplayProps> = ({
             </span>
           )}
 
-          {event!.verificationStatus && (
+          {event!.verificationStatus === 'VERIFIED' && (
             <span className="text-[9px] px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 rounded-full font-bold ml-auto">
-              [{event!.verificationStatus}]
+              [VERIFIED]
             </span>
           )}
         </div>
 
-        {/* Headline / Summary */}
-        <div className="glass-panel-subtle rounded-xl p-3 border border-white/5 space-y-1">
+        {/* Headline / Inbuilt AI SITREP */}
+        <div className="glass-panel-subtle rounded-xl p-3 border border-white/5 space-y-2">
           <TypewriterText
             as="h2"
-            text={event!.notes || `${event!.eventType} in ${event!.location}, ${event!.country}`}
+            text={aiSummary?.cleanHeadline || event!.notes || `${event!.eventType} in ${event!.location}`}
             className="text-[12.5px] font-bold text-white leading-snug cursor-pointer"
             speed={12}
           />
-          <div className="flex items-center gap-1.5 text-[10.5px] text-cyan-300 mt-1">
+
+          {aiSummary?.situationBrief && (
+            <div className="rounded-xl p-2.5 bg-white/[0.04] dark:bg-black/35 border border-white/[0.08] flex flex-col gap-1.5 text-[10px]">
+              <div className="max-h-[160px] overflow-y-auto pr-1 text-zinc-300 text-[9.5px] font-sans leading-relaxed space-y-1.5 scrollbar-thin scrollbar-thumb-white/10">
+                {aiSummary.situationBrief.split('\n\n').map((para, pIdx) => (
+                  <p key={pIdx} className="leading-relaxed">
+                    {para}
+                  </p>
+                ))}
+              </div>
+              {aiSummary.impactAssessment && (
+                <div className="text-[8.5px] text-zinc-400 font-mono pt-1 border-t border-white/[0.05] flex items-center justify-between">
+                  <span>{aiSummary.impactAssessment}</span>
+                  <span className="text-cyan-400 font-bold">{event?.source || 'INTEL WIRE'}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[10.5px] text-cyan-300 pt-0.5">
             <MapPin className="w-3 h-3 shrink-0" />
             <TypewriterText
               text={`${event!.location}, ${event!.country}`}

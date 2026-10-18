@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface EventRegistryArticle {
   uri?: string;
@@ -66,7 +66,7 @@ export class NewsApiAiProvider implements ConflictDataProvider {
           const events: ConflictEvent[] = [];
           res.data.articles.results.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `NEWSAPIAI-${a.uri || idx}-${Date.now()}`,
+              id: `NEWSAPIAI-${a.uri || simpleHash(a.title)}`,
               title: a.title,
               description: a.body ? a.body.slice(0, 300) : undefined,
               url: a.url,
@@ -156,7 +156,7 @@ export class NewsApiAiProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `NEWSAPIAI-SAMPLE-${idx}-${Date.now()}`,
+        id: `NEWSAPIAI-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, simpleHash } from './provider-utils';
 
 interface HnHit {
   objectID: string;
@@ -48,7 +48,7 @@ export class HackerNewsProvider implements ConflictDataProvider {
           if (!h.title) return;
 
           const ev = buildConflictEvent({
-            id: `HN-${h.objectID}-${Date.now()}`,
+            id: `HN-${h.objectID || simpleHash(h.title)}`,
             title: h.title,
             description: h.story_text || `Hacker News discussion: ${h.points || 0} points, ${h.num_comments || 0} comments. Posted by user ${h.author || 'anonymous'}.`,
             url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
@@ -123,7 +123,7 @@ export class HackerNewsProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `HN-SAMPLE-${idx}-${Date.now()}`,
+        id: `HN-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

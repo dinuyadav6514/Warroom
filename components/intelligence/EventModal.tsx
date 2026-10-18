@@ -3,7 +3,8 @@
 import React, { useEffect } from 'react';
 import { ConflictEvent } from '@/types/conflict';
 import { formatTerminalUtc } from '@/lib/data/date-utils';
-import { X, ExternalLink, ShieldCheck, AlertCircle, MapPin, Layers } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, AlertCircle, MapPin, Layers, Sparkles } from 'lucide-react';
+import { cleanHtmlAndMarkup, summarizeEventWithInbuiltAi } from '@/lib/intelligence/event-summarizer';
 
 interface EventModalProps {
   event: ConflictEvent | null;
@@ -101,7 +102,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
               <div className={`font-bold mt-0.5 font-mono ${
                 (event.confidenceScore ?? 0) >= 0.70 ? 'text-emerald-400' : 'text-amber-400'
               }`}>
-                {event.confidenceLabel || `UNVERIFIED ${Math.round((event.confidenceScore ?? 0.4) * 100)}%`}
+                {event.confidenceLabel || `${Math.round((event.confidenceScore ?? 0.52) * 100)}% SENSOR CONFIDENCE`}
               </div>
             </div>
             {event.sensorHits && (
@@ -207,13 +208,32 @@ export const EventModal: React.FC<EventModalProps> = ({ event, isOpen = true, on
             </div>
           )}
 
-          {/* Structured Source Notes */}
-          <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-1.5">
-            <div className="text-[10px] text-zinc-400 font-semibold">// PRIMARY SOURCE INCIDENT LOG</div>
-            <div className="text-[11px] text-zinc-200 leading-relaxed bg-white/[0.02] p-3 rounded-lg border border-white/5">
-              {event.notes ? event.notes : 'No raw descriptive notes attached to this record.'}
-            </div>
-          </div>
+          {/* Structured Inbuilt AI Tactical SITREP */}
+          {(() => {
+            const aiSummary = summarizeEventWithInbuiltAi(event);
+            return (
+              <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="flex items-center gap-1.5 text-cyan-400 font-bold tracking-wider">
+                    <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
+                    TACTICAL SITUATION BRIEF
+                  </span>
+                  <span className="text-zinc-500 font-mono text-[9px] uppercase">
+                    {aiSummary.corroborationStatus}
+                  </span>
+                </div>
+                <div className="text-[11px] text-zinc-200 leading-relaxed bg-white/[0.02] p-3 rounded-lg border border-white/5 space-y-1.5">
+                  <div className="text-white font-bold text-xs">{aiSummary.cleanHeadline}</div>
+                  <p className="text-zinc-300 font-sans text-[11px]">{aiSummary.situationBrief}</p>
+                  {aiSummary.impactAssessment && (
+                    <div className="text-[10px] text-zinc-400 font-mono pt-1 border-t border-white/5">
+                      {aiSummary.impactAssessment}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Source Attribution & Link */}
           <div className="glass-panel-subtle rounded-xl p-3.5 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">

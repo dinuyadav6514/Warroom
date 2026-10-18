@@ -9,3 +9,5 @@ export * from './escalation-forecaster';
 export * from './spatial-clustering';
 export * from './network-centrality';
 export * from './command-parser';
+export * from './event-summarizer';
+export * from './geo-locator';

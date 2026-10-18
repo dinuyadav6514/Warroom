@@ -5,7 +5,7 @@
  * Produces a confidence-weighted VerifiedIncident array.
  */
 
-import { ConflictEvent, FirmsThermalPoint, MilitaryAircraft } from '@/types/conflict';
+import type { ConflictEvent, FirmsThermalPoint, MilitaryAircraft } from '@/types/conflict';
 
 export interface VerifiedIncident {
   event: ConflictEvent;
@@ -126,35 +126,41 @@ export function runSensorFusion(
       }
     }
 
-    // ── Confidence Score Calculation ─────────────────────────────────────
-    let confidence = 0.40; // Base: single unverified report
+    // ── Dynamic Baseline Confidence Score Calculation ─────────────────────
+    // Baseline reflects provider verification, casualties reported, and source integrity
+    let baseline = 0.48;
+    if (event.verificationStatus === 'VERIFIED') {
+      baseline = 0.65;
+    } else if (typeof event.fatalities === 'number' && event.fatalities > 0) {
+      baseline += 0.08;
+    }
+    if (event.severity === 'CRITICAL' || event.severity === 'HIGH') {
+      baseline += 0.05;
+    }
+
+    let confidence = baseline;
 
     if (hasHighFrpCluster) {
-      confidence += 0.35; // Corroborated by thermal fire cluster
+      confidence += 0.32; // Corroborated by thermal fire cluster
     } else if (matchedFirms.length > 0) {
-      // Partial credit for low-FRP hits (conflict-zone industrial/gas flares still corroborate)
-      confidence += 0.15;
+      // Partial credit for low-FRP hits
+      confidence += 0.16;
     }
 
     if (matchedAviation.length > 0) {
-      confidence += 0.25; // Military reconnaissance/fighter sortie in proximity
+      confidence += 0.24; // Military reconnaissance/fighter sortie in proximity
     }
 
-    // Cap to [0.40, 1.00]
-    confidence = Math.min(1.0, Math.max(0.40, confidence));
-
-    // ── Verification Status Override ──────────────────────────────────────
-    // If already server-verified and no sensor data, nudge score up
-    if (event.verificationStatus === 'VERIFIED' && confidence < 0.60) {
-      confidence = 0.60;
-    }
+    // Cap to [0.45, 0.99]
+    confidence = Math.min(0.99, Math.max(0.45, confidence));
 
     const pct = Math.round(confidence * 100);
+    // Only generate confidenceLabel when genuinely corroborated by sensors or verified
     const confidenceLabel =
-      pct >= 90 ? `CONFIRMED ${pct}%` :
+      pct >= 88 ? `CONFIRMED ${pct}%` :
       pct >= 70 ? `CORROBORATED ${pct}%` :
-      pct >= 55 ? `PROBABLE ${pct}%` :
-                  `UNVERIFIED ${pct}%`;
+      pct >= 58 ? `PROBABLE ${pct}%` :
+                  '';
 
     verified.push({
       event,

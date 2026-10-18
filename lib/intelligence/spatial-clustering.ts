@@ -6,7 +6,7 @@
  * and frontline drift vector output.
  */
 
-import { ConflictEvent, FirmsThermalPoint } from '@/types/conflict';
+import type { ConflictEvent, FirmsThermalPoint } from '@/types/conflict';
 
 export interface ClusterPoint {
   lat: number;

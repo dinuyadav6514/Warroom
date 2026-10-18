@@ -271,9 +271,10 @@ async function executeConflictSync(days: 3 | 7 | 10 = 7, forceRefresh = false): 
   const all10DayStats = calculateGlobalOverviewStats(all10DayConflicts, all10DayEvents);
 
   // Construct API exchange telemetry for 12-source global news ingestion
+  const nowIso = new Date().toISOString();
   const exchange: ApiExchange = {
-    id: `EXCH-${Date.now()}`,
-    timestamp: new Date().toISOString(),
+    id: `EXCH-${nowIso.slice(0, 19).replace(/[^0-9]/g, '')}`,
+    timestamp: nowIso,
     request: {
       endpoint: '12 Connected Global News Endpoints (GDELT, ReliefWeb, FreeNewsApi, Currents, NewsAPI, GNews, NewsData, WorldNews, NewsAPI.ai, Mediastack, Guardian, HackerNews)',
       method: 'PARALLEL GET / POST',

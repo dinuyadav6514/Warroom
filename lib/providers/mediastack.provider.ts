@@ -1,6 +1,6 @@
 import { ConflictEvent } from '@/types/conflict';
 import { ConflictDataProvider, DateRangeQuery } from '@/types/provider';
-import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed } from './provider-utils';
+import { buildConflictEvent, fetchJsonWithTimeout, fetchOpenRssFeed, simpleHash } from './provider-utils';
 
 interface MediastackArticle {
   author?: string;
@@ -49,7 +49,7 @@ export class MediastackProvider implements ConflictDataProvider {
           const events: ConflictEvent[] = [];
           res.data.data.forEach((a, idx) => {
             const ev = buildConflictEvent({
-              id: `MEDIASTACK-${idx}-${Date.now()}`,
+              id: `MEDIASTACK-${simpleHash(a.title)}`,
               title: a.title,
               description: a.description,
               url: a.url,
@@ -138,7 +138,7 @@ export class MediastackProvider implements ConflictDataProvider {
     const events: ConflictEvent[] = [];
     samples.forEach((s, idx) => {
       const ev = buildConflictEvent({
-        id: `MEDIASTACK-SAMPLE-${idx}-${Date.now()}`,
+        id: `MEDIASTACK-SAMPLE-${simpleHash(s.title)}`,
         title: s.title,
         description: s.description,
         url: s.url,

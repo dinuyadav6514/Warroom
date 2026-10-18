@@ -1,5 +1,6 @@
-import { ConflictEvent } from '@/types/conflict';
-import { classifyEvent } from '@/lib/classification/event-classifier';
+import type { ConflictEvent } from '@/types/conflict';
+import { classifyEvent } from '../classification/event-classifier.ts';
+import { cleanHtmlAndMarkup } from '../intelligence/event-summarizer.ts';
 
 /**
  * Deduplicates conflict events by their unique ID or composite key.
@@ -10,6 +11,11 @@ export function deduplicateEvents(events: ConflictEvent[]): ConflictEvent[] {
 
   for (const event of events) {
     if (!event) continue;
+
+    // Defensive sanitization: ensure notes are always 100% stripped of HTML tags
+    if (event.notes) {
+      event.notes = cleanHtmlAndMarkup(event.notes);
+    }
 
     // Ensure event has primaryCategory and categoryConfidence
     if (!event.primaryCategory) {
@@ -22,25 +28,41 @@ export function deduplicateEvents(events: ConflictEvent[]): ConflictEvent[] {
       }
     }
 
-    // Use provider event ID, or construct deterministic hash key
+    // Construct deterministic ID key and normalized content signature
     const idKey = event.id && event.id.trim() !== ''
       ? event.id.trim()
       : `${event.country}_${event.location}_${event.eventDate}_${event.eventType}_${event.actor1 || ''}`.replace(/\s+/g, '_');
 
-    const existing = seen.get(idKey);
+    // Content signature: normalized title snippet + country + date
+    const normTitle = (event.notes || event.eventType || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 50);
+    const contentKey = normTitle.length > 10 ? `SIG:${normTitle}_${event.country}_${event.eventDate}` : idKey;
+
+    const existing = seen.get(idKey) || seen.get(contentKey);
     if (!existing) {
       seen.set(idKey, event);
+      if (contentKey !== idKey) seen.set(contentKey, event);
     } else {
-      // If duplicate exists, keep whichever has more data (e.g. notes, coordinates, higher timestamp)
+      // Merge sources and keep the more informative record
+      if (event.source && existing.source && !existing.source.includes(event.source)) {
+        existing.source = `${existing.source}, ${event.source}`;
+      }
       const existingWeight = (existing.notes ? 1 : 0) + (existing.latitude ? 1 : 0) + (existing.fatalities || 0);
       const newWeight = (event.notes ? 1 : 0) + (event.latitude ? 1 : 0) + (event.fatalities || 0);
-      if (newWeight >= existingWeight) {
-        seen.set(idKey, event);
+      const winner = newWeight > existingWeight ? event : existing;
+      if (event.source && winner.source && !winner.source.includes(event.source)) {
+        winner.source = `${winner.source}, ${event.source}`;
       }
+      seen.set(idKey, winner);
+      if (contentKey !== idKey) seen.set(contentKey, winner);
     }
   }
 
-  return Array.from(seen.values()).sort((a, b) => {
+  return Array.from(new Set(seen.values())).sort((a, b) => {
     const timeA = new Date(a.timestamp || a.eventDate).getTime();
     const timeB = new Date(b.timestamp || b.eventDate).getTime();
     return timeB - timeA; // Descending (newest first)

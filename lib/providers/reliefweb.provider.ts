@@ -18,7 +18,7 @@ import { DateRangeQuery } from '@/types/provider';
 import { calculateSeverity } from '../scoring/severity';
 import { isWithinWindow, isHistoricalOrStaleConflict } from '../data/date-utils';
 
-import { extractLocationAndCoords, simpleHash } from './provider-utils';
+import { extractLocationAndCoords, simpleHash, cleanHtmlAndMarkup } from './provider-utils';
 import { COUNTRY_TO_REGION } from '../aggregation/clustering';
 import { classifyEvent } from '../classification/event-classifier';
 
@@ -345,9 +345,9 @@ export class ReliefWebProvider {
       if (!titleM || !linkM) continue;
 
       items.push({
-        title: (titleM[1] || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#039;/g, "'").trim(),
+        title: cleanHtmlAndMarkup(titleM[1] || ''),
         link: (linkM[1] || '').trim(),
-        description: (descM ? descM[1] : '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim(),
+        description: cleanHtmlAndMarkup(descM ? descM[1] : ''),
         pubDate: (dateM ? dateM[1] : '').trim(),
       });
     }

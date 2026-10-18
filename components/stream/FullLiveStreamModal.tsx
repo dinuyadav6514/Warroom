@@ -13,6 +13,7 @@ import {
   ArrowUpDown,
   ShieldAlert,
 } from 'lucide-react';
+import { cleanHtmlAndMarkup } from '@/lib/intelligence/event-summarizer';
 
 interface FullLiveStreamModalProps {
   isOpen: boolean;
@@ -313,7 +314,7 @@ export const FullLiveStreamModal: React.FC<FullLiveStreamModalProps> = ({
                   ? 'border-yellow-600/80 bg-yellow-950/50 text-severity-moderate'
                   : 'border-emerald-600/80 bg-emerald-950/50 text-severity-low';
 
-              const headline = ev.notes || `${ev.eventType} reported in ${ev.location}`;
+              const headline = cleanHtmlAndMarkup(ev.notes || `${ev.eventType} reported in ${ev.location}`);
 
               return (
                 <div

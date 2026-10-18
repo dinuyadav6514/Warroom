@@ -4,7 +4,7 @@
  * incident frequency and casualty data per country/theater.
  */
 
-import { ConflictEvent, Conflict } from '@/types/conflict';
+import type { ConflictEvent, Conflict } from '@/types/conflict';
 
 export interface EscalationForecast {
   country: string;

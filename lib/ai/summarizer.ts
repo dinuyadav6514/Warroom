@@ -1,4 +1,4 @@
-import { Conflict, ConflictEvent } from '@/types/conflict';
+import type { Conflict, ConflictEvent } from '@/types/conflict';
 import { STRICT_AI_SYSTEM_PROMPT, buildConflictSummaryPrompt } from './prompts';
 
 export interface AiBriefResponse {
@@ -41,36 +41,39 @@ export async function generateConflictBrief(
 
   // Attempt Gemini API if key available
   if (geminiKey && geminiKey.trim() !== '') {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: `${STRICT_AI_SYSTEM_PROMPT}\n\n${prompt}` }],
+    const briefModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    for (const model of briefModels) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: `${STRICT_AI_SYSTEM_PROMPT}\n\n${prompt}` }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.2, // Low temperature to prevent hallucination
+                maxOutputTokens: 800,
               },
-            ],
-            generationConfig: {
-              temperature: 0.2, // Low temperature to prevent hallucination
-              maxOutputTokens: 800,
-            },
-          }),
-        }
-      );
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          return parseAiOutput(text, 'GEMINI', conflict);
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            return parseAiOutput(text, 'GEMINI', conflict);
+          }
         }
+      } catch (e) {
+        console.warn(`[Brief] Gemini model ${model} failed, trying fallback:`, e);
       }
-    } catch (e) {
-      console.warn('Gemini API request failed, falling back to rule-based synthesis', e);
     }
   }
 
