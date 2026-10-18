@@ -37,8 +37,8 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
       <div
         className={`w-full h-full flex flex-col justify-between p-3 select-none font-mono text-[11px] border-0 border-l transition-all ${
           isLight
-            ? 'glass-panel bg-white/70 border-slate-300/80 text-slate-800 backdrop-blur-2xl shadow-xl'
-            : 'glass-panel bg-black/45 border-white/10 text-white backdrop-blur-2xl shadow-2xl'
+            ? 'glass-panel-heavy-grain border-slate-300/80 text-slate-800'
+            : 'glass-panel-heavy-grain border-white/10 text-white'
         }`}
       >
         <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
@@ -126,8 +126,8 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
     <div
       className={`w-full h-full flex flex-col justify-between p-2.5 sm:p-3 select-none font-mono text-[11px] border-0 border-l transition-all animate-in fade-in slide-in-from-right duration-200 ${
         isLight
-          ? 'glass-panel bg-white/70 border-slate-300/80 text-slate-900 backdrop-blur-2xl shadow-xl'
-          : 'glass-panel bg-black/45 border-white/10 text-white backdrop-blur-2xl shadow-2xl'
+          ? 'glass-panel-heavy-grain border-slate-300/80 text-slate-900'
+          : 'glass-panel-heavy-grain border-white/10 text-white'
       }`}
     >
       {/* Scrollable Upper News Information Body */}
@@ -192,8 +192,8 @@ export const MobileSelectedNewsPane: React.FC<MobileSelectedNewsPaneProps> = ({
         <div
           className={`p-2.5 rounded-xl text-[10px] leading-relaxed space-y-1 border ${
             isLight
-              ? 'bg-white/80 text-slate-700 border-slate-200'
-              : 'glass-panel-subtle bg-white/[0.04] text-slate-300 border-white/10'
+              ? 'bg-white/40 text-slate-800 border-slate-300/40 backdrop-blur-md'
+              : 'glass-panel-subtle bg-white/[0.03] text-slate-200 border-white/10 backdrop-blur-md'
           }`}
         >
           <div className="flex items-center gap-1 text-[9px] font-bold text-cyan-400">

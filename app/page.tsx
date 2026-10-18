@@ -127,27 +127,38 @@ export default function WarRoomDashboard() {
   // Hydrate theme from localStorage on initial load
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('warroom_theme') as 'dark' | 'light' | null;
-      if (saved === 'light' || saved === 'dark') {
-        setTheme(saved);
-        if (saved === 'light') {
-          document.documentElement.classList.add('theme-light');
-        } else {
-          document.documentElement.classList.remove('theme-light');
+      try {
+        const saved = localStorage.getItem('warroom_theme');
+        if (saved === 'light' || saved === 'dark') {
+          setTheme(saved);
+          if (saved === 'light') {
+            document.documentElement.classList.add('theme-light');
+          } else {
+            document.documentElement.classList.remove('theme-light');
+          }
+        } else if (saved) {
+          localStorage.removeItem('warroom_theme');
         }
+      } catch {
+        // Ignore storage access errors
       }
     }
   }, []);
 
-  const handleToggleTheme = useCallback((targetTheme?: 'dark' | 'light') => {
+  const handleToggleTheme = useCallback((targetTheme?: unknown) => {
     setTheme((prev) => {
-      const next = targetTheme || (prev === 'dark' ? 'light' : 'dark');
+      const explicit = (targetTheme === 'dark' || targetTheme === 'light') ? targetTheme : undefined;
+      const next: 'dark' | 'light' = explicit || (prev === 'dark' ? 'light' : 'dark');
       if (typeof window !== 'undefined') {
-        localStorage.setItem('warroom_theme', next);
-        if (next === 'light') {
-          document.documentElement.classList.add('theme-light');
-        } else {
-          document.documentElement.classList.remove('theme-light');
+        try {
+          localStorage.setItem('warroom_theme', next);
+          if (next === 'light') {
+            document.documentElement.classList.add('theme-light');
+          } else {
+            document.documentElement.classList.remove('theme-light');
+          }
+        } catch {
+          // Ignore
         }
       }
       return next;
@@ -650,9 +661,9 @@ export default function WarRoomDashboard() {
 
   return (
     <div
-      className={`flex flex-col h-screen w-screen ${
+      className={`fixed inset-0 h-[100dvh] max-h-[100dvh] w-full flex flex-col ${
         theme === 'light' ? 'theme-light bg-[#f8fafc]' : 'bg-black'
-      } text-text-primary overflow-hidden font-mono transition-colors duration-200`}
+      } text-text-primary overflow-hidden overscroll-none font-mono transition-colors duration-200`}
     >
       {/* Top Header */}
       <Header
@@ -856,6 +867,56 @@ export default function WarRoomDashboard() {
               />
             )}
           </div>
+
+          {/* Mobile Left Drawer Navigation (when opened via header) */}
+          {mobileNavOpen && (
+            <LeftNav
+              currentView={currentView}
+              onSelectView={(v) => {
+                setCurrentView(v);
+                setMobileNavOpen(false);
+              }}
+              filters={filters}
+              onUpdateFilters={handleUpdateFilters}
+              onOpenSources={() => {
+                setIsSourcesModalOpen(true);
+                setMobileNavOpen(false);
+              }}
+              isOpenMobile={mobileNavOpen}
+              onCloseMobile={() => setMobileNavOpen(false)}
+              availableSources={availableSources}
+              isRefreshing={isRefreshing}
+              lastSyncAt={freshness?.lastSyncAt}
+              eventsCount={enrichedEvents.length}
+              events={enrichedEvents}
+              apiExchange={apiExchange}
+              selectedEvent={selectedEvent}
+              selectedConflict={selectedConflict}
+              relationNetwork={relationNetwork}
+              onSelectRelation={handleSelectRelation}
+              onClearRelationNetwork={() => {
+                setRelationNetwork(null);
+                handleSelectCountries([]);
+              }}
+              onClearSelection={() => {
+                setSelectedEvent(null);
+                setSelectedConflict(null);
+              }}
+              onSelectEvent={(ev) => {
+                handleSelectEvent(ev);
+                setMobileNavOpen(false);
+              }}
+              onOpenEventModal={(e) => {
+                setSelectedEvent(e);
+                setIsEventModalOpen(true);
+                setMobileNavOpen(false);
+              }}
+              onOpenFullStream={() => {
+                handleOpenFullStream();
+                setMobileNavOpen(false);
+              }}
+            />
+          )}
 
           {/* 2. Bottom Bar with (Home, Read, Analysis) buttons */}
           <MobileBottomBar

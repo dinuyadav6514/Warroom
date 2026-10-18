@@ -7,7 +7,9 @@ export const viewport: Viewport = {
   themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
@@ -36,12 +38,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark h-full w-full overflow-hidden overscroll-none">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="bg-background text-text-primary antialiased select-none selection:bg-accent-cyan/20 selection:text-accent-cyan">
+      <body className="bg-background text-text-primary antialiased select-none selection:bg-accent-cyan/20 selection:text-accent-cyan h-full w-full overflow-hidden overscroll-none">
         <ServiceWorkerRegister />
         {children}
       </body>

@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [isRefreshing]);
 
   return (
-    <header className="h-12 glass-panel mx-3 mt-2.5 mb-1 rounded-2xl md:rounded-[22px] border border-white/[0.12] px-3 md:px-5 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0 shadow-[0_12px_36px_rgba(0,0,0,0.7)]">
+    <header className="h-12 glass-panel mx-2 md:mx-3 mt-1.5 md:mt-2.5 mb-1 rounded-xl md:rounded-[22px] border border-white/[0.12] px-2.5 md:px-5 flex items-center justify-between z-30 font-mono select-none gap-2 shrink-0 shadow-[0_12px_36px_rgba(0,0,0,0.7)]">
       {/* LEFT SECTION: Logo -> Refresh -> Day Selector */}
       <div className="flex items-center gap-2 md:gap-3.5 min-w-0">
 
@@ -262,9 +262,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Dynamic Dark / Light Mode Visual Switcher - Prominent on both Mobile and Desktop */}
         {onToggleTheme && (
           <button
-            onClick={onToggleTheme}
+            type="button"
+            onClick={() => onToggleTheme()}
             className="p-1.5 rounded-lg border border-white/10 glass-pill hover:border-cyan-400/50 text-text-secondary hover:text-white transition-all cursor-pointer shrink-0"
-            title={`Toggle Theme [Current: ${theme.toUpperCase()}] · Type 'theme' in terminal`}
+            title={`Toggle Theme [Current: ${(typeof theme === 'string' ? theme : 'dark').toUpperCase()}] · Type 'theme' in terminal`}
           >
             {theme === 'light' ? (
               <Moon className="w-4 h-4 text-slate-800 hover:text-cyan-600 transition-colors" />

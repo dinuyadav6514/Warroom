@@ -23,7 +23,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   const isLight = theme === 'light';
 
   return (
-    <div className="w-full shrink-0 px-3 pb-2 pt-1 pointer-events-auto z-30 select-none font-mono">
+    <div className="w-full shrink-0 px-2.5 sm:px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 pointer-events-auto z-30 select-none font-mono sticky bottom-0">
       <nav
         aria-label="Mobile Navigation"
         className={`w-full h-13 px-2 flex items-center justify-around rounded-2xl border transition-all ${

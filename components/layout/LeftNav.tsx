@@ -75,13 +75,13 @@ export const LeftNav: React.FC<LeftNavProps> = ({
       {/* Mobile backdrop */}
       {isOpenMobile && (
         <div
-          className="fixed inset-0 bg-black/70 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-md z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`w-64 glass-panel border border-white/[0.12] rounded-[28px] overflow-hidden flex flex-col font-mono text-xs select-none transition-transform z-40 fixed md:static inset-y-2 left-2 md:my-1 md:ml-3 md:mb-3 md:h-[calc(100%-16px)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] ${
+        className={`w-72 sm:w-80 md:w-64 glass-panel-heavy-grain border border-white/[0.14] rounded-[28px] overflow-hidden flex flex-col font-mono text-xs select-none transition-transform z-40 fixed md:static inset-y-2 left-2 md:my-1 md:ml-3 md:mb-3 md:h-[calc(100%-16px)] shadow-[0_20px_50px_rgba(0,0,0,0.85)] ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
